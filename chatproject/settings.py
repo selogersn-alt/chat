@@ -128,10 +128,24 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # Custom User Model
 AUTH_USER_MODEL = 'chat.User'
 
-# Default primary key field type
-# https://docs.djangoproject.com/en/stable/ref/settings/#default-auto-field
+JAZZMIN_SETTINGS = {
+    "site_title": "Loger Sénégal Chat",
+    "site_header": "Loger Sénégal",
+    "site_brand": "CRM WhatsApp",
+    "site_logo": "logo.png",  # Le fichier devra être dans static/logo.png
+    "login_logo": None,
+    "login_logo_dark": None,
+    "site_logo_classes": "img-circle",
+    "site_icon": "favicon.ico",  # Le fichier devra être dans static/favicon.ico
+    "welcome_sign": "Bienvenue sur le CRM Loger Sénégal",
+    "copyright": "Loger Sénégal Ltd",
+    "show_ui_builder": False,
+}
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+JAZZMIN_UI_TWEAKS = {
+    "theme": "darkly",
+}
+
 
 # DRF configuration
 REST_FRAMEWORK = {
