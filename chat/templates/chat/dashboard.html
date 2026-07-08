@@ -312,7 +312,7 @@
     <div class="flex-1 flex overflow-hidden">
         
         <!-- COLUMN 1: CONVERSATIONS LIST -->
-        <aside class="col-left w-80 md:w-96 flex flex-col h-full flex-shrink-0">
+        <aside id="colLeft" class="col-left w-full md:w-80 lg:w-96 flex flex-col h-full flex-shrink-0 transition-transform duration-300">
             <!-- Search & Filters -->
             <div class="p-4 border-b border-gray-100 flex flex-col gap-3">
                 <div class="flex gap-2">
@@ -391,7 +391,7 @@
         </aside>
 
         <!-- COLUMN 2: ACTIVE CHAT AREA -->
-        <main class="flex-1 bg-gray-50 flex flex-col h-full relative">
+        <main id="colCenter" class="hidden md:flex flex-1 bg-gray-50 flex-col h-full relative w-full absolute md:static z-20 transition-all duration-300">
             <!-- Empty Chat View -->
             <div id="emptyChatView" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-50 p-8 text-center z-20">
                 <div class="w-20 h-20 rounded-full bg-forest-50 flex items-center justify-center text-forest-600 mb-4 shadow-inner">
@@ -425,9 +425,14 @@
                             <span id="chatAvatarPresenceDot" class="presence-dot inactive absolute -bottom-0.5 -right-0.5"></span>
                         </div>
                         <div>
-                            <div class="flex items-center gap-2">
-                                <h4 class="font-bold text-gray-800 text-sm md:text-base" id="chatHeaderName">Chargement...</h4>
-                                <span class="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold bg-green-100 text-green-700 rounded-full" id="whatsappBadge">
+                                <div class="flex items-center gap-2">
+                                    <button onclick="mobileBackToList()" class="md:hidden p-1 mr-1 text-gray-500 hover:bg-gray-100 rounded-lg">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-5 h-5">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                                        </svg>
+                                    </button>
+                                    <h4 class="font-bold text-gray-800 text-sm md:text-base" id="chatHeaderName">Chargement...</h4>
+                                    <span class="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold bg-green-100 text-green-700 rounded-full" id="whatsappBadge">
                                     <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.5-5.739-1.446L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.42 9.864-9.864.002-2.637-1.03-5.114-2.905-6.99C16.455 1.875 13.978.847 11.332.845c-5.438 0-9.862 4.42-9.866 9.863-.002 1.702.447 3.366 1.301 4.821L1.65 22.378l6.997-1.834z"/></svg>
                                     WhatsApp
                                 </span>
@@ -446,8 +451,12 @@
                         </div>
                     </div>
                     
-                    <div class="flex items-center gap-2">
-                        <button onclick="closeCurrentConversation()" class="px-3 py-1.5 bg-gray-100 hover:bg-red-50 hover:text-red-600 rounded-lg text-xs font-semibold text-gray-600 transition-all">
+                        <button onclick="mobileOpenCRM()" class="md:hidden p-2 bg-forest-50 text-forest-600 rounded-xl hover:bg-forest-100" title="Détails CRM">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                            </svg>
+                        </button>
+                        <button onclick="closeCurrentConversation()" class="hidden md:block px-3 py-1.5 bg-gray-100 hover:bg-red-50 hover:text-red-600 rounded-lg text-xs font-semibold text-gray-600 transition-all">
                             Fermer la discussion
                         </button>
                     </div>
@@ -526,9 +535,12 @@
         </main>
 
         <!-- COLUMN 3: PROPERTIES & CATALOG SIDEBAR -->
-        <aside class="col-right w-80 md:w-96 flex flex-col h-full flex-shrink-0">
+        <aside id="colRight" class="hidden md:flex col-right w-full md:w-80 lg:w-96 flex-col h-full flex-shrink-0 absolute md:static inset-0 z-30 transition-transform duration-300">
             <!-- Sidebar Tabs -->
-            <div class="border-b border-white/10 flex px-3 pt-3">
+            <div class="border-b border-white/10 flex px-3 pt-3 relative">
+                <button onclick="mobileCloseCRM()" class="md:hidden absolute right-3 top-3 p-1.5 text-white/50 hover:bg-white/10 rounded-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
                 <button onclick="setRightTab('CURRENT')" id="rightTabCurrent" class="right-tab-btn active flex-1">🏠 Fiche Prospect</button>
                 <button onclick="setRightTab('CATALOG')" id="rightTabCatalog" class="right-tab-btn flex-1">📋 Catalogue</button>
             </div>
@@ -937,10 +949,24 @@
         // Select active conversation
         function selectConversation(id) {
             currentConversationId = id;
+            
+            // UI Toggle
+            document.querySelectorAll('.conv-tile').forEach(el => el.classList.remove('active'));
+            const tile = document.querySelector(`.conv-tile[data-id="${id}"]`);
+            if (tile) tile.classList.add('active');
+            
             document.getElementById('emptyChatView').classList.add('hidden');
             const activeView = document.getElementById('activeChatView');
             activeView.classList.remove('hidden');
             setTimeout(() => activeView.classList.remove('opacity-0'), 50);
+            
+            // Mobile toggle
+            if (window.innerWidth < 768) {
+                document.getElementById('colLeft').classList.add('hidden');
+                document.getElementById('colLeft').classList.remove('flex');
+                document.getElementById('colCenter').classList.remove('hidden');
+                document.getElementById('colCenter').classList.add('flex');
+            }
             
             // Sync immediately
             syncData();
@@ -1412,10 +1438,32 @@
                 currentConversationId = null;
                 document.getElementById('activeChatView').classList.add('opacity-0', 'hidden');
                 document.getElementById('emptyChatView').classList.remove('hidden');
+                mobileBackToList();
                 syncData();
             })
             .catch(err => console.error("Error closing conversation:", err));
         }
+
+        // --- Mobile Layout Helpers ---
+        function mobileBackToList() {
+            document.getElementById('colLeft').classList.remove('hidden');
+            document.getElementById('colLeft').classList.add('flex');
+            document.getElementById('colCenter').classList.add('hidden');
+            document.getElementById('colCenter').classList.remove('flex');
+            document.getElementById('colRight').classList.add('hidden');
+            document.getElementById('colRight').classList.remove('flex');
+        }
+
+        function mobileOpenCRM() {
+            document.getElementById('colRight').classList.remove('hidden');
+            document.getElementById('colRight').classList.add('flex');
+        }
+
+        function mobileCloseCRM() {
+            document.getElementById('colRight').classList.add('hidden');
+            document.getElementById('colRight').classList.remove('flex');
+        }
+        // -----------------------------
 
         // Search trigger
         document.getElementById('convSearch').addEventListener('input', renderConversationList);
