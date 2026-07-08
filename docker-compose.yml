@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    container_name: logersn_chat_crm
+    restart: always
+    ports:
+      - "8085:8000"
+    volumes:
+      - sqlite_data:/app/db_volume
+      - media_volume:/app/media
+    env_file:
+      - .env
+    environment:
+      # Redirect DB to persistent volume path
+      - DATABASE_DIR=/app/db_volume
+
+volumes:
+  sqlite_data:
+  media_volume:

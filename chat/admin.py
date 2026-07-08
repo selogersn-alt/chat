@@ -1,0 +1,33 @@
+from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin
+from .models import User, Conversation, Message, Property, QuickTemplate, Reminder
+
+@admin.register(User)
+class CustomUserAdmin(UserAdmin):
+    list_display = ('username', 'phone_number', 'role', 'is_staff')
+    fieldsets = UserAdmin.fieldsets + (
+        ('Informations Métier', {'fields': ('phone_number', 'role')}),
+    )
+
+@admin.register(Conversation)
+class ConversationAdmin(admin.ModelAdmin):
+    list_display = ('id', 'topic', 'status', 'is_whatsapp', 'last_message_at', 'pipeline_stage')
+    list_filter = ('status', 'is_whatsapp', 'pipeline_stage')
+
+@admin.register(Message)
+class MessageAdmin(admin.ModelAdmin):
+    list_display = ('id', 'conversation', 'sender', 'created_at')
+    list_filter = ('created_at',)
+
+@admin.register(Property)
+class PropertyAdmin(admin.ModelAdmin):
+    list_display = ('title', 'price', 'created_at')
+
+@admin.register(QuickTemplate)
+class QuickTemplateAdmin(admin.ModelAdmin):
+    list_display = ('title', 'category')
+
+@admin.register(Reminder)
+class ReminderAdmin(admin.ModelAdmin):
+    list_display = ('title', 'conversation', 'remind_at', 'is_done')
+    list_filter = ('is_done', 'remind_at')

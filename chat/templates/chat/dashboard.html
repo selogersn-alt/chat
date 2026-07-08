@@ -1,0 +1,1994 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Console Agent | Loger Sénégal Chat</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                    },
+                    colors: {
+                        forest: {
+                            50: '#f2f8f5',
+                            100: '#e1efe7',
+                            200: '#c5e0cf',
+                            500: '#1b6b3e',
+                            600: '#0f4f2c',
+                            700: '#0b3c21',
+                            900: '#052212',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* ── Global Body ── */
+        body {
+            background: #f0f4f8;
+            font-feature-settings: "kern" 1, "liga" 1;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ── Custom Scrollbar ── */
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #c7d2df; border-radius: 9999px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* ── Header: Rich gradient ── */
+        .app-header {
+            background: linear-gradient(135deg, #0f5132 0%, #1a7f4e 60%, #0d9488 100%);
+            box-shadow: 0 2px 20px rgba(15, 81, 50, 0.3);
+        }
+
+        /* ── Left sidebar: warm slate background ── */
+        .col-left {
+            background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+            border-right: 1px solid #e2e8f0;
+        }
+
+        /* ── Center chat area: clean white with subtle pattern ── */
+        .col-center {
+            background: #ffffff;
+        }
+        .chat-bg {
+            background-color: #f8fafc;
+            background-image: radial-gradient(circle, #e2e8f0 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        /* ── Right sidebar: deep navy slate ── */
+        .col-right {
+            background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+            border-left: 1px solid #334155;
+        }
+
+        /* ── Section cards in right panel ── */
+        .crm-card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 14px;
+            backdrop-filter: blur(4px);
+        }
+        .crm-card-label {
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.4);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .crm-card-label::before {
+            content: '';
+            display: inline-block;
+            width: 10px;
+            height: 2px;
+            border-radius: 2px;
+            background: currentColor;
+            opacity: 0.6;
+        }
+        .crm-card select, .crm-card textarea, .crm-card input {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.12);
+            color: #e2e8f0;
+            border-radius: 8px;
+            font-size: 12px;
+            width: 100%;
+            padding: 7px 10px;
+            outline: none;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        .crm-card select:focus, .crm-card textarea:focus, .crm-card input:focus {
+            border-color: rgba(45, 212, 191, 0.5);
+            background: rgba(255,255,255,0.12);
+        }
+        .crm-card select option { background: #1e293b; color: #e2e8f0; }
+        .crm-card textarea { resize: none; }
+
+        /* ── Session Timer badge ── */
+        #sessionTimerBadge {
+            display: inline-flex !important;
+            visibility: visible !important;
+            animation: pulse-timer 2s ease-in-out infinite;
+        }
+        #sessionTimerBadge.expired {
+            background: rgba(239,68,68,0.2) !important;
+            color: #fca5a5 !important;
+            border-color: rgba(239,68,68,0.3) !important;
+            animation: none;
+        }
+        @keyframes pulse-timer {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        /* ── Conversation tile hover ── */
+        .conv-tile {
+            transition: all 0.18s ease;
+            border-left: 3px solid transparent;
+        }
+        .conv-tile:hover {
+            background: linear-gradient(90deg, #f0fdf4, #f8fafc);
+            border-left-color: #1a7f4e;
+            transform: translateX(2px);
+        }
+        .conv-tile.active {
+            background: linear-gradient(90deg, #dcfce7, #f0fdf4);
+            border-left-color: #16a34a;
+        }
+
+        /* ── Chat bubbles ── */
+        .bubble-agent {
+            background: linear-gradient(135deg, #0f5132, #1a7f4e);
+            color: white;
+            border-radius: 18px 18px 4px 18px;
+            box-shadow: 0 2px 8px rgba(15, 81, 50, 0.25);
+        }
+        .bubble-client {
+            background: white;
+            color: #1e293b;
+            border: 1px solid #e2e8f0;
+            border-radius: 18px 18px 18px 4px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+        }
+        .bubble-system {
+            background: linear-gradient(90deg, #fef3c7, #fef9ee);
+            color: #92400e;
+            border: 1px solid #fde68a;
+            border-radius: 10px;
+            font-size: 11px;
+        }
+
+        /* ── Tag pills ── */
+        .tag-pill {
+            background: linear-gradient(135deg, #dbeafe, #e0e7ff);
+            color: #3730a3;
+            border: 1px solid #c7d2fe;
+            border-radius: 999px;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            cursor: default;
+            transition: all 0.15s;
+        }
+        .tag-pill:hover { background: linear-gradient(135deg, #c7d2fe, #ddd6fe); }
+
+        /* ── Right panel tab buttons ── */
+        .right-tab-btn { color: rgba(255,255,255,0.4); border-bottom: 2px solid transparent; padding: 8px; text-align:center; font-size:11px; font-weight:700; transition:all 0.2s; cursor:pointer; }
+        .right-tab-btn.active { color: #2dd4bf; border-bottom-color: #2dd4bf; }
+        .right-tab-btn:hover:not(.active) { color: rgba(255,255,255,0.75); }
+
+        /* ── Connection indicator badge ── */
+        .conn-badge { transition: all 0.3s; }
+        .conn-badge.offline { background: rgba(239,68,68,0.15) !important; color: #fca5a5 !important; border-color: rgba(239,68,68,0.3) !important; }
+
+        /* ── Glass header ── */
+        .glass-header {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        /* ── Chat input area ── */
+        .chat-input-bar {
+            background: white;
+            border-top: 1px solid #e2e8f0;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.04);
+        }
+
+        /* ── Activity / Presence Indicators ── */
+        .presence-dot {
+            width: 9px; height: 9px;
+            border-radius: 50%;
+            border: 2px solid white;
+            display: inline-block;
+            flex-shrink: 0;
+        }
+        .presence-dot.active    { background: #22c55e; box-shadow: 0 0 0 2px rgba(34,197,94,0.3); animation: pulse-green 2s infinite; }
+        .presence-dot.recent    { background: #f59e0b; }
+        .presence-dot.inactive  { background: #94a3b8; }
+        @keyframes pulse-green {
+            0%, 100% { box-shadow: 0 0 0 0px rgba(34,197,94,0.5); }
+            50%       { box-shadow: 0 0 0 5px rgba(34,197,94,0); }
+        }
+        .activity-badge {
+            font-size: 10px; font-weight: 700;
+            padding: 1px 7px; border-radius: 999px;
+            display: inline-flex; align-items: center; gap: 4px;
+        }
+        .activity-badge.active   { background: #dcfce7; color: #15803d; }
+        .activity-badge.recent   { background: #fef9c3; color: #a16207; }
+        .activity-badge.inactive { background: #f1f5f9; color: #64748b; }
+
+        /* ── Typing animation ── */
+        .typing-bubble {
+            display: flex; align-items: center; gap: 4px;
+            padding: 10px 14px;
+            background: white; border: 1px solid #e2e8f0;
+            border-radius: 18px 18px 18px 4px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+            width: fit-content;
+        }
+        .typing-dot {
+            width: 7px; height: 7px; border-radius: 50%;
+            background: #94a3b8;
+            animation: typing-bounce 1.2s infinite;
+        }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing-bounce {
+            0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+            30%            { transform: translateY(-6px); opacity: 1; }
+        }
+
+        /* ── Recently active conversation tile highlight ── */
+        .conv-tile.recently-active {
+            background: linear-gradient(90deg, #f0fff4, #f8fafc) !important;
+        }
+    </style>
+</head>
+<body class="h-screen overflow-hidden flex flex-col font-sans">
+
+    <!-- HEADER -->
+    <header class="app-header h-16 flex items-center justify-between px-6 z-10">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-white shadow-md">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 21v-4.875c0-.621.504-1.125 1.125-1.125h5.25c.621 0 1.125.504 1.125 1.125V21m0 0h4.5V3.545M21 21h1.5M3 21h1.5m18 0h-18M5 20.25V3.545M5 3.545l7.5-2.1 7.5 2.1m-15 0h15" />
+                </svg>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="font-extrabold text-lg text-white tracking-wide">Loger Sénégal</span>
+                <span class="text-xs bg-white/20 text-white font-semibold px-2 py-0.5 rounded-full">Multi-Agent</span>
+                <span id="connBadge" class="conn-badge inline-flex items-center gap-1.5 text-[9px] text-teal-100 bg-teal-800/40 px-2 py-0.5 rounded-lg font-bold border border-teal-400/30 shadow-sm ml-2">
+                    <span class="flex h-1.5 w-1.5 relative">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-300 opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-teal-300"></span>
+                    </span>
+                    Live Connecté
+                </span>
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-4">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-full bg-white/25 flex items-center justify-center font-bold text-white text-sm">
+                    {{ user.first_name|slice:":1"|default:user.username|slice:":1" }}
+                </div>
+                <div class="hidden md:block text-left">
+                    <p class="text-xs font-semibold text-white">{{ user.first_name }} {{ user.last_name }}</p>
+                    <p class="text-[10px] text-teal-200/70">Agent en ligne</p>
+                </div>
+            </div>
+            
+            <a href="{% url 'logout' %}" class="p-2 text-white/50 hover:text-white hover:bg-white/10 rounded-xl transition-all duration-200" title="Se déconnecter">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M19 12H9m10 0l-3-3m3 3l-3 3" />
+                </svg>
+            </a>
+        </div>
+    </header>
+
+    <!-- WORKSPACE -->
+    <div class="flex-1 flex overflow-hidden">
+        
+        <!-- COLUMN 1: CONVERSATIONS LIST -->
+        <aside class="col-left w-80 md:w-96 flex flex-col h-full flex-shrink-0">
+            <!-- Search & Filters -->
+            <div class="p-4 border-b border-gray-100 flex flex-col gap-3">
+                <div class="flex gap-2">
+                    <div class="relative flex-1">
+                        <input type="text" id="convSearch" placeholder="Rechercher un prospect..." 
+                            class="w-full pl-10 pr-4 py-2 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-forest-500 transition-all">
+                        <div class="absolute left-3.5 top-3 text-gray-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.602 10.602z" />
+                            </svg>
+                        </div>
+                    </div>
+                    <button onclick="triggerExportCSV()" class="px-2.5 bg-gray-50 border border-gray-200 text-gray-500 hover:text-forest-600 hover:bg-forest-50 rounded-xl transition-all flex items-center justify-center flex-shrink-0" title="Exporter les Leads en Excel/CSV">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4.5 h-4.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- Status Tab Filters -->
+                <div class="flex bg-gray-100 p-0.5 rounded-lg text-xs font-semibold text-gray-600">
+                    <button onclick="setFilter('ACTIVE')" id="tabActive" class="flex-1 py-1.5 text-center rounded-md bg-white text-forest-900 shadow-sm transition-all">Actives</button>
+                    <button onclick="setFilter('PENDING')" id="tabPending" class="flex-1 py-1.5 text-center rounded-md hover:text-forest-900 transition-all">En attente</button>
+                    <button onclick="setFilter('CLOSED')" id="tabClosed" class="flex-1 py-1.5 text-center rounded-md hover:text-forest-900 transition-all">Fermées</button>
+                </div>
+
+                <!-- Agent Filter Toggle -->
+                <div class="flex justify-between items-center bg-gray-50 border border-gray-100 p-1.5 rounded-xl text-[11px] mt-1">
+                    <span class="text-gray-500 font-semibold pl-1.5">Assignation :</span>
+                    <div class="flex gap-1">
+                        <button onclick="setAgentFilter('MY')" id="btnFilterMy" class="px-2 py-0.5 rounded bg-forest-600 text-white font-bold transition-all">Miennes</button>
+                        <button onclick="setAgentFilter('ALL')" id="btnFilterAll" class="px-2 py-0.5 rounded text-gray-500 hover:text-forest-900 font-bold transition-all">Toutes</button>
+                    </div>
+                </div>
+
+                <!-- Tag Filter Selection -->
+                <div class="flex items-center justify-between gap-2 mt-1">
+                    <select id="filterTagSelect" onchange="handleFilterTagChange(this)" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5 text-[11px] font-semibold text-gray-600 focus:outline-none focus:ring-1 focus:ring-forest-500">
+                        <option value="">Toutes les catégories</option>
+                        <option value="Chambres">Chambres</option>
+                        <option value="Chambre sdb">Chambre sdb</option>
+                        <option value="Studio">Studio</option>
+                        <option value="Studio entre salon">Studio entre salon</option>
+                        <option value="MINI STUDIO">MINI STUDIO</option>
+                        <option value="F3">F3</option>
+                        <option value="F4">F4</option>
+                        <option value="F5">F5</option>
+                        <option value="VILLA">VILLA</option>
+                        <option value="ETRANGER">ETRANGER</option>
+                        <option value="MAGASIN">MAGASIN</option>
+                        <option value="PARTENAIRE">PARTENAIRE</option>
+                        <option value="MEUBLEE">MEUBLEE</option>
+                        <option value="CLIENTY MEUBLE">CLIENTY MEUBLE</option>
+                        <option value="FASS">FASS</option>
+                        <option value="OUAKAM">OUAKAM</option>
+                        <option value="NGOR">NGOR</option>
+                        <option value="OUEST FOIRE">OUEST FOIRE</option>
+                        <option value="MARISTE">MARISTE</option>
+                        <option value="GUEDIAWAYE">GUEDIAWAYE</option>
+                        <option value="BANLIEUE">BANLIEUE</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- List Container -->
+            <div class="flex-1 overflow-y-auto custom-scrollbar" id="conversationsContainer">
+                <!-- Loading State -->
+                <div class="flex flex-col items-center justify-center p-8 text-gray-400">
+                    <svg class="animate-spin -ml-1 mr-3 h-8 w-8 text-forest-600 mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span class="text-xs">Chargement des conversations...</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- COLUMN 2: ACTIVE CHAT AREA -->
+        <main class="flex-1 bg-gray-50 flex flex-col h-full relative">
+            <!-- Empty Chat View -->
+            <div id="emptyChatView" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-50 p-8 text-center z-20">
+                <div class="w-20 h-20 rounded-full bg-forest-50 flex items-center justify-center text-forest-600 mb-4 shadow-inner">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-10 h-10">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 8.511c.083.185.127.39.127.607v9.75a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V9.118c0-.218.044-.422.127-.608m19.5 0a3 3 0 00-2.68-1.748h-14.14a3 3 0 00-2.68 1.748m19.5 0L12 14.898 2.25 8.511" />
+                    </svg>
+                </div>
+                <h3 class="text-lg font-bold text-gray-800">Bienvenue dans Loger Sénégal</h3>
+                <p class="text-sm text-gray-500 max-w-sm mt-1">Sélectionnez une discussion à gauche pour commencer à échanger avec un prospect WhatsApp en temps réel.</p>
+                
+                <!-- Mockup Webhook Trigger Help -->
+                <div class="mt-6 p-4 bg-forest-50 rounded-2xl border border-forest-100 max-w-md text-left text-xs text-forest-900 leading-relaxed shadow-sm">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></span>
+                        <strong class="font-bold">Démo Locale & Webhook Actif :</strong>
+                    </div>
+                    Pour tester la réception d'un message sans avoir configuré WhatsApp API, vous pouvez simuler un message client. Ouvrez PowerShell dans ce dossier et exécutez le script d'aide ou envoyez une requête HTTP POST sur `/api/webhook/`.
+                </div>
+            </div>
+
+            <!-- Chat Active View (Initially hidden) -->
+            <div id="activeChatView" class="flex-1 flex flex-col h-full overflow-hidden opacity-0 transition-opacity duration-300">
+                <!-- Chat Header -->
+                <div class="h-16 border-b border-gray-200 bg-white px-6 flex items-center justify-between flex-shrink-0 shadow-sm">
+                    <div class="flex items-center gap-3">
+                        <div class="relative">
+                            <div class="w-10 h-10 rounded-full bg-forest-600 text-white flex items-center justify-center font-bold" id="chatHeaderAvatar">
+                                C
+                            </div>
+                            <!-- Presence dot on avatar -->
+                            <span id="chatAvatarPresenceDot" class="presence-dot inactive absolute -bottom-0.5 -right-0.5"></span>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h4 class="font-bold text-gray-800 text-sm md:text-base" id="chatHeaderName">Chargement...</h4>
+                                <span class="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold bg-green-100 text-green-700 rounded-full" id="whatsappBadge">
+                                    <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.5-5.739-1.446L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.42 9.864-9.864.002-2.637-1.03-5.114-2.905-6.99C16.455 1.875 13.978.847 11.332.845c-5.438 0-9.862 4.42-9.866 9.863-.002 1.702.447 3.366 1.301 4.821L1.65 22.378l6.997-1.834z"/></svg>
+                                    WhatsApp
+                                </span>
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold bg-teal-50 text-teal-700 rounded-full border border-teal-200" id="sessionTimerBadge">
+                                    ⏱️ Calcul...
+                                </span>
+                            </div>
+                            <!-- Activity status row -->
+                            <div class="flex items-center gap-2 mt-0.5">
+                                <p class="text-xs text-gray-500" id="chatHeaderPhone">...</p>
+                                <span id="chatHeaderActivityBadge" class="activity-badge inactive">
+                                    <span class="presence-dot inactive" style="width:6px;height:6px;border:none;"></span>
+                                    Inactif
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center gap-2">
+                        <button onclick="closeCurrentConversation()" class="px-3 py-1.5 bg-gray-100 hover:bg-red-50 hover:text-red-600 rounded-lg text-xs font-semibold text-gray-600 transition-all">
+                            Fermer la discussion
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Claiming Banner -->
+                <div id="claimingBanner" class="hidden bg-emerald-50 border-b border-emerald-100 px-6 py-3 flex justify-between items-center flex-shrink-0">
+                    <div class="flex items-center gap-2 text-xs font-semibold text-emerald-800">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                        Cette discussion n'est pas encore prise en charge par un agent.
+                    </div>
+                    <button onclick="claimActiveConversation()" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-all">
+                        Prendre en charge
+                    </button>
+                </div>
+
+                <!-- Messages Scroll Area -->
+                <div class="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar chat-bg" id="messagesContainer">
+                    <!-- Messages will be injected here -->
+                </div>
+
+                <!-- Footer Input Area -->
+                <div class="p-4 chat-input-bar flex flex-col gap-2 flex-shrink-0 relative">
+                    
+                    <!-- Slash Templates Dropdown Popup -->
+                    <div id="slashTemplatesDropdown" class="absolute left-4 bottom-full mb-2 w-80 bg-white border border-gray-200 rounded-2xl shadow-2xl hidden z-40 p-2 flex flex-col gap-1 max-h-48 overflow-y-auto custom-scrollbar">
+                        <div class="px-2 py-1 text-[10px] font-bold text-forest-600 uppercase tracking-wide border-b border-gray-100 pb-1 flex justify-between items-center">
+                            <span>Raccourcis clavier (Tapez /...)</span>
+                            <span class="text-gray-400">Entrée pour insérer</span>
+                        </div>
+                        <div id="slashTemplatesList" class="flex flex-col gap-1"></div>
+                    </div>
+
+                    <!-- Session Expired Alert Banner -->
+                    <div id="sessionExpiredBanner" class="hidden bg-red-50 border border-red-100 rounded-xl px-4 py-2.5 flex items-center justify-between">
+                        <div class="flex items-center gap-2 text-xs font-semibold text-red-800">
+                            <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                            <span>Session WhatsApp expirée (+24h). Les réponses libres sont désactivées.</span>
+                        </div>
+                        <span class="text-[10px] bg-red-100 text-red-700 font-bold px-2 py-0.5 rounded-full">Utilisez un modèle</span>
+                    </div>
+
+                    <!-- Quick Actions Row -->
+                    <div class="flex items-center gap-2">
+                        <!-- Quick Templates Dropdown -->
+                        <div class="relative">
+                            <button onclick="toggleTemplatesDropdown()" class="flex items-center gap-1.5 px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-800 text-xs font-semibold rounded-lg transition-all">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3.5 h-3.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
+                                </svg>
+                                Messages types
+                            </button>
+                            <!-- Dropdown List -->
+                            <div id="templatesDropdown" class="absolute left-0 bottom-full mb-2 w-72 bg-white border border-gray-200 rounded-2xl shadow-xl hidden z-30 p-2 flex flex-col gap-1 max-h-60 overflow-y-auto custom-scrollbar">
+                                <div class="px-2 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Modèles de réponse</div>
+                                <div id="templatesList"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Input Form -->
+                    <form onsubmit="handleSendSubmit(event)" class="flex gap-3">
+                        <textarea id="messageInput" placeholder="Saisissez votre réponse..." rows="1" required
+                            class="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-forest-500 resize-none text-sm max-h-24 custom-scrollbar"
+                            onkeydown="handleTextareaKeydown(event)" oninput="handleInputSlash(event)"></textarea>
+                        
+                        <button type="submit" id="btnSendMessage" 
+                            class="h-12 w-12 rounded-2xl bg-forest-600 hover:bg-forest-700 text-white flex items-center justify-center shadow-md shadow-forest-600/20 hover:shadow-forest-600/30 transition-all flex-shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 rotate-45 -translate-x-0.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                            </svg>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </main>
+
+        <!-- COLUMN 3: PROPERTIES & CATALOG SIDEBAR -->
+        <aside class="col-right w-80 md:w-96 flex flex-col h-full flex-shrink-0">
+            <!-- Sidebar Tabs -->
+            <div class="border-b border-white/10 flex px-3 pt-3">
+                <button onclick="setRightTab('CURRENT')" id="rightTabCurrent" class="right-tab-btn active flex-1">🏠 Fiche Prospect</button>
+                <button onclick="setRightTab('CATALOG')" id="rightTabCatalog" class="right-tab-btn flex-1">📋 Catalogue</button>
+            </div>
+
+            <!-- Tab Content Container -->
+            <div class="flex-1 overflow-y-auto p-4 custom-scrollbar" style="scrollbar-color: rgba(255,255,255,0.12) transparent;">
+                <!-- Current Property Tab -->
+                <div id="currentPropertyTab">
+                    <!-- Prospect Labels Section -->
+                    <div class="crm-card">
+                        <div class="crm-card-label" style="color: #818cf8;">🏷️ Catégories &amp; Étiquettes</div>
+                        
+                        <!-- Current Tags Container -->
+                        <div id="prospectTagsContainer" class="flex flex-wrap gap-1.5 mb-3">
+                            <!-- Tags will be injected here -->
+                        </div>
+                        
+                        <!-- Add Tag Selector -->
+                        <div class="flex gap-2">
+                            <select id="tagSelect" class="flex-1 bg-white border border-gray-200 rounded-xl px-2.5 py-1.5 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-forest-500">
+                                <option value="" disabled selected>+ Étiquette...</option>
+                                <option value="Chambres">Chambres</option>
+                                <option value="Chambre sdb">Chambre sdb</option>
+                                <option value="Studio">Studio</option>
+                                <option value="Studio entre salon">Studio entre salon</option>
+                                <option value="MINI STUDIO">MINI STUDIO</option>
+                                <option value="F3">F3</option>
+                                <option value="F4">F4</option>
+                                <option value="F5">F5</option>
+                                <option value="VILLA">VILLA</option>
+                                <option value="ETRANGER">ETRANGER</option>
+                                <option value="MAGASIN">MAGASIN</option>
+                                <option value="PARTENAIRE">PARTENAIRE</option>
+                                <option value="MEUBLEE">MEUBLEE</option>
+                                <option value="CLIENTY MEUBLE">CLIENTY MEUBLE</option>
+                                <option value="FASS">FASS</option>
+                                <option value="OUAKAM">OUAKAM</option>
+                                <option value="NGOR">NGOR</option>
+                                <option value="OUEST FOIRE">OUEST FOIRE</option>
+                                <option value="MARISTE">MARISTE</option>
+                                <option value="GUEDIAWAYE">GUEDIAWAYE</option>
+                                <option value="BANLIEUE">BANLIEUE</option>
+                            </select>
+                            <button onclick="addProspectTag()" class="px-3 py-1 bg-forest-600 hover:bg-forest-700 text-white rounded-xl text-xs font-bold transition-all">OK</button>
+                        </div>
+                    </div>
+
+                    <!-- Lead Pipeline Section -->
+                    <div class="crm-card">
+                        <div class="crm-card-label" style="color: #f59e0b;">📊 Pipeline — Étape du Prospect</div>
+                        <select id="pipelineSelect" onchange="updatePipelineStage(this)" class="w-full bg-white border border-gray-200 rounded-xl px-2.5 py-1.5 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-forest-500">
+                            <option value="NEW">Nouveau</option>
+                            <option value="QUALIFIED">Qualifié</option>
+                            <option value="VISIT">Visite Planifiée</option>
+                            <option value="NEGOTIATION">Négociation</option>
+                            <option value="WON">Gagné</option>
+                            <option value="LOST">Perdu</option>
+                        </select>
+                    </div>
+
+                    <!-- Agent Notes Section -->
+                    <div class="crm-card">
+                        <div class="crm-card-label" style="color: #34d399;">📝 Notes de l'Agent</div>
+                        <textarea id="agentNotesArea" onblur="saveAgentNotes()" placeholder="Budget, besoins, prochaines étapes..." rows="3" class="crm-card-textarea"></textarea>
+                    </div>
+
+                    <!-- Reminders & Followups Section -->
+                    <div class="crm-card">
+                        <div class="crm-card-label" style="color: #fb923c;">🔔 Tâches &amp; Relances</div>
+                        
+                        <!-- List of current active reminders for active conversation -->
+                        <div id="remindersContainer" class="flex flex-col gap-2 mb-3 max-h-36 overflow-y-auto custom-scrollbar">
+                            <!-- Reminders will be injected here -->
+                        </div>
+                        
+                        <!-- Add Reminder Form -->
+                        <div class="flex flex-col gap-2 border-t border-gray-200 pt-3">
+                            <input type="text" id="reminderTitle" placeholder="Tâche à faire..." class="w-full bg-white border border-gray-200 rounded-xl px-2.5 py-1.5 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-forest-500">
+                            <div class="flex gap-2">
+                                <input type="datetime-local" id="reminderTime" class="flex-1 bg-white border border-gray-200 rounded-xl px-2 py-1.5 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-forest-500">
+                                <button onclick="addReminder()" class="px-3 py-1 bg-forest-600 hover:bg-forest-700 text-white rounded-xl text-xs font-bold transition-all">Relancer</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- AI Suggestions Section -->
+                    <div id="aiSuggestionsSection" class="hidden mb-6">
+                        <div class="flex items-center gap-2 text-[10px] font-bold text-forest-600 uppercase tracking-wider mb-3">
+                            <span class="flex h-2 w-2 relative">
+                              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-forest-400 opacity-75"></span>
+                              <span class="relative inline-flex rounded-full h-2 w-2 bg-forest-500"></span>
+                            </span>
+                            Suggestions de l'IA
+                        </div>
+                        <div id="aiSuggestionsContainer" class="flex flex-col gap-3"></div>
+                        <hr class="border-gray-100 my-4">
+                    </div>
+
+                    <div id="noAssociatedProperty" class="flex flex-col items-center justify-center py-12 text-center text-gray-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-12 h-12 mb-2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-10.5h16.5M2.25 9h19.5M2.25 9.75h19.5m-19.5 3h19.5m-19.5 3h19.5m-19.5 3h19.5" />
+                        </svg>
+                        <p class="text-sm">Aucun bien associé à cette discussion</p>
+                        <p class="text-xs text-gray-500 mt-1 max-w-xs px-4">Si le prospect envoie un lien LogerSénégal, le bien s'affichera ici automatiquement.</p>
+                    </div>
+
+                    <div id="associatedPropertyCard" class="hidden flex flex-col bg-gray-50 border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+                        <img id="assocPropImg" src="" alt="Photo Bien" class="h-44 w-full object-cover">
+                        <div class="p-4">
+                            <span class="text-xs font-bold text-forest-600 px-2 py-0.5 bg-forest-100 rounded-full" id="assocPropPrice">0 FCFA</span>
+                            <h5 class="font-bold text-gray-800 text-sm mt-2" id="assocPropTitle">Titre Bien</h5>
+                            <p class="text-xs text-gray-500 mt-2 leading-relaxed" id="assocPropDesc">Description...</p>
+                            <div class="mt-4 flex gap-2">
+                                <a id="assocPropUrl" href="#" target="_blank" class="flex-1 text-center py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-xl text-xs transition-all">Voir l'annonce</a>
+                                <button onclick="shareActiveProperty()" class="flex-1 py-2 bg-forest-600 hover:bg-forest-700 text-white font-semibold rounded-xl text-xs transition-all">Envoyer au client</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Catalog Tab (Hidden initially) -->
+                <div id="catalogPropertyTab" class="hidden flex flex-col gap-4">
+                    <div id="catalogList" class="flex flex-col gap-4">
+                        <!-- Properties list will be injected here -->
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+    </div>
+
+    <!-- CSRF Token helper -->
+    <script>
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        const csrftoken = getCookie('csrftoken') || '{{ csrf_token }}';
+    </script>
+
+    <!-- CORE CHAT SCRIPT -->
+    <script>
+        let currentConversationId = null;
+        let currentFilter = 'ACTIVE'; // ACTIVE, PENDING, CLOSED
+        let currentAgentFilter = 'MY'; // MY, ALL
+        let currentRightTab = 'CURRENT'; // CURRENT, CATALOG
+        let currentTagFilter = '';
+        let currentProspectTags = [];
+        const currentAgentUsername = "{{ request.user.username }}";
+        
+        let loadedConversations = [];
+        let loadedProperties = [];
+        let loadedTemplates = [];
+        
+        let previousMessageSnippets = {}; // Track last message snippets to trigger notifications
+
+        // Request notification permissions
+        if (typeof window !== 'undefined' && 'Notification' in window) {
+            if (Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
+        }
+
+        // Run sync loop immediately, and poll every 3 seconds
+        syncData();
+        setInterval(syncData, 3000);
+        // Update the session countdown every second for real-time HH:MM:SS
+        setInterval(updateSessionCountdown, 1000);
+
+        function syncData() {
+            let url = `/api/sync/`;
+            if (currentConversationId) {
+                url += `?conversation_id=${currentConversationId}`;
+            }
+            
+            fetch(url)
+                .then(res => res.json())
+                .then(data => {
+                    loadedConversations = data.conversations || [];
+                    loadedProperties = data.properties || [];
+                    loadedTemplates = data.templates || [];
+                    
+                    renderConversationList();
+                    renderCatalog();
+                    renderTemplates();
+                    renderAiSuggestions(data.suggested_properties);
+                    
+                    // Trigger browser Desktop Notifications for new incoming client messages
+                    let shouldNotify = false;
+                    let notifyTitle = "";
+                    let notifyBody = "";
+                    
+                    loadedConversations.forEach(c => {
+                        const prev = previousMessageSnippets[c.id];
+                        if (prev !== undefined && prev !== c.last_message) {
+                            // If conversation is not currently active OR active but tab is hidden/minimized
+                            if (c.id !== currentConversationId || document.hidden) {
+                                // Ignore system logs and status messages
+                                if (!c.last_message.startsWith('[SYSTEME]') && !c.last_message.startsWith('[SYSTEM]')) {
+                                    shouldNotify = true;
+                                    notifyTitle = `Nouveau message de ${c.client_name}`;
+                                    notifyBody = c.last_message;
+                                }
+                            }
+                        }
+                        previousMessageSnippets[c.id] = c.last_message;
+                    });
+                    
+                    if (shouldNotify && typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+                        new Notification(notifyTitle, {
+                            body: notifyBody,
+                            tag: 'logersn_new_msg'
+                        });
+                    }
+                    
+                    if (currentConversationId && data.active_conversation) {
+                        renderActiveChat(data.active_conversation, data.messages);
+                        renderRemindersList(data.active_reminders);
+                    }
+                    checkAgentReminders(data.agent_reminders);
+                    // ── Connection badge: success ──
+                    const badge = document.getElementById('connBadge');
+                    if (badge) {
+                        badge.classList.remove('offline');
+                        badge.innerHTML = `<span class="flex h-1.5 w-1.5 relative"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-300 opacity-75"></span><span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-teal-300"></span></span> Live Connecté`;
+                    }
+                })
+                .catch(err => {
+                    console.error("Error syncing dashboard:", err);
+                    // ── Connection badge: offline ──
+                    const badge = document.getElementById('connBadge');
+                    if (badge) {
+                        badge.classList.add('offline');
+                        badge.innerHTML = `<span class="flex h-1.5 w-1.5 relative"><span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-400"></span></span> Déconnecté`;
+                    }
+                });
+        }
+
+        // Render Column 1 List
+        function renderConversationList() {
+            const container = document.getElementById('conversationsContainer');
+            const searchVal = document.getElementById('convSearch').value.toLowerCase();
+            
+            // Filter by Status, Agent, Tag and Search Query
+            const filtered = loadedConversations.filter(c => {
+                const matchesStatus = c.status === currentFilter;
+                const matchesSearch = c.client_name.toLowerCase().includes(searchVal) || 
+                                      c.client_phone.includes(searchVal) || 
+                                      c.topic.toLowerCase().includes(searchVal) ||
+                                      (c.tags && c.tags.some(t => t.toLowerCase().includes(searchVal)));
+                
+                let matchesAgent = true;
+                if (currentAgentFilter === 'MY') {
+                    matchesAgent = (c.assigned_to_username === currentAgentUsername);
+                }
+                
+                const matchesTag = !currentTagFilter || (c.tags && c.tags.includes(currentTagFilter));
+                
+                return matchesStatus && matchesSearch && matchesAgent && matchesTag;
+            });
+            
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="flex flex-col items-center justify-center p-8 text-gray-400 text-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8 mb-2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.444 3 12c0 2.104.859 4.023 2.273 5.48.432.447.74 1.04.586 1.641a4.483 4.483 0 01-.923 1.785 4.5 4.5 0 002.394-.658 4.45 4.45 0 001.373.195c.579 0 1.13-.109 1.637-.306z" />
+                        </svg>
+                        <span class="text-xs font-semibold">Aucune discussion trouvée</span>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '<div class="divide-y divide-gray-100/60">';
+            filtered.forEach(c => {
+                const isActive = c.id === currentConversationId;
+                const activeClasses = isActive ? 'conv-tile active' : 'conv-tile';
+                
+                html += `
+                    <div onclick="selectConversation('${c.id}')" class="p-4 flex flex-col gap-1 cursor-pointer ${activeClasses}">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="presence-dot ${getActivityStatus(c.client_last_message_at).level}"></span>
+                                <span class="font-bold text-gray-800 text-sm">${c.client_name}</span>
+                            </div>
+                            <span class="text-[10px] text-gray-400">${c.last_message_time}</span>
+                        </div>
+                        <div class="flex items-center justify-between gap-2 mt-0.5">
+                            <p class="text-xs text-gray-500 truncate flex-1">${c.last_message}</p>
+                            <span class="flex-shrink-0">
+                                ${c.is_whatsapp ? `
+                                    <span class="text-green-500 hover:text-green-600" title="WhatsApp">
+                                        <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.5-5.739-1.446L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.42 9.864-9.864.002-2.637-1.03-5.114-2.905-6.99C16.455 1.875 13.978.847 11.332.845c-5.438 0-9.862 4.42-9.866 9.863-.002 1.702.447 3.366 1.301 4.821L1.65 22.378l6.997-1.834z"/></svg>
+                                    </span>
+                                ` : `
+                                    <span class="text-blue-500" title="Web Chat">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-3.5 h-3.5">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-.778.099-1.533.284-2.253" />
+                                        </svg>
+                                    </span>
+                                `}
+                            </span>
+                        </div>
+                        <div class="flex items-center gap-2 mt-1 truncate">
+                            <span class="text-[10px] font-bold text-forest-600 bg-forest-100 rounded px-1.5 py-0.5 w-max">${c.topic}</span>
+                            ${c.assigned_to ? `<span class="text-[9px] font-bold text-emerald-700 bg-emerald-100 rounded px-1.5 py-0.5" title="Gérée par ${c.assigned_to}">Gérée</span>` : `<span class="text-[9px] font-bold text-amber-700 bg-amber-100 rounded px-1.5 py-0.5">Non assignée</span>`}
+                            <span class="text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                                c.pipeline_stage === 'WON' ? 'bg-green-100 text-green-800' :
+                                c.pipeline_stage === 'LOST' ? 'bg-red-100 text-red-800' :
+                                c.pipeline_stage === 'NEGOTIATION' ? 'bg-amber-100 text-amber-800' :
+                                c.pipeline_stage === 'VISIT' ? 'bg-indigo-100 text-indigo-800' :
+                                c.pipeline_stage === 'QUALIFIED' ? 'bg-purple-100 text-purple-800' :
+                                'bg-blue-100 text-blue-800'
+                            }">${c.pipeline_stage_display}</span>
+                            <!-- Activity label -->
+                            <span class="text-[9px] font-bold activity-badge ${getActivityStatus(c.client_last_message_at).level}">${getActivityStatus(c.client_last_message_at).label}</span>
+                        </div>
+                        ${c.tags && c.tags.length > 0 ? `
+                            <div class="flex flex-wrap gap-1 mt-1">
+                                ${c.tags.map(t => `<span class="text-[8px] font-extrabold bg-gray-200/60 text-gray-600 px-1 rounded-md">${t}</span>`).join('')}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        // ─── PRESENCE & ACTIVITY HELPERS ──────────────────────────────
+
+        /**
+         * Returns { level: 'active'|'recent'|'inactive', label: string }
+         * based on last client message timestamp.
+         */
+        function getActivityStatus(isoTimestamp) {
+            if (!isoTimestamp) return { level: 'inactive', label: 'Jamais actif' };
+            const lastTime = new Date(isoTimestamp);
+            const diffMs = Date.now() - lastTime;
+            const diffMin = Math.floor(diffMs / 60000);
+            const diffH   = Math.floor(diffMin / 60);
+            const diffD   = Math.floor(diffH / 24);
+
+            if (diffMin < 10)  return { level: 'active',   label: `Actif il y a ${diffMin < 1 ? '<1' : diffMin} min` };
+            if (diffH   < 24)  return { level: 'recent',   label: diffH < 1 ? `Il y a ${diffMin} min` : `Il y a ${diffH}h` };
+            return { level: 'inactive', label: `Inactif ${diffD}j` };
+        }
+
+        /**
+         * Update the chat header presence dot and activity badge
+         * for the currently active conversation.
+         */
+        function updatePresenceUI(clientLastMessageAt, clientName) {
+            const status = getActivityStatus(clientLastMessageAt);
+            
+            // Avatar dot
+            const dot = document.getElementById('chatAvatarPresenceDot');
+            if (dot) {
+                dot.className = `presence-dot ${status.level} absolute -bottom-0.5 -right-0.5`;
+            }
+            
+            // Activity badge below the phone number
+            const badge = document.getElementById('chatHeaderActivityBadge');
+            if (badge) {
+                const dotColor = status.level === 'active' ? '#22c55e' : status.level === 'recent' ? '#f59e0b' : '#94a3b8';
+                badge.className = `activity-badge ${status.level}`;
+                badge.innerHTML = `<span style="width:6px;height:6px;border-radius:50%;background:${dotColor};display:inline-block;flex-shrink:0;"></span>${status.label}`;
+            }
+        }
+
+        // ─── TYPING INDICATOR ────────────────────────────────────────────
+        let typingTimer = null;
+        let lastKnownMessageCount = 0;
+
+        /**
+         * Trigger typing indicator for 4 seconds when new messages arrive.
+         * Called by renderActiveChat when message count increases.
+         */
+        function triggerTypingIndicator(clientName) {
+            const indicator = document.getElementById('typingIndicator');
+            const label = document.getElementById('typingLabel');
+            const container = document.getElementById('messagesContainer');
+            if (!indicator) return;
+
+            if (typingTimer) clearTimeout(typingTimer);
+
+            label.textContent = `${clientName} est en train d'écrire...`;
+            indicator.classList.remove('hidden');
+            container.scrollTop = container.scrollHeight;
+
+            typingTimer = setTimeout(() => {
+                indicator.classList.add('hidden');
+            }, 4000);
+        }
+
+        // Select active conversation
+        function selectConversation(id) {
+            currentConversationId = id;
+            document.getElementById('emptyChatView').classList.add('hidden');
+            const activeView = document.getElementById('activeChatView');
+            activeView.classList.remove('hidden');
+            setTimeout(() => activeView.classList.remove('opacity-0'), 50);
+            
+            // Sync immediately
+            syncData();
+        }
+
+        // Render Column 2 Chat View
+        let lastMessageCount = 0;
+        let activeSessionTimerInterval = null;
+        let clientLastMessageAt = null;
+
+        function renderActiveChat(info, messages) {
+            document.getElementById('chatHeaderName').textContent = info.client_name;
+            document.getElementById('chatHeaderPhone').textContent = info.client_phone;
+            document.getElementById('chatHeaderAvatar').textContent = info.client_name.charAt(0);
+            
+            // Update presence UI (dot and badge)
+            updatePresenceUI(info.client_last_message_at, info.client_name);
+            
+            if (info.is_whatsapp) {
+                document.getElementById('whatsappBadge').classList.remove('hidden');
+            } else {
+                document.getElementById('whatsappBadge').classList.add('hidden');
+            }
+            
+            // Show or hide claim banner
+            const claimBanner = document.getElementById('claimingBanner');
+            if (!info.assigned_to) {
+                claimBanner.classList.remove('hidden');
+            } else {
+                claimBanner.classList.add('hidden');
+            }
+            
+            // WhatsApp 24-hour Session countdown initialization
+            clientLastMessageAt = info.client_last_message_at;
+            if (activeSessionTimerInterval) {
+                clearInterval(activeSessionTimerInterval);
+                activeSessionTimerInterval = null;
+            }
+            
+            if (info.is_whatsapp && clientLastMessageAt) {
+                document.getElementById('sessionTimerBadge').classList.remove('hidden');
+                updateSessionCountdown();
+                activeSessionTimerInterval = setInterval(updateSessionCountdown, 10000); // Check and tick every 10 seconds
+            } else {
+                document.getElementById('sessionTimerBadge').classList.add('hidden');
+                document.getElementById('sessionExpiredBanner').classList.add('hidden');
+                enableChatInput(true);
+            }
+            
+            // Populate and render active conversation tags
+            currentProspectTags = info.tags || [];
+            renderProspectTags();
+
+            // Populate and render pipeline stage
+            document.getElementById('pipelineSelect').value = info.pipeline_stage || 'NEW';
+            
+            // Populate agent notes
+            const notesArea = document.getElementById('agentNotesArea');
+            if (document.activeElement !== notesArea) {
+                notesArea.value = info.notes || '';
+            }
+            
+            const container = document.getElementById('messagesContainer');
+            
+            let html = '';
+            messages.forEach(m => {
+                if (m.content.startsWith('[SYSTEME]')) {
+                    // System Message
+                    html += `
+                        <div class="flex justify-center my-3">
+                            <span class="px-4 py-1.5 bg-yellow-100 border border-yellow-200 text-yellow-800 text-[11px] font-bold rounded-full shadow-sm max-w-sm text-center">
+                                ${m.content.replace('[SYSTEME] ', '')}
+                            </span>
+                        </div>
+                    `;
+                } else {
+                    const isSelf = m.sender_is_self;
+                    const containerClass = isSelf ? 'justify-end' : 'justify-start';
+                    const bubbleClass = isSelf ? 'bg-forest-600 text-white rounded-tr-none' : 'bg-white text-gray-800 rounded-tl-none border border-gray-200';
+                    const nameClass = isSelf ? 'text-right' : 'text-left';
+                    
+                    let statusTicks = '';
+                    if (isSelf && info.is_whatsapp) {
+                        if (m.status === 'SENT') {
+                            statusTicks = '<span class="text-white/50 ml-1 font-bold" title="Envoyé">✓</span>';
+                        } else if (m.status === 'DELIVERED') {
+                            statusTicks = '<span class="text-white/60 ml-1 font-bold" title="Délivré">✓✓</span>';
+                        } else if (m.status === 'READ') {
+                            statusTicks = '<span class="text-blue-300 ml-1 font-bold" title="Lu">✓✓</span>';
+                        }
+                    }
+                    
+                    let contentHtml = `<div>${linkify(m.content)}</div>`;
+                    
+                    if (m.content.includes('[Note Vocale WhatsApp]') || (m.attachment_url && m.attachment_url.toLowerCase().includes('audio'))) {
+                        contentHtml = `
+                            <div class="flex items-center gap-3 py-1 min-w-[200px]">
+                                <button type="button" onclick="playMockVoiceNote(this)" class="w-8 h-8 rounded-full bg-forest-100 flex items-center justify-center text-forest-600 hover:bg-forest-200 transition-all flex-shrink-0">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4 text-forest-600">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" />
+                                    </svg>
+                                </button>
+                                <div class="flex-1 flex flex-col gap-1 min-w-0">
+                                    <div class="h-1 bg-gray-200/50 rounded-full w-full overflow-hidden">
+                                        <div class="h-full bg-forest-500 rounded-full w-0 transition-all duration-300"></div>
+                                    </div>
+                                    <div class="flex justify-between text-[9px] text-gray-400">
+                                        <span>0:14</span>
+                                        <span class="flex items-center gap-0.5 text-forest-500 font-bold">
+                                            <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/></svg>
+                                            Vocal
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
+                    let attachmentHtml = '';
+                    if (m.attachment_url && !m.content.includes('[Note Vocale WhatsApp]')) {
+                        const urlLower = m.attachment_url.toLowerCase();
+                        const contentLower = m.content.toLowerCase();
+                        const isImg = urlLower.includes('.jpg') || urlLower.includes('.jpeg') || urlLower.includes('.png') || urlLower.includes('.webp') || contentLower.includes('[image]');
+                        const isVid = urlLower.includes('.mp4') || urlLower.includes('.mov') || urlLower.includes('.avi') || urlLower.includes('.webm') || contentLower.includes('[vidéo]') || contentLower.includes('[video]');
+                        
+                        let mediaPreview = '';
+                        if (isImg) {
+                            mediaPreview = `<img src="${m.attachment_url}" class="rounded-xl max-h-60 object-cover mt-2 w-full border border-white/10 hover:opacity-95 transition-opacity cursor-zoom-in" alt="Media Attachment">`;
+                        } else if (isVid) {
+                            mediaPreview = `<video src="${m.attachment_url}" controls class="rounded-xl max-h-60 w-full object-cover mt-2 border border-white/10"></video>`;
+                        } else {
+                            mediaPreview = `
+                                <a href="${m.attachment_url}" target="_blank" class="underline flex items-center gap-1 font-bold mt-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m.75 12l3 3m0 0l3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                                    </svg>
+                                    Voir la pièce jointe
+                                </a>
+                            `;
+                        }
+                        
+                        attachmentHtml = `
+                            <div class="mt-2 border-t border-white/20 pt-2 text-xs">
+                                ${mediaPreview}
+                                <div class="mt-2 flex gap-2">
+                                    <a href="${m.attachment_url}" download="attachment_${m.id}" target="_blank" 
+                                        class="px-2.5 py-1.5 bg-white/20 hover:bg-white/30 text-white font-bold rounded-lg text-[10px] flex items-center gap-1 transition-all">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-3.5 h-3.5">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                                        </svg>
+                                        Télécharger en HD
+                                    </a>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
+                    html += `
+                        <div class="flex ${containerClass}">
+                            <div class="max-w-[70%] flex flex-col gap-1">
+                                <span class="text-[10px] font-semibold text-gray-400 ${nameClass}">${m.sender_name}</span>
+                                <div class="px-4 py-3 rounded-2xl text-sm shadow-sm leading-relaxed ${bubbleClass}">
+                                    ${contentHtml}
+                                    ${attachmentHtml}
+                                </div>
+                                <span class="text-[9px] text-gray-400 ${nameClass} mt-0.5">${m.created_at} ${statusTicks}</span>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+            
+            html += `
+                <!-- Typing indicator (hidden by default) -->
+                <div id="typingIndicator" class="hidden flex items-center gap-3 mt-4 mb-2">
+                    <div class="typing-bubble">
+                        <span class="typing-dot"></span>
+                        <span class="typing-dot"></span>
+                        <span class="typing-dot"></span>
+                    </div>
+                    <span class="text-[10px] text-gray-400 font-semibold" id="typingLabel">En train d'écrire...</span>
+                </div>
+            `;
+            
+            container.innerHTML = html;
+            
+            // Auto scroll to bottom only if there are new messages
+            if (messages.length > lastMessageCount) {
+                container.scrollTop = container.scrollHeight;
+                
+                // If the last message was from the client, trigger typing indicator to show they are active
+                if (messages.length > 0) {
+                    const lastMsg = messages[messages.length - 1];
+                    if (!lastMsg.sender_is_self && !lastMsg.content.startsWith('[SYSTEME]')) {
+                        triggerTypingIndicator(info.client_name);
+                    }
+                }
+                
+                lastMessageCount = messages.length;
+            }
+            
+            // Update Right Property Tab Details if a property link is mentioned in topic
+            updateRightTabProperty(info.topic);
+        }
+
+        // Right Column Tab: Display associated property details
+        function updateRightTabProperty(topic) {
+            const noProp = document.getElementById('noAssociatedProperty');
+            const card = document.getElementById('associatedPropertyCard');
+            
+            // Look for matching property in loadedProperties from the topic title
+            const match = loadedProperties.find(p => topic.includes(p.title));
+            
+            if (match) {
+                noProp.classList.add('hidden');
+                card.classList.remove('hidden');
+                
+                document.getElementById('assocPropImg').src = match.image_url;
+                document.getElementById('assocPropTitle').textContent = match.title;
+                document.getElementById('assocPropPrice').textContent = `${match.price.toLocaleString('fr-FR')} FCFA`;
+                document.getElementById('assocPropDesc').textContent = match.description;
+                document.getElementById('assocPropUrl').href = match.url;
+                
+                // Store active property data to easily share
+                card.dataset.url = match.url;
+                card.dataset.title = match.title;
+            } else {
+                noProp.classList.remove('hidden');
+                card.classList.add('hidden');
+            }
+        }
+
+        // Render Column 3 Catalog List
+        function renderCatalog() {
+            const container = document.getElementById('catalogList');
+            if (loadedProperties.length === 0) {
+                container.innerHTML = '<span class="text-xs text-gray-400">Aucun bien disponible</span>';
+                return;
+            }
+            
+            let html = '';
+            loadedProperties.forEach(p => {
+                html += `
+                    <div class="flex gap-3 bg-gray-50 border border-gray-100 rounded-xl p-2.5 shadow-sm hover:shadow transition-all">
+                        <img src="${p.image_url}" alt="${p.title}" class="h-16 w-16 object-cover rounded-lg flex-shrink-0">
+                        <div class="flex-1 min-w-0">
+                            <h6 class="font-bold text-gray-800 text-xs truncate">${p.title}</h6>
+                            <span class="text-[10px] font-bold text-forest-600">${p.price.toLocaleString('fr-FR')} FCFA</span>
+                            <div class="flex gap-2 mt-2">
+                                <button onclick="insertText('Regardez cette annonce : ${p.url}')" class="px-2 py-1 bg-forest-100 hover:bg-forest-200 text-forest-700 font-bold rounded text-[9px] transition-all">Partager</button>
+                                <a href="${p.url}" target="_blank" class="px-2 py-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold rounded text-[9px] transition-all">Annonce</a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        // Render Quick Reply templates
+        function renderTemplates() {
+            const container = document.getElementById('templatesList');
+            if (loadedTemplates.length === 0) {
+                container.innerHTML = '<span class="text-[10px] text-gray-400 px-2">Aucun modèle disponible</span>';
+                return;
+            }
+            
+            let html = '';
+            loadedTemplates.forEach(t => {
+                html += `
+                    <button type="button" onclick="insertText(\`${t.content.replace(/"/g, '&quot;')}\`)" 
+                        class="text-left px-2 py-2 hover:bg-forest-50 text-xs text-gray-700 rounded-lg font-medium transition-all leading-normal">
+                        <strong class="font-bold text-forest-600 block text-[10px] uppercase tracking-wide mb-0.5">${t.title}</strong>
+                        ${t.content}
+                    </button>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        // Tab Filtering (Column 1)
+        function setFilter(status) {
+            currentFilter = status;
+            
+            document.getElementById('tabActive').className = 'flex-1 py-1.5 text-center rounded-md transition-all hover:text-forest-900';
+            document.getElementById('tabPending').className = 'flex-1 py-1.5 text-center rounded-md transition-all hover:text-forest-900';
+            document.getElementById('tabClosed').className = 'flex-1 py-1.5 text-center rounded-md transition-all hover:text-forest-900';
+            
+            if (status === 'ACTIVE') {
+                document.getElementById('tabActive').className = 'flex-1 py-1.5 text-center rounded-md bg-white text-forest-900 shadow-sm transition-all';
+            } else if (status === 'PENDING') {
+                document.getElementById('tabPending').className = 'flex-1 py-1.5 text-center rounded-md bg-white text-forest-900 shadow-sm transition-all';
+            } else if (status === 'CLOSED') {
+                document.getElementById('tabClosed').className = 'flex-1 py-1.5 text-center rounded-md bg-white text-forest-900 shadow-sm transition-all';
+            }
+            
+            renderConversationList();
+        }
+
+        // Right Sidebar Tab switching
+        function setRightTab(tab) {
+            currentRightTab = tab;
+            
+            const btnCurrent = document.getElementById('rightTabCurrent');
+            const btnCatalog = document.getElementById('rightTabCatalog');
+            const currentTabDiv = document.getElementById('currentPropertyTab');
+            const catalogTabDiv = document.getElementById('catalogPropertyTab');
+            
+            if (tab === 'CURRENT') {
+                btnCurrent.className = 'flex-1 py-2 text-center border-b-2 border-forest-600 text-forest-900';
+                btnCatalog.className = 'flex-1 py-2 text-center border-b-2 border-transparent text-gray-500 hover:text-forest-900';
+                currentTabDiv.classList.remove('hidden');
+                catalogTabDiv.classList.add('hidden');
+            } else {
+                btnCurrent.className = 'flex-1 py-2 text-center border-b-2 border-transparent text-gray-500 hover:text-forest-900';
+                btnCatalog.className = 'flex-1 py-2 text-center border-b-2 border-forest-600 text-forest-900';
+                currentTabDiv.classList.add('hidden');
+                catalogTabDiv.classList.remove('hidden');
+            }
+        }
+
+        // Dropdown toggle
+        function toggleTemplatesDropdown() {
+            const dropdown = document.getElementById('templatesDropdown');
+            dropdown.classList.toggle('hidden');
+        }
+
+        // Insert Template / Property link into text input
+        function insertText(text) {
+            const input = document.getElementById('messageInput');
+            
+            // If input is disabled (session expired), offer to send directly
+            if (input.hasAttribute('disabled')) {
+                if (confirm(`La session libre de 24h est expirée. Souhaitez-vous envoyer ce modèle directement pour réengager le client ?\n\n"${text}"`)) {
+                    sendDirectTemplate(text);
+                }
+                return;
+            }
+            
+            input.value = text;
+            input.focus();
+            
+            // Hide dropdown
+            document.getElementById('templatesDropdown').classList.add('hidden');
+        }
+
+        // Send a template directly when session is expired
+        function sendDirectTemplate(content) {
+            if (!currentConversationId) return;
+            
+            fetch('/api/send/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify({
+                    conversation_id: currentConversationId,
+                    content: content
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'sent') {
+                    syncData();
+                } else {
+                    alert('Erreur: ' + data.error);
+                }
+            })
+            .catch(err => console.error("Error sending template directly:", err));
+        }
+
+        // Copy property link to input from active card
+        function shareActiveProperty() {
+            const card = document.getElementById('associatedPropertyCard');
+            const url = card.dataset.url;
+            const title = card.dataset.title;
+            insertText(`Voici les détails de l'annonce "${title}" : ${url}`);
+        }
+
+        // Textarea height auto-growth & submit on enter (without Shift)
+        function handleTextareaKeydown(e) {
+            const dropdown = document.getElementById('slashTemplatesDropdown');
+            const isDropdownVisible = dropdown && !dropdown.classList.contains('hidden');
+            
+            if (isDropdownVisible) {
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    activeSlashIndex = (activeSlashIndex + 1) % visibleSlashTemplates.length;
+                    handleInputSlash({ target: document.getElementById('messageInput') });
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    activeSlashIndex = (activeSlashIndex - 1 + visibleSlashTemplates.length) % visibleSlashTemplates.length;
+                    handleInputSlash({ target: document.getElementById('messageInput') });
+                } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    selectSlashTemplate(activeSlashIndex);
+                } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    dropdown.classList.add('hidden');
+                }
+                return;
+            }
+            
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSendSubmit(e);
+            }
+        }
+
+        // Handle sending message
+        function handleSendSubmit(e) {
+            if (e) e.preventDefault();
+            
+            const input = document.getElementById('messageInput');
+            const content = input.value.trim();
+            
+            if (!content || !currentConversationId) return;
+            
+            // Clear input immediately to feel instant
+            input.value = '';
+            
+            fetch('/api/send/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify({
+                    conversation_id: currentConversationId,
+                    content: content
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'sent') {
+                    // Sync immediately
+                    syncData();
+                } else {
+                    alert('Erreur: ' + data.error);
+                }
+            })
+            .catch(err => console.error("Error sending message:", err));
+        }
+
+        // Close/resolve current conversation (mock set to CLOSED)
+        function closeCurrentConversation() {
+            if (!currentConversationId) return;
+            
+            // Simple mockup closed logic in UI, sets status to closed
+            // Since we don't have a specific edit endpoint, we can expand our api send to support system messages or add a views action.
+            // For now we send a system log message notifying closing, 
+            // In a real app we'd have a POST endpoint. Let's send a close system notification!
+            
+            fetch('/api/send/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify({
+                    conversation_id: currentConversationId,
+                    content: "[SYSTEME] La conversation a été résolue par l'agent."
+                })
+            })
+            .then(res => res.json())
+            .then(() => {
+                // Clear active conversation view
+                currentConversationId = null;
+                document.getElementById('activeChatView').classList.add('opacity-0', 'hidden');
+                document.getElementById('emptyChatView').classList.remove('hidden');
+                syncData();
+            })
+            .catch(err => console.error("Error closing conversation:", err));
+        }
+
+        // Search trigger
+        document.getElementById('convSearch').addEventListener('input', renderConversationList);
+
+        // Agent assignment filter logic
+        function setAgentFilter(filter) {
+            currentAgentFilter = filter;
+            
+            const btnMy = document.getElementById('btnFilterMy');
+            const btnAll = document.getElementById('btnFilterAll');
+            
+            if (filter === 'MY') {
+                btnMy.className = 'px-2 py-0.5 rounded bg-forest-600 text-white font-bold transition-all';
+                btnAll.className = 'px-2 py-0.5 rounded text-gray-500 hover:text-forest-900 font-bold transition-all';
+            } else {
+                btnMy.className = 'px-2 py-0.5 rounded text-gray-500 hover:text-forest-900 font-bold transition-all';
+                btnAll.className = 'px-2 py-0.5 rounded bg-forest-600 text-white font-bold transition-all';
+            }
+            
+            renderConversationList();
+        }
+
+        // Claim Conversation API call
+        function claimActiveConversation() {
+            if (!currentConversationId) return;
+            
+            fetch('/api/claim/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify({ conversation_id: currentConversationId })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'claimed') {
+                    // Sync immediately to reload chat states
+                    syncData();
+                } else {
+                    alert('Erreur lors de la prise en charge: ' + data.error);
+                }
+            })
+            .catch(err => console.error("Error claiming conversation:", err));
+        }
+
+        // Render AI Suggested Properties
+        function renderAiSuggestions(suggestions) {
+            const section = document.getElementById('aiSuggestionsSection');
+            const container = document.getElementById('aiSuggestionsContainer');
+            
+            if (suggestions && suggestions.length > 0) {
+                section.classList.remove('hidden');
+                let html = '';
+                suggestions.forEach(p => {
+                    html += `
+                        <div class="flex gap-3 bg-forest-50/50 border border-forest-100 rounded-2xl p-3 shadow-sm hover:shadow transition-all duration-200">
+                            <img src="${p.image_url}" alt="${p.title}" class="h-16 w-16 object-cover rounded-xl flex-shrink-0">
+                            <div class="flex-1 min-w-0">
+                                <h6 class="font-bold text-gray-800 text-xs truncate">${p.title}</h6>
+                                <span class="text-[10px] font-bold text-forest-600">${p.price.toLocaleString('fr-FR')} FCFA</span>
+                                <div class="flex gap-1.5 mt-2">
+                                    <button onclick="insertText('Regardez cette suggestion de bien : ${p.url}')" class="px-2 py-1 bg-forest-600 hover:bg-forest-700 text-white font-bold rounded-lg text-[9px] transition-all">Partager</button>
+                                    <a href="${p.url}" target="_blank" class="px-2 py-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold rounded-lg text-[9px] transition-all">Annonce</a>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            } else {
+                section.classList.add('hidden');
+                container.innerHTML = '';
+            }
+        }
+
+        // Play mock voice note
+        function playMockVoiceNote(btn) {
+            const progress = btn.nextElementSibling.querySelector('.bg-forest-500');
+            if (progress.style.width === '100%') {
+                progress.style.width = '0%';
+                btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4 text-forest-600"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" /></svg>`;
+            } else {
+                progress.style.width = '100%';
+                progress.style.transition = 'width 10s linear';
+                btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4 text-forest-600"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25v13.5m-7.5-13.5v13.5" /></svg>`;
+                setTimeout(() => {
+                    if (progress.style.width === '100%') {
+                        progress.style.transition = 'none';
+                        progress.style.width = '0%';
+                        btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4 text-forest-600"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" /></svg>`;
+                    }
+                }, 10000);
+            }
+        }
+
+        // Update session countdown timer badge & input states
+        function updateSessionCountdown() {
+            const timerBadge = document.getElementById('sessionTimerBadge');
+            const expiredBanner = document.getElementById('sessionExpiredBanner');
+            
+            if (!clientLastMessageAt) {
+                timerBadge.innerHTML = `⏱️ Pas de session`;
+                timerBadge.classList.remove('expired');
+                expiredBanner.classList.add('hidden');
+                enableChatInput(true);
+                return;
+            }
+            
+            const lastTime = new Date(clientLastMessageAt);
+            const now = new Date();
+            const elapsedMs = now - lastTime;
+            const remainingMs = (24 * 60 * 60 * 1000) - elapsedMs; // 24 hours in ms
+            
+            if (remainingMs > 0) {
+                // Session is active — show countdown HH:MM:SS
+                const totalSecs = Math.floor(remainingMs / 1000);
+                const hours = Math.floor(totalSecs / 3600);
+                const mins = Math.floor((totalSecs % 3600) / 60);
+                const secs = totalSecs % 60;
+                const pad = n => String(n).padStart(2, '0');
+                
+                timerBadge.classList.remove('expired');
+                timerBadge.innerHTML = `⏱️ ${pad(hours)}:${pad(mins)}:${pad(secs)}`;
+                
+                expiredBanner.classList.add('hidden');
+                enableChatInput(true);
+            } else {
+                // Session has expired
+                timerBadge.classList.add('expired');
+                timerBadge.innerHTML = `⚠️ Session expirée`;
+                
+                expiredBanner.classList.remove('hidden');
+                enableChatInput(false);
+            }
+        }
+
+        // Toggle state of message textarea & send buttons
+        function enableChatInput(enabled) {
+            const textarea = document.getElementById('messageInput');
+            const btnSend = document.getElementById('btnSendMessage');
+            
+            if (enabled) {
+                textarea.removeAttribute('disabled');
+                textarea.placeholder = "Saisissez votre réponse...";
+                textarea.className = "flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-forest-500 resize-none text-sm max-h-24 custom-scrollbar";
+                if (btnSend) {
+                    btnSend.removeAttribute('disabled');
+                    btnSend.className = "h-12 w-12 rounded-2xl bg-forest-600 hover:bg-forest-700 text-white flex items-center justify-center shadow-md shadow-forest-600/20 hover:shadow-forest-600/30 transition-all flex-shrink-0";
+                }
+            } else {
+                textarea.setAttribute('disabled', 'true');
+                textarea.value = ""; // Clear text if expired
+                textarea.placeholder = "Saisie désactivée. Utilisez un modèle de message à droite ➔";
+                textarea.className = "flex-1 px-4 py-3 bg-gray-100 border border-gray-200 rounded-2xl text-sm resize-none custom-scrollbar text-gray-400 cursor-not-allowed";
+                if (btnSend) {
+                    btnSend.setAttribute('disabled', 'true');
+                    btnSend.className = "h-12 w-12 rounded-2xl bg-gray-200 text-gray-400 flex items-center justify-center transition-all flex-shrink-0 cursor-not-allowed shadow-none";
+                }
+            }
+        }
+
+        // Auto-linkify text URLs to clickable anchor tags
+        function linkify(text) {
+            if (!text) return "";
+            const urlPattern = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
+            return text.replace(urlPattern, function(url) {
+                return `<a href="${url}" target="_blank" class="underline text-forest-600 hover:text-forest-800 font-bold break-all">${url}</a>`;
+            });
+        }
+
+        // Handle Left Sidebar Tag Filtering Change
+        function handleFilterTagChange(select) {
+            currentTagFilter = select.value;
+            renderConversationList();
+        }
+
+        // Render prospect tags inside Column 3 sidebar
+        function renderProspectTags() {
+            const container = document.getElementById('prospectTagsContainer');
+            if (currentProspectTags.length === 0) {
+                container.innerHTML = '<span class="text-xs text-gray-400">Aucune étiquette associée</span>';
+                return;
+            }
+            
+            let html = '';
+            currentProspectTags.forEach(t => {
+                html += `
+                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 bg-forest-100 text-forest-800 text-[10px] font-bold rounded-full">
+                        ${t}
+                        <button onclick="removeProspectTag('${t}')" class="text-forest-600 hover:text-red-600 font-extrabold ml-0.5">&times;</button>
+                    </span>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        // Add a tag to active conversation
+        function addProspectTag() {
+            const select = document.getElementById('tagSelect');
+            const newTag = select.value;
+            if (!newTag || !currentConversationId) return;
+            
+            if (!currentProspectTags.includes(newTag)) {
+                currentProspectTags.push(newTag);
+                saveProspectTags();
+            }
+            select.selectedIndex = 0; // reset
+        }
+
+        // Remove tag from active conversation
+        function removeProspectTag(tag) {
+            if (!currentConversationId) return;
+            currentProspectTags = currentProspectTags.filter(t => t !== tag);
+            saveProspectTags();
+        }
+
+        // Sync tags with Django Backend
+        function saveProspectTags() {
+            if (!currentConversationId) return;
+            
+            fetch('/api/conversation/tags/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify({
+                    conversation_id: currentConversationId,
+                    tags: currentProspectTags
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'updated') {
+                    renderProspectTags();
+                    
+                    // Update in loaded conversations array to update Column 1 list live
+                    const conv = loadedConversations.find(c => c.id === currentConversationId);
+                    if (conv) {
+                        conv.tags = currentProspectTags;
+                        renderConversationList();
+                    }
+                } else {
+                    alert('Erreur: ' + data.error);
+                }
+            })
+            .catch(err => console.error("Error saving tags:", err));
+        }
+
+        // Autocomplete predefined replies when typing "/" in input box
+        let activeSlashIndex = 0;
+        let visibleSlashTemplates = [];
+
+        function handleInputSlash(e) {
+            const input = e.target;
+            const val = input.value;
+            const dropdown = document.getElementById('slashTemplatesDropdown');
+            const listContainer = document.getElementById('slashTemplatesList');
+            
+            if (val.startsWith('/')) {
+                const search = val.substring(1).toLowerCase();
+                // Filter templates
+                visibleSlashTemplates = loadedTemplates.filter(t => 
+                    t.title.toLowerCase().includes(search) || 
+                    t.content.toLowerCase().includes(search)
+                );
+                
+                if (visibleSlashTemplates.length > 0) {
+                    dropdown.classList.remove('hidden');
+                    let html = '';
+                    visibleSlashTemplates.forEach((t, index) => {
+                        const activeClass = index === activeSlashIndex ? 'bg-forest-50 border-l-2 border-forest-600 font-bold' : '';
+                        html += `
+                            <div onclick="selectSlashTemplate(${index})" class="px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 rounded-lg cursor-pointer flex flex-col gap-0.5 transition-all ${activeClass}">
+                                <div class="flex justify-between items-center">
+                                    <span class="font-bold text-forest-600">/${t.title.toLowerCase().replace(/\s+/g, '')}</span>
+                                    <span class="text-[9px] bg-gray-100 text-gray-400 px-1 rounded">Raccourci</span>
+                                </div>
+                                <span class="text-gray-500 truncate">${t.content}</span>
+                            </div>
+                        `;
+                    });
+                    listContainer.innerHTML = html;
+                } else {
+                    dropdown.classList.add('hidden');
+                }
+            } else {
+                dropdown.classList.add('hidden');
+            }
+        }
+        
+        function selectSlashTemplate(index) {
+            if (index < 0 || index >= visibleSlashTemplates.length) return;
+            const t = visibleSlashTemplates[index];
+            const input = document.getElementById('messageInput');
+            
+            // Set template text
+            insertText(t.content);
+            
+            // Hide dropdown
+            document.getElementById('slashTemplatesDropdown').classList.add('hidden');
+            activeSlashIndex = 0;
+        }
+
+        // Save agent notes on textarea blur
+        function saveAgentNotes() {
+            if (!currentConversationId) return;
+            const notes = document.getElementById('agentNotesArea').value;
+            
+            fetch('/api/conversation/notes/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify({
+                    conversation_id: currentConversationId,
+                    notes: notes
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status !== 'updated') {
+                    console.error('Error saving notes:', data.error);
+                }
+            })
+            .catch(err => console.error("Error saving notes:", err));
+        }
+
+        // Update pipeline stage on dropdown change
+        function updatePipelineStage(select) {
+            if (!currentConversationId) return;
+            const stage = select.value;
+            
+            fetch('/api/conversation/pipeline/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify({
+                    conversation_id: currentConversationId,
+                    pipeline_stage: stage
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'updated') {
+                    const conv = loadedConversations.find(c => c.id === currentConversationId);
+                    if (conv) {
+                        conv.pipeline_stage = stage;
+                        const mapping = {
+                            'NEW': 'Nouveau',
+                            'QUALIFIED': 'Qualifié',
+                            'VISIT': 'Visite Planifiée',
+                            'NEGOTIATION': 'Négociation',
+                            'WON': 'Gagné',
+                            'LOST': 'Perdu'
+                        };
+                        conv.pipeline_stage_display = mapping[stage];
+                        renderConversationList();
+                    }
+                    syncData();
+                } else {
+                    alert('Erreur: ' + data.error);
+                }
+            })
+            .catch(err => console.error("Error updating pipeline:", err));
+        }
+
+        // Render current reminders inside active sidebar panel
+        function renderRemindersList(reminders) {
+            const container = document.getElementById('remindersContainer');
+            if (!reminders || reminders.length === 0) {
+                container.innerHTML = '<span class="text-xs text-gray-400">Aucun rappel planifié</span>';
+                return;
+            }
+            
+            let html = '';
+            reminders.forEach(r => {
+                const date = new Date(r.remind_at);
+                const dateStr = date.toLocaleString('fr-FR', {
+                    day: 'numeric',
+                    month: 'short',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                html += `
+                    <div class="flex items-start justify-between bg-white border border-gray-150 p-2 rounded-xl text-xs gap-2">
+                        <div class="flex-1 min-w-0">
+                            <p class="font-semibold text-gray-800 break-words">${r.title}</p>
+                            <span class="text-[10px] text-forest-600 font-bold">${dateStr}</span>
+                        </div>
+                        <button onclick="completeReminder('${r.id}')" class="text-gray-400 hover:text-green-600 transition-all font-bold text-sm" title="Marquer comme fait">✓</button>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        // Add a new reminder schedule
+        function addReminder() {
+            if (!currentConversationId) return;
+            const titleInput = document.getElementById('reminderTitle');
+            const timeInput = document.getElementById('reminderTime');
+            
+            const title = titleInput.value.trim();
+            const time = timeInput.value;
+            
+            if (!title || !time) {
+                alert('Veuillez renseigner la tâche et la date/heure de relance.');
+                return;
+            }
+            
+            fetch('/api/reminders/create/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify({
+                    conversation_id: currentConversationId,
+                    title: title,
+                    remind_at: time
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'created') {
+                    titleInput.value = '';
+                    timeInput.value = '';
+                    syncData();
+                } else {
+                    alert('Erreur: ' + data.error);
+                }
+            })
+            .catch(err => console.error("Error creating reminder:", err));
+        }
+
+        // Mark reminder as done
+        function completeReminder(id) {
+            fetch('/api/reminders/complete/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify({
+                    reminder_id: id
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'completed') {
+                    syncData();
+                } else {
+                    alert('Erreur: ' + data.error);
+                }
+            })
+            .catch(err => console.error("Error completing reminder:", err));
+        }
+
+        // Play gentle audio beep for reminders
+        function playReminderSound() {
+            try {
+                const context = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = context.createOscillator();
+                const gain = context.createGain();
+                
+                osc.connect(gain);
+                gain.connect(context.destination);
+                
+                osc.frequency.setValueAtTime(880, context.currentTime);
+                gain.gain.setValueAtTime(0.1, context.currentTime);
+                
+                osc.start();
+                osc.stop(context.currentTime + 0.3);
+            } catch (e) {
+                console.error("Audio Context error:", e);
+            }
+        }
+
+        let triggeredReminders = new Set();
+
+        // Check active agent reminders list and trigger alerts if time is reached
+        function checkAgentReminders(reminders) {
+            if (!reminders || reminders.length === 0) return;
+            
+            const now = new Date();
+            reminders.forEach(r => {
+                const targetTime = new Date(r.remind_at);
+                if (targetTime <= now && !triggeredReminders.has(r.id)) {
+                    triggeredReminders.add(r.id);
+                    playReminderSound();
+                    
+                    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+                        new Notification(`Rappel CRM : Relance de ${r.client_name}`, {
+                            body: r.title,
+                            tag: r.id
+                        });
+                    } else {
+                        alert(`RAPPEL CRM (Relance de ${r.client_name}) :\n\n${r.title}`);
+                    }
+                }
+            });
+        }
+
+        // Download CSV export file
+        function triggerExportCSV() {
+            let url = `/api/leads/export/?status=${currentFilter}&tag=${currentTagFilter}&agent=${currentAgentFilter}`;
+            window.open(url, '_blank');
+        }
+
+        // Bind event listener to convSearch to filter search input instantly
+        document.addEventListener('DOMContentLoaded', () => {
+            const search = document.getElementById('convSearch');
+            if (search) {
+                search.addEventListener('input', renderConversationList);
+            }
+        });
+
+        // Status filter (Actives / En attente / Fermées)
+        function setFilter(filter) {
+            currentFilter = filter;
+            ['ACTIVE','PENDING','CLOSED'].forEach(f => {
+                const btn = document.getElementById(`tab${f.charAt(0) + f.slice(1).toLowerCase()}`);
+                if (!btn) return;
+                if (f === filter) {
+                    btn.className = 'flex-1 py-1.5 text-center rounded-md bg-white text-forest-900 shadow-sm transition-all font-bold';
+                } else {
+                    btn.className = 'flex-1 py-1.5 text-center rounded-md hover:text-forest-900 transition-all text-gray-500';
+                }
+            });
+            renderConversationList();
+        }
+
+        // Agent filter (MY / ALL)
+        function setAgentFilter(filter) {
+            currentAgentFilter = filter;
+            const my = document.getElementById('btnFilterMy');
+            const all = document.getElementById('btnFilterAll');
+            if (filter === 'MY') {
+                my.className = 'px-2 py-0.5 rounded bg-forest-600 text-white font-bold transition-all';
+                all.className = 'px-2 py-0.5 rounded text-gray-500 hover:text-forest-900 font-bold transition-all';
+            } else {
+                all.className = 'px-2 py-0.5 rounded bg-forest-600 text-white font-bold transition-all';
+                my.className = 'px-2 py-0.5 rounded text-gray-500 hover:text-forest-900 font-bold transition-all';
+            }
+            renderConversationList();
+        }
+
+        // Right column tab switching (Fiche / Catalogue)
+        function setRightTab(tab) {
+            currentRightTab = tab;
+            const currentBtn = document.getElementById('rightTabCurrent');
+            const catalogBtn = document.getElementById('rightTabCatalog');
+            const currentPanel = document.getElementById('currentPropertyTab');
+            const catalogPanel = document.getElementById('catalogPropertyTab');
+
+            if (tab === 'CURRENT') {
+                currentBtn.classList.add('active');
+                catalogBtn.classList.remove('active');
+                if (currentPanel) currentPanel.classList.remove('hidden');
+                if (catalogPanel) catalogPanel.classList.add('hidden');
+            } else {
+                catalogBtn.classList.add('active');
+                currentBtn.classList.remove('active');
+                if (catalogPanel) catalogPanel.classList.remove('hidden');
+                if (currentPanel) currentPanel.classList.add('hidden');
+            }
+        }
+    </script>
+</body>
+</html>
