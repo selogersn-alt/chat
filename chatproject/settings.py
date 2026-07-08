@@ -17,8 +17,14 @@ DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = ['*']
 
-CSRF_TRUSTED_ORIGINS = ['https://chat.logersenegal.com']
+CSRF_TRUSTED_ORIGINS = [
+    'https://chat.logersenegal.com',
+    'http://chat.logersenegal.com',
+    'https://*.logersenegal.com'
+]
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+CSRF_COOKIE_SECURE = False
+SESSION_COOKIE_SECURE = False
 
 # Application definition
 
