@@ -87,26 +87,7 @@ def custom_login_view(request):
     else:
         form = AuthenticationForm()
         
-    # Auto-login helper for easy local testing
-    auto_login = request.GET.get('auto_login') == 'true'
-    if auto_login:
-        # Check if an agent already exists, else create one
-        agent = User.objects.filter(role=User.RoleEnum.AGENT, is_staff=True).first()
-        if not agent:
-            agent = User.objects.create_user(
-                username='agent_demo',
-                phone_number='+22890000000',
-                first_name='Demo',
-                last_name='Agent',
-                role=User.RoleEnum.AGENT,
-                is_staff=True,
-                is_superuser=True
-            )
-            agent.set_password('agent123')
-            agent.save()
-        login(request, agent, backend='django.contrib.auth.backends.ModelBackend')
-        return redirect('dashboard')
-        
+
     return render(request, 'chat/login.html', {'form': form})
 
 def custom_logout_view(request):
