@@ -333,8 +333,10 @@ def whatsapp_webhook(request):
                 status=Message.StatusEnum.READ
             )
             
-            # 5. Update last message time
+            # 5. Update last message time and restart SLA countdown
             conversation.last_message_at = timezone.now()
+            conversation.sla_started_at = timezone.now()
+            conversation.sla_limit_minutes = 15
             conversation.save()
             
             return JsonResponse({'status': 'message_received'}, status=200)
@@ -394,6 +396,7 @@ def sync_messages(request):
             'client_last_message_at': last_client_msg_at,
             'is_last_msg_from_client': is_last_msg_from_client,
             'sla_limit_minutes': conv.sla_limit_minutes,
+            'sla_started_at': conv.sla_started_at.isoformat() if conv.sla_started_at else None,
         })
         
     messages_data = []
@@ -431,6 +434,7 @@ def sync_messages(request):
                 'pipeline_stage_display': active_conv.get_pipeline_stage_display(),
                 'is_last_msg_from_client': active_is_last_msg_from_client,
                 'sla_limit_minutes': active_conv.sla_limit_minutes,
+                'sla_started_at': active_conv.sla_started_at.isoformat() if active_conv.sla_started_at else None,
             }
             
             # Fetch messages
@@ -531,6 +535,7 @@ def send_message(request):
         )
         
         conversation.last_message_at = timezone.now()
+        conversation.sla_started_at = None
         conversation.save()
         
         # If it is a WhatsApp conversation, invoke Meta Cloud API
@@ -851,6 +856,7 @@ def update_conversation_sla_limit(request):
             
         conversation = get_object_or_404(Conversation, id=conversation_id, participants=request.user)
         conversation.sla_limit_minutes = int(limit)
+        conversation.sla_started_at = timezone.now()
         conversation.save()
         
         return JsonResponse({'status': 'updated', 'sla_limit_minutes': conversation.sla_limit_minutes})
