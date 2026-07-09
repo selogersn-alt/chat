@@ -1,5 +1,6 @@
 import os
 import re
+import csv
 import json
 import logging
 import requests
@@ -12,6 +13,7 @@ from django.http import JsonResponse, HttpResponse
 from datetime import timedelta
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 from django.db.models import Q
 from django.core.cache import cache
 from .models import User, Conversation, Message, Property, QuickTemplate, Reminder
@@ -98,11 +100,11 @@ def custom_logout_view(request):
 
 @login_required(login_url='login')
 def dashboard_view(request):
-    """Main Agent Chat Dashboard."""
-    # Ensure there is at least one agent (the logged in user should be an AGENT)
+    """Main Agent Chat Dashboard. Réservé aux agents uniquement."""
+    # Refuser l'accès si l'utilisateur n'est pas un AGENT
+    # (ne jamais modifier le rôle silencieusement en base de données)
     if request.user.role != User.RoleEnum.AGENT:
-        request.user.role = User.RoleEnum.AGENT
-        request.user.save()
+        return redirect('login')
         
     # Ensure some mock data exists for testing if properties/templates are empty
     if not Property.objects.exists():
@@ -334,9 +336,9 @@ def whatsapp_webhook(request):
             )
             
             # 5. Update last message time and restart SLA countdown
+            # NOTE: On ne remet PAS sla_limit_minutes à 15 — on respecte la config de l'agent
             conversation.last_message_at = timezone.now()
             conversation.sla_started_at = timezone.now()
-            conversation.sla_limit_minutes = 15
             conversation.save()
             
             return JsonResponse({'status': 'message_received'}, status=200)
@@ -651,8 +653,6 @@ def claim_conversation(request):
         logger.error(f"Error claiming conversation: {str(e)}", exc_info=True)
         return JsonResponse({'error': str(e)}, status=500)
 
-import csv
-from django.utils.dateparse import parse_datetime
 
 @login_required(login_url='login')
 @csrf_exempt

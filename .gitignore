@@ -24,3 +24,8 @@ venv.bak/
 .idea/
 .vscode/
 *.swp
+
+# Scratch files
+find_sla.py
+search_results.txt
+syntax_report.txt

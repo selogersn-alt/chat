@@ -13,7 +13,7 @@ load_dotenv(BASE_DIR / '.env')
 
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-fallback-key-54321')
 
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'False').lower() in ('true', '1', 'yes')
 
 LOGGING = {
     'version': 1,
@@ -44,7 +44,7 @@ LOGGING = {
     },
 }
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
 CSRF_TRUSTED_ORIGINS = [
     'https://chat.logersenegal.com',
@@ -138,7 +138,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'fr-fr'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Africa/Dakar'
 
 USE_I18N = True
 
@@ -166,23 +166,7 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # Custom User Model
 AUTH_USER_MODEL = 'chat.User'
 
-JAZZMIN_SETTINGS = {
-    "site_title": "Loger Sénégal Chat",
-    "site_header": "Loger Sénégal",
-    "site_brand": "CRM WhatsApp",
-    "site_logo": "logo.png",  # Le fichier devra être dans static/logo.png
-    "login_logo": None,
-    "login_logo_dark": None,
-    "site_logo_classes": "img-circle",
-    "site_icon": "favicon.ico",  # Le fichier devra être dans static/favicon.ico
-    "welcome_sign": "Bienvenue sur le CRM Loger Sénégal",
-    "copyright": "Loger Sénégal Ltd",
-    "show_ui_builder": False,
-}
-
-JAZZMIN_UI_TWEAKS = {
-    "theme": "darkly",
-}
+# (Premier bloc JAZZMIN supprimé — doublon écrasé par le bloc complet ci-dessous)
 
 
 # DRF configuration

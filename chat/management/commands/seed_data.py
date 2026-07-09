@@ -6,7 +6,23 @@ from chat.models import User, Conversation, Message, Property, QuickTemplate
 class Command(BaseCommand):
     help = 'Seeds initial data for Loger Sénégal Chat Dashboard (Properties, Templates, Agent, and Client)'
 
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--force',
+            action='store_true',
+            help='OBLIGATOIRE pour exécuter cette commande. Protège contre un lancement accidentel en production.',
+        )
+
     def handle(self, *args, **options):
+        if not options['force']:
+            self.stdout.write(self.style.ERROR(
+                "[ANNULÉ] Sécurité : utilisez --force pour confirmer le peuplement et la purge de la base de données."
+            ))
+            self.stdout.write(self.style.WARNING(
+                "Exemple : python manage.py seed_data --force"
+            ))
+            return
+
         self.stdout.write(self.style.WARNING("Début du peuplement de la base de données..."))
 
         # 1. Clear old data

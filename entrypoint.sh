@@ -16,7 +16,7 @@ django.setup()
 from chat.models import User
 if not User.objects.exists():
     from django.core.management import call_command
-    call_command('seed_data')
+    call_command('seed_data', force=True)
     print('Fresh database: Seed data successfully loaded!')
 else:
     print('Database is not empty: skipping seed_data to protect existing records.')

@@ -2209,64 +2209,6 @@
             window.open(url, '_blank');
         }
 
-        // Bind event listener to convSearch to filter search input instantly
-        document.addEventListener('DOMContentLoaded', () => {
-            const search = document.getElementById('convSearch');
-            if (search) {
-                search.addEventListener('input', renderConversationList);
-            }
-        });
-
-        // Status filter (Actives / En attente / Fermées)
-        function setFilter(filter) {
-            currentFilter = filter;
-            ['ACTIVE','PENDING','CLOSED'].forEach(f => {
-                const btn = document.getElementById(`tab${f.charAt(0) + f.slice(1).toLowerCase()}`);
-                if (!btn) return;
-                if (f === filter) {
-                    btn.className = 'flex-1 py-1.5 text-center rounded-md bg-white text-forest-900 shadow-sm transition-all font-bold';
-                } else {
-                    btn.className = 'flex-1 py-1.5 text-center rounded-md hover:text-forest-900 transition-all text-gray-500';
-                }
-            });
-            renderConversationList();
-        }
-
-        // Agent filter (MY / ALL)
-        function setAgentFilter(filter) {
-            currentAgentFilter = filter;
-            const my = document.getElementById('btnFilterMy');
-            const all = document.getElementById('btnFilterAll');
-            if (filter === 'MY') {
-                my.className = 'px-2 py-0.5 rounded bg-forest-600 text-white font-bold transition-all';
-                all.className = 'px-2 py-0.5 rounded text-gray-500 hover:text-forest-900 font-bold transition-all';
-            } else {
-                all.className = 'px-2 py-0.5 rounded bg-forest-600 text-white font-bold transition-all';
-                my.className = 'px-2 py-0.5 rounded text-gray-500 hover:text-forest-900 font-bold transition-all';
-            }
-            renderConversationList();
-        }
-
-        // Right column tab switching (Fiche / Catalogue)
-        function setRightTab(tab) {
-            currentRightTab = tab;
-            const currentBtn = document.getElementById('rightTabCurrent');
-            const catalogBtn = document.getElementById('rightTabCatalog');
-            const currentPanel = document.getElementById('currentPropertyTab');
-            const catalogPanel = document.getElementById('catalogPropertyTab');
-
-            if (tab === 'CURRENT') {
-                currentBtn.classList.add('active');
-                catalogBtn.classList.remove('active');
-                if (currentPanel) currentPanel.classList.remove('hidden');
-                if (catalogPanel) catalogPanel.classList.add('hidden');
-            } else {
-                catalogBtn.classList.add('active');
-                currentBtn.classList.remove('active');
-                if (catalogPanel) catalogPanel.classList.remove('hidden');
-                if (currentPanel) currentPanel.classList.add('hidden');
-            }
-        }
     </script>
     <!-- Toast Notification Container -->
     <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm pointer-events-none"></div>
