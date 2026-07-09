@@ -42,6 +42,7 @@ class Conversation(models.Model):
     tags = models.CharField(max_length=500, blank=True, default='')
     notes = models.TextField(blank=True, default='')
     pipeline_stage = models.CharField(max_length=20, choices=PipelineStageEnum.choices, default=PipelineStageEnum.NEW)
+    sla_limit_minutes = models.IntegerField(default=15)
     
     last_message_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

@@ -12,6 +12,7 @@ urlpatterns = [
     path('api/conversation/tags/', views.update_conversation_tags, name='update_conversation_tags'),
     path('api/conversation/notes/', views.update_conversation_notes, name='update_conversation_notes'),
     path('api/conversation/pipeline/', views.update_conversation_pipeline, name='update_conversation_pipeline'),
+    path('api/conversation/sla-limit/', views.update_conversation_sla_limit, name='update_conversation_sla_limit'),
     path('api/reminders/create/', views.create_reminder, name='create_reminder'),
     path('api/reminders/complete/', views.complete_reminder, name='complete_reminder'),
     path('api/leads/export/', views.export_leads_csv, name='export_leads_csv'),

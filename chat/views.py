@@ -393,6 +393,7 @@ def sync_messages(request):
             'pipeline_stage_display': conv.get_pipeline_stage_display(),
             'client_last_message_at': last_client_msg_at,
             'is_last_msg_from_client': is_last_msg_from_client,
+            'sla_limit_minutes': conv.sla_limit_minutes,
         })
         
     messages_data = []
@@ -429,6 +430,7 @@ def sync_messages(request):
                 'pipeline_stage': active_conv.pipeline_stage,
                 'pipeline_stage_display': active_conv.get_pipeline_stage_display(),
                 'is_last_msg_from_client': active_is_last_msg_from_client,
+                'sla_limit_minutes': active_conv.sla_limit_minutes,
             }
             
             # Fetch messages
@@ -829,4 +831,29 @@ def update_conversation_tags(request):
         return JsonResponse({'status': 'updated', 'tags': tags_list})
     except Exception as e:
         logger.error(f"Error updating conversation tags: {str(e)}", exc_info=True)
+        return JsonResponse({'error': str(e)}, status=500)
+
+@login_required(login_url='login')
+def update_conversation_sla_limit(request):
+    """
+    POST: Update the SLA duration limit in minutes for a conversation.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+        
+    try:
+        data = json.loads(request.body)
+        conversation_id = data.get('conversation_id')
+        limit = data.get('sla_limit_minutes')
+        
+        if not conversation_id or limit is None:
+            return JsonResponse({'error': 'Missing conversation_id or sla_limit_minutes'}, status=400)
+            
+        conversation = get_object_or_404(Conversation, id=conversation_id, participants=request.user)
+        conversation.sla_limit_minutes = int(limit)
+        conversation.save()
+        
+        return JsonResponse({'status': 'updated', 'sla_limit_minutes': conversation.sla_limit_minutes})
+    except Exception as e:
+        logger.error(f"Error updating SLA limit: {str(e)}", exc_info=True)
         return JsonResponse({'error': str(e)}, status=500)

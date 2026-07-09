@@ -1,5 +1,5 @@
-# Generated manually - No-op migration
-from django.db import migrations
+# Generated manually
+from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
@@ -8,5 +8,9 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        # No database schema changes needed (SLA is calculated in frontend)
+        migrations.AddField(
+            model_name='conversation',
+            name='sla_limit_minutes',
+            field=models.IntegerField(default=15),
+        ),
     ]
