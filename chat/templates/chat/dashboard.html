@@ -707,6 +707,7 @@
         let loadedTemplates = [];
         
         let previousMessageSnippets = {}; // Track last message snippets to trigger notifications
+        let triggeredSlaAlerts = new Set(); // Track conversations that triggered SLA alert in current client-message cycle
 
         // Request notification permissions
         if (typeof window !== 'undefined' && 'Notification' in window) {
@@ -720,6 +721,7 @@
         setInterval(syncData, 3000);
         // Update the session countdown every second for real-time HH:MM:SS
         setInterval(updateSessionCountdown, 1000);
+        setInterval(updateSLATimers, 1000);
 
         function syncData() {
             let url = `/api/sync/`;
@@ -868,6 +870,16 @@
                             }">${c.pipeline_stage_display}</span>
                             <!-- Activity label -->
                             <span class="text-[9px] font-bold activity-badge ${getActivityStatus(c.client_last_message_at).level}">${getActivityStatus(c.client_last_message_at).label}</span>
+                            <!-- SLA Timer Badge -->
+                            ${c.is_last_msg_from_client ? `
+                                <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 border border-blue-200 sla-timer-badge" data-client-time="${c.client_last_message_at}" data-conv-id="${c.id}" data-client-name="${c.client_name}">
+                                    ⏱️ SLA...
+                                </span>
+                            ` : `
+                                <span class="text-[9px] font-bold bg-green-50 text-green-700 border border-green-200 px-1.5 py-0.5 rounded">
+                                    SLA Respecté
+                                </span>
+                            `}
                         </div>
                         ${c.tags && c.tags.length > 0 ? `
                             <div class="flex flex-wrap gap-1 mt-1">
@@ -1600,6 +1612,60 @@
                 expiredBanner.classList.remove('hidden');
                 enableChatInput(false);
             }
+        }
+
+        // Real-time ticking for the internal SLA timers in conversation list
+        function updateSLATimers() {
+            const badges = document.querySelectorAll('.sla-timer-badge');
+            badges.forEach(b => {
+                const clientTimeStr = b.getAttribute('data-client-time');
+                const convId = b.getAttribute('data-conv-id');
+                const clientName = b.getAttribute('data-client-name') || "Prospect";
+                if (!clientTimeStr || !convId) return;
+                
+                const clientTime = new Date(clientTimeStr);
+                const now = new Date();
+                const elapsedMs = now - clientTime;
+                const limitMs = 15 * 60 * 1000; // 15 minutes SLA limit
+                const remainingMs = limitMs - elapsedMs;
+                
+                const alertKey = `${convId}_${clientTimeStr}`;
+                
+                if (remainingMs > 0) {
+                    const totalSecs = Math.floor(remainingMs / 1000);
+                    const mins = Math.floor(totalSecs / 60);
+                    const secs = totalSecs % 60;
+                    const pad = n => String(n).padStart(2, '0');
+                    
+                    b.innerHTML = `⏱️ SLA: ${pad(mins)}:${pad(secs)}`;
+                    if (mins < 3) {
+                        // Critical time limit warning (red pulsing)
+                        b.className = "text-[9px] font-bold px-1.5 py-0.5 rounded bg-red-100 text-red-700 border border-red-200 sla-timer-badge animate-pulse";
+                    } else if (mins < 7) {
+                        // Medium time warning
+                        b.className = "text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 border border-amber-200 sla-timer-badge";
+                    } else {
+                        // Safe time remaining
+                        b.className = "text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 border border-blue-200 sla-timer-badge";
+                    }
+                } else {
+                    b.innerHTML = `⚠️ SLA Dépassé`;
+                    b.className = "text-[9px] font-bold px-1.5 py-0.5 rounded bg-red-600 text-white sla-timer-badge animate-pulse";
+                    
+                    // Trigger sound & alert notification only once per client-message cycle
+                    if (!triggeredSlaAlerts.has(alertKey)) {
+                        triggeredSlaAlerts.add(alertKey);
+                        playReminderSound();
+                        
+                        if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+                            new Notification(`Urgence SLA : Délai de réponse dépassé`, {
+                                body: `Le prospect ${clientName} attend une réponse depuis plus de 15 minutes !`,
+                                tag: convId
+                            });
+                        }
+                    }
+                }
+            });
         }
 
         // Toggle state of message textarea & send buttons

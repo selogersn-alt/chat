@@ -9,6 +9,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
+from datetime import timedelta
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
 from django.db.models import Q
@@ -372,6 +373,9 @@ def sync_messages(request):
         
         assigned_to_name = conv.assigned_to.get_full_name() or conv.assigned_to.username if conv.assigned_to else None
         
+        # Check if last message is from client for SLA tracking
+        is_last_msg_from_client = (last_msg.sender.role == User.RoleEnum.CLIENT) if last_msg else False
+        
         conv_data.append({
             'id': str(conv.id),
             'topic': conv.topic,
@@ -388,6 +392,7 @@ def sync_messages(request):
             'pipeline_stage': conv.pipeline_stage,
             'pipeline_stage_display': conv.get_pipeline_stage_display(),
             'client_last_message_at': last_client_msg_at,
+            'is_last_msg_from_client': is_last_msg_from_client,
         })
         
     messages_data = []
@@ -406,6 +411,9 @@ def sync_messages(request):
             last_client_msg = active_conv.messages.filter(sender__role=User.RoleEnum.CLIENT).order_by('-created_at').first()
             client_last_message_at = last_client_msg.created_at.isoformat() if last_client_msg else active_conv.created_at.isoformat()
             
+            active_last_msg = active_conv.messages.all().order_by('-created_at').first()
+            active_is_last_msg_from_client = (active_last_msg.sender.role == User.RoleEnum.CLIENT) if active_last_msg else False
+            
             active_conv_info = {
                 'id': str(active_conv.id),
                 'topic': active_conv.topic,
@@ -419,7 +427,8 @@ def sync_messages(request):
                 'tags': [t.strip() for t in active_conv.tags.split(',') if t.strip()] if active_conv.tags else [],
                 'notes': active_conv.notes,
                 'pipeline_stage': active_conv.pipeline_stage,
-                'pipeline_stage_display': active_conv.get_pipeline_stage_display()
+                'pipeline_stage_display': active_conv.get_pipeline_stage_display(),
+                'is_last_msg_from_client': active_is_last_msg_from_client,
             }
             
             # Fetch messages
