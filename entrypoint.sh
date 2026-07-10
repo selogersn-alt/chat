@@ -22,6 +22,27 @@ if not User.objects.exists():
     print('Fresh database: Seed data successfully loaded!')
 else:
     print('Database is not empty: skipping seed_data to protect existing records.')
+
+# Always ensure the partners table is seeded correctly on start
+from chat.models import Partner
+if Partner.objects.count() < 56:
+    print('Partners list is incomplete or empty in the database. Seeding partners...')
+    try:
+        from chat.management.commands.seed_data import PARTNERS_LIST
+        Partner.objects.all().delete()
+        for name, ref, c1, c2, zone_val, p_type, meteo_val in PARTNERS_LIST:
+            Partner.objects.create(
+                name=name,
+                ref=ref,
+                contact_1=c1,
+                contact_2=c2,
+                zone=zone_val,
+                property_type=p_type,
+                meteo=meteo_val
+            )
+        print('Successfully seeded all 56 partners!')
+    except Exception as e:
+        print('Error seeding partners:', e)
 "
 
 echo "Starting Gunicorn server..."
