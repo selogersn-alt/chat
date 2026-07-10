@@ -6,11 +6,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 def setup_ice_breakers():
-    token = os.environ.get('WA_TOKEN')
+    token = os.environ.get('WA_ACCESS_TOKEN')
     phone_id = os.environ.get('WA_PHONE_NUMBER_ID')
     
     if not token or not phone_id:
-        print("Erreur: Les variables d'environnement WA_TOKEN et WA_PHONE_NUMBER_ID doivent être définies dans votre fichier .env")
+        print("Erreur: Les variables d'environnement WA_ACCESS_TOKEN et WA_PHONE_NUMBER_ID doivent être définies dans votre fichier .env")
         return
         
     # URL de l'API Graph Meta pour le profil WhatsApp Business
