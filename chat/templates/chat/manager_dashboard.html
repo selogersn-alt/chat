@@ -113,6 +113,9 @@
             <button onclick="switchTab('matches')" id="tab-matches-btn" class="py-3 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-forest-600 transition-all">
                 🤝 Suivi des Visites
             </button>
+            <button onclick="switchTab('help')" id="tab-help-btn" class="py-3 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-forest-600 transition-all">
+                ℹ️ Centre d'Aide
+            </button>
         </div>
 
         <!-- TAB CONTENT: STATS -->
@@ -163,6 +166,57 @@
                     <div class="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center text-gray-500">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PARTNERS & SLA CARDS (SECOND ROW) -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Visites Transmises</p>
+                        <h3 class="text-3xl font-extrabold text-blue-600 mt-1" id="stat-total-matches">-</h3>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Visites Gagnées (Ventes)</p>
+                        <h3 class="text-3xl font-extrabold text-emerald-600 mt-1" id="stat-won-matches">-</h3>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.746 3.746 0 0 1 3.296-1.043A3.746 3.746 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 0 1 3.296 1.043 3.746 3.746 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z" />
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Taux de Réussite</p>
+                        <h3 class="text-3xl font-extrabold text-indigo-600 mt-1" id="stat-conversion-rate">-</h3>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Violations de SLA</p>
+                        <h3 class="text-3xl font-extrabold text-rose-600 mt-1" id="stat-sla-violations">-</h3>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-rose-50 flex items-center justify-center text-rose-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0-10.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.75c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.57-.598-3.75h-.152c-3.196 0-6.1-1.249-8.25-3.286zm0 13.036h.008v.008H12v-.008z" />
                         </svg>
                     </div>
                 </div>
@@ -274,6 +328,75 @@
             </div>
         </div>
 
+        <!-- TAB CONTENT: HELP -->
+        <div id="tab-help" class="tab-pane hidden flex flex-col gap-6">
+            <div class="flex justify-between items-center">
+                <h4 class="font-bold text-gray-800 text-lg">Centre d'Aide & Manuel d'Utilisation</h4>
+                <p class="text-xs text-gray-500">Consultez la documentation pour maîtriser l'ensemble des fonctionnalités du CRM.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Guide Part 1 -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-4">
+                    <h5 class="font-bold text-gray-800 text-sm flex items-center gap-2 border-b border-gray-100 pb-2">
+                        🔄 1. Attribution des Tâches
+                    </h5>
+                    <p class="text-xs text-gray-600 leading-relaxed">
+                        Chaque nouveau client WhatsApp arrivant sur la plateforme commence dans le statut <strong>"En attente"</strong>. 
+                        Ces discussions sont visibles par tous les agents.
+                    </p>
+                    <ul class="list-disc pl-4 text-xs text-gray-600 flex flex-col gap-1.5">
+                        <li><strong>Prise en charge directe</strong> : N'importe quel conseiller peut cliquer sur "Prendre en charge" depuis son tableau de bord pour s'attribuer la discussion.</li>
+                        <li><strong>Délégation Manager</strong> : Depuis l'onglet "Attribution des Tâches" du Manager, vous pouvez forcer l'attribution d'une conversation à un agent spécifique en sélectionnant son nom dans la liste, ou la libérer ("non assignée") pour la remettre dans la file d'attente.</li>
+                    </ul>
+                </div>
+
+                <!-- Guide Part 2 -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-4">
+                    <h5 class="font-bold text-gray-800 text-sm flex items-center gap-2 border-b border-gray-100 pb-2">
+                        ⏱️ 2. Suivi de la SLA (Délais de Réponse)
+                    </h5>
+                    <p class="text-xs text-gray-600 leading-relaxed">
+                        Le système suit le temps de réponse accordé aux prospects. Par défaut, la limite est fixée à <strong>15 minutes</strong> après le dernier message du client.
+                    </p>
+                    <ul class="list-disc pl-4 text-xs text-gray-600 flex flex-col gap-1.5">
+                        <li><strong>Chronomètre Dynamique</strong> : S'affiche sur la fiche de discussion du conseiller. Il passe à l'orange à 90% du temps écoulé (soit 13m30s), puis au rouge clignotant en cas de dépassement.</li>
+                        <li><strong>Alerte Sonore</strong> : Si un délai est dépassé, une alerte retentit dans l'onglet du conseiller.</li>
+                        <li><strong>Personnalisation</strong> : Les conseillers peuvent prolonger cette limite de temps directement sur le profil du prospect (ex: fixer à 30 minutes ou 1 heure) en cas de dossier complexe.</li>
+                    </ul>
+                </div>
+
+                <!-- Guide Part 3 -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-4">
+                    <h5 class="font-bold text-gray-800 text-sm flex items-center gap-2 border-b border-gray-100 pb-2">
+                        🤝 3. Module Partenaires (Zéro Surcoût)
+                    </h5>
+                    <p class="text-xs text-gray-600 leading-relaxed">
+                        Pour recommander un prospect à un partenaire local sans générer de frais d'API :
+                    </p>
+                    <ul class="list-disc pl-4 text-xs text-gray-600 flex flex-col gap-1.5">
+                        <li><strong>Recherche dynamique</strong> : Dans l'onglet "Partenaires" du chat de l'agent, le système liste les courtiers de la zone du bien avec un indicateur coloré de leur réactivité historique (Ensoleillé = réactif, Orageux = peu réactif).</li>
+                        <li><strong>Message Client</strong> : Le client reçoit un message automatique WhatsApp avec les coordonnées du courtier.</li>
+                        <li><strong>Lien wa.me</strong> : L'agent clique sur "Notifier le partenaire", ce qui ouvre un onglet WhatsApp Web pré-rempli avec les coordonnées du visiteur et les caractéristiques du bien, prêt à être envoyé gratuitement.</li>
+                    </ul>
+                </div>
+
+                <!-- Guide Part 4 -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-4">
+                    <h5 class="font-bold text-gray-800 text-sm flex items-center gap-2 border-b border-gray-100 pb-2">
+                        💰 4. Suivi des Commissions et Rémunérations
+                    </h5>
+                    <p class="text-xs text-gray-600 leading-relaxed">
+                        Le Manager pilote la facturation et le succès des visites depuis l'onglet "Suivi des Visites" :
+                    </p>
+                    <ul class="list-disc pl-4 text-xs text-gray-600 flex flex-col gap-1.5">
+                        <li><strong>Changement de statut</strong> : Vous pouvez marquer une visite comme `Visité`, `Gagné` ou `Perdu`.</li>
+                        <li><strong>Notification Agent en direct</strong> : Dès que vous changez le statut (ex: `Gagné (Commission)`), un log automatique s'inscrit dans la discussion de l'agent pour le notifier du succès de sa mise en relation et de l'acquisition de sa commission.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <!-- MODAL: CREATE AGENT -->
@@ -364,7 +487,12 @@
                     document.getElementById('stat-total-clients').textContent = data.total_clients;
                     document.getElementById('stat-active-convs').textContent = data.active_conversations;
                     document.getElementById('stat-pending-convs').textContent = data.pending_conversations;
-                    document.getElementById('stat-closed-convs').textContent = data.closed_conversations;
+                    document.getElementById('stat-closed-convs').textContent = data.closed_convs || data.closed_conversations;
+
+                    document.getElementById('stat-total-matches').textContent = data.total_matches || '0';
+                    document.getElementById('stat-won-matches').textContent = data.won_matches || '0';
+                    document.getElementById('stat-conversion-rate').textContent = (data.conversion_rate !== undefined) ? `${data.conversion_rate}%` : '0%';
+                    document.getElementById('stat-sla-violations').textContent = data.sla_violations || '0';
 
                     updateStatusChart(data.active_conversations, data.pending_conversations, data.closed_conversations);
                     updateAgentsChart(data.agents_performance);

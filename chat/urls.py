@@ -5,6 +5,7 @@ urlpatterns = [
     path('', views.dashboard_view, name='dashboard'),
     path('login/', views.custom_login_view, name='login'),
     path('logout/', views.custom_logout_view, name='logout'),
+    path('select-portal/', views.select_portal_view, name='select_portal'),
     path('manager/', views.manager_dashboard_view, name='manager_dashboard'),
     
     path('api/webhook/', views.whatsapp_webhook, name='whatsapp_webhook'),

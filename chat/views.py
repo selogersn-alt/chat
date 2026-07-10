@@ -79,9 +79,7 @@ def get_live_properties():
 def custom_login_view(request):
     """Simple login view for agents and managers."""
     if request.user.is_authenticated:
-        if request.user.role == User.RoleEnum.MANAGER or request.user.is_superuser:
-            return redirect('manager_dashboard')
-        return redirect('dashboard')
+        return redirect('select_portal')
         
     if request.GET.get('auto_login') == 'true':
         user = authenticate(username='agent_demo', password='agent123')
@@ -110,13 +108,16 @@ def custom_login_view(request):
         if form.is_valid():
             user = form.get_user()
             login(request, user)
-            if user.role == User.RoleEnum.MANAGER or user.is_superuser:
-                return redirect('manager_dashboard')
-            return redirect('dashboard')
+            return redirect('select_portal')
     else:
         form = AuthenticationForm()
 
     return render(request, 'chat/login.html', {'form': form})
+
+@login_required(login_url='login')
+def select_portal_view(request):
+    """View to choose between Agent Console and Manager Dashboard."""
+    return render(request, 'chat/select_portal.html', {'user': request.user})
 
 def custom_logout_view(request):
     """Logout view."""
@@ -984,6 +985,29 @@ def manager_stats(request):
         pending_convs = conversations.filter(status=Conversation.StatusEnum.PENDING).count()
         closed_convs = conversations.filter(status=Conversation.StatusEnum.CLOSED).count()
         
+        # 1. Partner Match & Visit Stats
+        total_matches = PartnerMatch.objects.count()
+        won_matches = PartnerMatch.objects.filter(status=PartnerMatch.StatusEnum.WON).count()
+        visited_matches = PartnerMatch.objects.filter(status=PartnerMatch.StatusEnum.VISITED).count()
+        lost_matches = PartnerMatch.objects.filter(status=PartnerMatch.StatusEnum.LOST).count()
+        pending_matches = PartnerMatch.objects.filter(status=PartnerMatch.StatusEnum.PENDING).count()
+        
+        conversion_rate = 0.0
+        if total_matches > 0:
+            conversion_rate = (won_matches / total_matches) * 100
+            
+        # 2. SLA Violations calculation
+        now = timezone.now()
+        sla_violations = 0
+        active_convs_qs = Conversation.objects.filter(status=Conversation.StatusEnum.ACTIVE, sla_started_at__isnull=False)
+        for c in active_convs_qs:
+            last_msg = c.messages.order_by('-created_at').first()
+            if last_msg and last_msg.sender.role == User.RoleEnum.CLIENT:
+                limit_mins = c.sla_limit_minutes or 15
+                elapsed = now - c.sla_started_at
+                if elapsed.total_seconds() > limit_mins * 60:
+                    sla_violations += 1
+        
         # Conversations per agent
         agents = User.objects.filter(role=User.RoleEnum.AGENT)
         agents_list = []
@@ -1003,6 +1027,13 @@ def manager_stats(request):
             'active_conversations': active_convs,
             'pending_conversations': pending_convs,
             'closed_conversations': closed_convs,
+            'total_matches': total_matches,
+            'won_matches': won_matches,
+            'visited_matches': visited_matches,
+            'lost_matches': lost_matches,
+            'pending_matches': pending_matches,
+            'conversion_rate': round(conversion_rate, 1),
+            'sla_violations': sla_violations,
             'agents_performance': agents_list
         })
     except Exception as e:
