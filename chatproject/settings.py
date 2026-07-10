@@ -15,6 +15,10 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-fallback-key-54321')
 
 DEBUG = os.getenv('DEBUG', 'False').lower() in ('true', '1', 'yes')
 
+if not DEBUG and SECRET_KEY == 'django-insecure-fallback-key-54321':
+    from django.core.exceptions import ImproperlyConfigured
+    raise ImproperlyConfigured("La variable SECRET_KEY est manquante en production. Définissez-la dans .env.")
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -52,8 +56,8 @@ CSRF_TRUSTED_ORIGINS = [
     'https://*.logersenegal.com'
 ]
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-CSRF_COOKIE_SECURE = False
-SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_SECURE = not DEBUG
 
 # Application definition
 

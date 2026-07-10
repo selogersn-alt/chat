@@ -39,7 +39,7 @@ class Conversation(models.Model):
     status = models.CharField(max_length=20, choices=StatusEnum.choices, default=StatusEnum.ACTIVE)
     topic = models.CharField(max_length=150, default='Discussion Générale', blank=True)
     is_whatsapp = models.BooleanField(default=False)
-    assigned_to = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_conversations')
+    assigned_to = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_conversations', limit_choices_to={'role__in': ['AGENT', 'MANAGER']})
     tags = models.CharField(max_length=500, blank=True, default='')
     notes = models.TextField(blank=True, default='')
     pipeline_stage = models.CharField(max_length=20, choices=PipelineStageEnum.choices, default=PipelineStageEnum.NEW)

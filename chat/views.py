@@ -905,7 +905,6 @@ def export_leads_csv(request):
         
     return response
 
-@csrf_exempt
 @login_required(login_url='login')
 def update_conversation_tags(request):
     """
@@ -970,7 +969,6 @@ def manager_dashboard_view(request):
         return redirect('dashboard')
     return render(request, 'chat/manager_dashboard.html', {'user': request.user})
 
-@csrf_exempt
 @login_required(login_url='login')
 def close_conversation(request):
     """POST: Close a conversation (sets status to CLOSED)."""
@@ -1107,7 +1105,6 @@ def manager_stats(request):
         logger.error(f"Error getting manager stats: {str(e)}", exc_info=True)
         return JsonResponse({'error': str(e)}, status=500)
 
-@csrf_exempt
 @login_required(login_url='login')
 def manager_agents(request):
     """
@@ -1167,7 +1164,6 @@ def manager_agents(request):
             
     return JsonResponse({'error': 'Method not allowed'}, status=405)
 
-@csrf_exempt
 @login_required(login_url='login')
 def manager_delegate(request):
     """POST: Delegate a conversation to an agent."""
@@ -1249,7 +1245,6 @@ def search_partners(request):
     
     return JsonResponse({'partners': partners_data})
 
-@csrf_exempt
 @login_required(login_url='login')
 def create_partner_match(request):
     """POST: Match client with partner and notify client + generate wa.me link for partner."""
@@ -1352,7 +1347,6 @@ def create_partner_match(request):
         logger.error(f"Error creating partner match: {str(e)}", exc_info=True)
         return JsonResponse({'error': str(e)}, status=500)
 
-@csrf_exempt
 @login_required(login_url='login')
 def manager_matches(request):
     """
