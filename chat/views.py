@@ -309,6 +309,7 @@ def whatsapp_webhook(request):
                 clean_content = content.strip().lower()
                 
                 if "louer" in clean_content or "location" in clean_content:
+                    conversation.tags = "#location"
                     welcome_text = (
                         "Bienvenue chez Loger Sénégal ! 🏡\n"
                         "Génial ! Nous avons de superbes opportunités de location. 🏢\n\n"
@@ -317,6 +318,7 @@ def whatsapp_webhook(request):
                         "2️⃣ *Votre budget mensuel maximum* en FCFA."
                     )
                 elif "acheter" in clean_content or "achat" in clean_content or "acquisition" in clean_content:
+                    conversation.tags = "#achat"
                     welcome_text = (
                         "Bienvenue chez Loger Sénégal ! 🏡\n"
                         "Excellent projet d'achat ! 🔑\n\n"
@@ -329,6 +331,16 @@ def whatsapp_webhook(request):
                         "Bienvenue chez Loger Sénégal ! 🏡\n"
                         "Super ! 📱\n\n"
                         "Envoyez-nous le lien de la vidéo/publication ou une capture d'écran du bien afin que notre équipe l'identifie immédiatement."
+                    )
+                elif "confier" in clean_content or "gestion" in clean_content:
+                    conversation.tags = "#gestion"
+                    welcome_text = (
+                        "Bienvenue chez Loger Sénégal ! 🏡\n"
+                        "Nous serions ravis de gérer votre bien. 🤝\n\n"
+                        "Pourriez-vous nous donner quelques détails sur le bien ?\n"
+                        "1️⃣ *Type de bien* (Appartement, Villa, Immeuble...)\n"
+                        "2️⃣ *Emplacement*\n"
+                        "3️⃣ *Est-il vide ou meublé ?*"
                     )
                 elif "conseiller" in clean_content or "parler" in clean_content:
                     welcome_text = (
