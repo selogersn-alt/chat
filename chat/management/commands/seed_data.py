@@ -95,8 +95,8 @@ class Command(BaseCommand):
             first_name='Moussa',
             last_name='Ndiaye',
             role=User.RoleEnum.AGENT,
-            is_staff=True,
-            is_superuser=True
+            is_staff=False,
+            is_superuser=False
         )
         agent.set_password('agent123')
         agent.save()
@@ -107,8 +107,8 @@ class Command(BaseCommand):
             first_name='Adama',
             last_name='Diop',
             role=User.RoleEnum.MANAGER,
-            is_staff=True,
-            is_superuser=True
+            is_staff=False,
+            is_superuser=False
         )
         manager.set_password('manager123')
         manager.save()

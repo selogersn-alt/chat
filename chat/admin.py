@@ -2,6 +2,10 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from .models import User, Conversation, Message, Property, QuickTemplate, Reminder
 
+# Restriction d'accès à l'administration (/admin/) uniquement aux super-utilisateurs (super-admins)
+admin.site.has_permission = lambda request: request.user.is_active and request.user.is_superuser
+
+
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
     list_display = ('username', 'phone_number', 'role', 'is_staff')
