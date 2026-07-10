@@ -569,7 +569,7 @@
                 });
 
             // Load Matches List (for visits tracking)
-            fetch('/api/manager/matches/')
+            fetch(`/api/manager/matches/?range=${range}`)
                 .then(res => res.json())
                 .then(data => {
                     renderMatchesTable(data.matches || []);

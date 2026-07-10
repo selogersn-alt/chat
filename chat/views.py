@@ -1363,7 +1363,31 @@ def manager_matches(request):
         return JsonResponse({'error': 'Unauthorized'}, status=403)
         
     if request.method == 'GET':
-        matches = PartnerMatch.objects.all().order_by('-created_at')
+        range_val = request.GET.get('range', 'all')
+        matches = PartnerMatch.objects.all()
+        
+        from django.utils import timezone
+        from datetime import timedelta
+        now = timezone.now()
+        start_date = None
+        end_date = None
+        
+        if range_val == 'today':
+            start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        elif range_val == 'yesterday':
+            start_date = (now - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+            end_date = start_date + timedelta(days=1)
+        elif range_val == '7days':
+            start_date = now - timedelta(days=7)
+        elif range_val == '30days':
+            start_date = now - timedelta(days=30)
+            
+        if start_date:
+            matches = matches.filter(created_at__gte=start_date)
+        if end_date:
+            matches = matches.filter(created_at__lt=end_date)
+            
+        matches = matches.order_by('-created_at')
         matches_data = []
         for m in matches:
             client = m.conversation.participants.filter(role=User.RoleEnum.CLIENT).first()
