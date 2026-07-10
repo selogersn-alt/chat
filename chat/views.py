@@ -385,11 +385,11 @@ def sync_messages(request):
     
     # Get all conversations the agent has access to
     if agent.is_superuser or agent.role == User.RoleEnum.MANAGER:
-        conversations = Conversation.objects.all().order_by('-last_message_at', '-updated_at')
+        conversations = Conversation.objects.all().order_by('-last_message_at', '-created_at')
     else:
         conversations = Conversation.objects.filter(
             Q(participants=agent) | Q(status=Conversation.StatusEnum.PENDING)
-        ).distinct().order_by('-last_message_at', '-updated_at')
+        ).distinct().order_by('-last_message_at', '-created_at')
     
     conv_data = []
     for conv in conversations:
@@ -971,35 +971,64 @@ def close_conversation(request):
 
 @login_required(login_url='login')
 def manager_stats(request):
-    """GET: Returns manager stats."""
+    """GET: Returns manager stats with date filtering and sectors grouping."""
     if request.user.role != User.RoleEnum.MANAGER and not request.user.is_superuser:
         return JsonResponse({'error': 'Unauthorized'}, status=403)
         
     try:
-        total_clients = User.objects.filter(role=User.RoleEnum.CLIENT).count()
+        range_filter = request.GET.get('range', 'all').strip()
+        now = timezone.now()
+        start_date = None
+        end_date = None
+        
+        if range_filter == 'today':
+            start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        elif range_filter == 'yesterday':
+            today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            start_date = today_start - timedelta(days=1)
+            end_date = today_start
+        elif range_filter == '7days':
+            start_date = now - timedelta(days=7)
+        elif range_filter == '30days':
+            start_date = now - timedelta(days=30)
+
+        # Base querysets
+        clients_qs = User.objects.filter(role=User.RoleEnum.CLIENT)
+        convs_qs = Conversation.objects.all()
+        matches_qs = PartnerMatch.objects.all()
+        
+        # Apply date filters
+        if start_date:
+            clients_qs = clients_qs.filter(date_joined__gte=start_date)
+            convs_qs = convs_qs.filter(created_at__gte=start_date)
+            matches_qs = matches_qs.filter(created_at__gte=start_date)
+        if end_date:
+            clients_qs = clients_qs.filter(date_joined__lt=end_date)
+            convs_qs = convs_qs.filter(created_at__lt=end_date)
+            matches_qs = matches_qs.filter(created_at__lt=end_date)
+
+        total_clients = clients_qs.count()
         total_agents = User.objects.filter(role=User.RoleEnum.AGENT).count()
         
-        conversations = Conversation.objects.all()
-        total_convs = conversations.count()
-        active_convs = conversations.filter(status=Conversation.StatusEnum.ACTIVE).count()
-        pending_convs = conversations.filter(status=Conversation.StatusEnum.PENDING).count()
-        closed_convs = conversations.filter(status=Conversation.StatusEnum.CLOSED).count()
+        total_convs = convs_qs.count()
+        active_convs = convs_qs.filter(status=Conversation.StatusEnum.ACTIVE).count()
+        pending_convs = convs_qs.filter(status=Conversation.StatusEnum.PENDING).count()
+        closed_convs = convs_qs.filter(status=Conversation.StatusEnum.CLOSED).count()
         
         # 1. Partner Match & Visit Stats
-        total_matches = PartnerMatch.objects.count()
-        won_matches = PartnerMatch.objects.filter(status=PartnerMatch.StatusEnum.WON).count()
-        visited_matches = PartnerMatch.objects.filter(status=PartnerMatch.StatusEnum.VISITED).count()
-        lost_matches = PartnerMatch.objects.filter(status=PartnerMatch.StatusEnum.LOST).count()
-        pending_matches = PartnerMatch.objects.filter(status=PartnerMatch.StatusEnum.PENDING).count()
+        total_matches = matches_qs.count()
+        won_matches = matches_qs.filter(status=PartnerMatch.StatusEnum.WON).count()
+        visited_matches = matches_qs.filter(status=PartnerMatch.StatusEnum.VISITED).count()
+        lost_matches = matches_qs.filter(status=PartnerMatch.StatusEnum.LOST).count()
+        pending_matches = matches_qs.filter(status=PartnerMatch.StatusEnum.PENDING).count()
         
         conversion_rate = 0.0
         if total_matches > 0:
             conversion_rate = (won_matches / total_matches) * 100
             
         # 2. SLA Violations calculation
-        now = timezone.now()
         sla_violations = 0
-        active_convs_qs = Conversation.objects.filter(status=Conversation.StatusEnum.ACTIVE, sla_started_at__isnull=False)
+        active_convs_qs = convs_qs.filter(status=Conversation.StatusEnum.ACTIVE, sla_started_at__isnull=False)
         for c in active_convs_qs:
             last_msg = c.messages.order_by('-created_at').first()
             if last_msg and last_msg.sender.role == User.RoleEnum.CLIENT:
@@ -1008,11 +1037,16 @@ def manager_stats(request):
                 if elapsed.total_seconds() > limit_mins * 60:
                     sla_violations += 1
         
+        # 3. Sectors / Zones grouping (Real data)
+        from django.db.models import Count
+        sectors_data = matches_qs.values('zone').annotate(count=Count('id')).order_by('-count')
+        sectors_list = [{'zone': item['zone'], 'count': item['count']} for item in sectors_data if item['zone']]
+        
         # Conversations per agent
         agents = User.objects.filter(role=User.RoleEnum.AGENT)
         agents_list = []
         for a in agents:
-            assigned_count = conversations.filter(assigned_to=a, status=Conversation.StatusEnum.ACTIVE).count()
+            assigned_count = Conversation.objects.filter(assigned_to=a, status=Conversation.StatusEnum.ACTIVE).count()
             agents_list.append({
                 'id': str(a.id),
                 'name': a.get_full_name() or a.username,
@@ -1034,6 +1068,7 @@ def manager_stats(request):
             'pending_matches': pending_matches,
             'conversion_rate': round(conversion_rate, 1),
             'sla_violations': sla_violations,
+            'sectors': sectors_list,
             'agents_performance': agents_list
         })
     except Exception as e:

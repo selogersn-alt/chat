@@ -120,6 +120,24 @@
 
         <!-- TAB CONTENT: STATS -->
         <div id="tab-stats" class="tab-pane flex flex-col gap-6">
+            <!-- DATE FILTER ROW -->
+            <div class="flex justify-between items-center bg-white px-6 py-4 rounded-2xl border border-gray-100 shadow-sm">
+                <div class="flex flex-col">
+                    <h4 class="font-bold text-gray-800 text-sm">Filtre des Statistiques</h4>
+                    <p class="text-[10px] text-gray-400">Sélectionnez la période d'analyse des données de performance.</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-gray-500 font-semibold">Période :</span>
+                    <select id="statsDateFilter" onchange="loadDashboardData()" class="bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5 text-xs text-gray-700 font-semibold focus:outline-none focus:ring-1 focus:ring-forest-500 cursor-pointer">
+                        <option value="all" selected>Toute la période</option>
+                        <option value="today">Aujourd'hui</option>
+                        <option value="yesterday">Hier</option>
+                        <option value="7days">7 derniers jours</option>
+                        <option value="30days">30 derniers jours</option>
+                    </select>
+                </div>
+            </div>
+
             <!-- STATS CARDS -->
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
@@ -240,6 +258,31 @@
                     </div>
                 </div>
             </div>
+
+            <!-- SECTORS & LIVE ACTIVITY ROW -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Clickable Sectors Widget -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-4">
+                    <div class="flex flex-col">
+                        <h4 class="font-bold text-gray-800 text-sm">📍 Secteurs Actifs & Zones de Visite</h4>
+                        <p class="text-[10px] text-gray-400">Cliquez sur un secteur pour filtrer directement les visites dans ce secteur.</p>
+                    </div>
+                    <div id="sectors-container" class="flex flex-wrap gap-2.5 max-h-[250px] overflow-y-auto custom-scrollbar pr-1">
+                        <!-- Sectors injected here -->
+                    </div>
+                </div>
+
+                <!-- Live Activity Feed Widget -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-4">
+                    <div class="flex flex-col">
+                        <h4 class="font-bold text-gray-800 text-sm">⚡ Journal d'Activité en Direct</h4>
+                        <p class="text-[10px] text-gray-400">Suivi en temps réel des actions système et des mises en relation.</p>
+                    </div>
+                    <div id="activity-feed" class="flex flex-col gap-3 max-h-[250px] overflow-y-auto custom-scrollbar pr-1 text-xs text-gray-700">
+                        <!-- Activity items injected here -->
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- TAB CONTENT: AGENTS -->
@@ -304,6 +347,15 @@
             <div class="flex justify-between items-center">
                 <h4 class="font-bold text-gray-800 text-lg">Suivi des Visites Clients</h4>
                 <p class="text-xs text-gray-500">Suivez et pilotez le statut des visites transmises aux partenaires immobiliers.</p>
+            </div>
+
+            <!-- SEARCH / SECTOR FILTER ROW -->
+            <div class="flex items-center gap-3 bg-white px-5 py-3.5 rounded-2xl border border-gray-100 shadow-sm">
+                <input type="text" id="matchSearchInput" oninput="filterMatchesTable(this.value)" placeholder="Filtrer par secteur (ex: Ouakam), client, courtier..." class="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-forest-500 w-80">
+                <span id="activeSectorBadge" class="hidden bg-forest-50 border border-forest-200 text-forest-700 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-2">
+                    <span id="activeSectorText"></span>
+                    <button onclick="clearSectorFilter()" class="hover:text-red-500 font-extrabold text-sm">&times;</button>
+                </span>
             </div>
 
             <!-- Visits Tracking Table -->
@@ -480,8 +532,10 @@
         }
 
         function loadDashboardData() {
+            const range = document.getElementById('statsDateFilter') ? document.getElementById('statsDateFilter').value : 'all';
+            
             // Load stats & charts
-            fetch('/api/manager/stats/')
+            fetch(`/api/manager/stats/?range=${range}`)
                 .then(res => res.json())
                 .then(data => {
                     document.getElementById('stat-total-clients').textContent = data.total_clients;
@@ -496,6 +550,7 @@
 
                     updateStatusChart(data.active_conversations, data.pending_conversations, data.closed_conversations);
                     updateAgentsChart(data.agents_performance);
+                    renderSectors(data.sectors || []);
                 });
 
             // Load Agents List
@@ -518,6 +573,7 @@
                 .then(res => res.json())
                 .then(data => {
                     renderMatchesTable(data.matches || []);
+                    renderActivityFeed(data.matches || []);
                 });
         }
 
@@ -781,21 +837,37 @@
         }
 
         // MATCHES TABLE LOGIC
+        let allMatchesList = [];
+
         function renderMatchesTable(matches) {
+            allMatchesList = matches;
+            const query = document.getElementById('matchSearchInput') ? document.getElementById('matchSearchInput').value.toLowerCase().trim() : '';
+            
             const tbody = document.getElementById('matches-table-body');
             tbody.innerHTML = '';
-            if (matches.length === 0) {
+            
+            const filtered = matches.filter(m => {
+                return (
+                    m.zone.toLowerCase().includes(query) ||
+                    m.client_name.toLowerCase().includes(query) ||
+                    m.partner_name.toLowerCase().includes(query) ||
+                    m.visitor_name.toLowerCase().includes(query) ||
+                    m.client_phone.includes(query)
+                );
+            });
+
+            if (filtered.length === 0) {
                 tbody.innerHTML = `
                     <tr>
                         <td colspan="8" class="p-6 text-center text-gray-400 text-xs">
-                            Aucune visite partenaire enregistrée pour le moment.
+                            Aucune visite partenaire correspondante pour le moment.
                         </td>
                     </tr>
                 `;
                 return;
             }
 
-            matches.forEach(m => {
+            filtered.forEach(m => {
                 let badgeClass = 'bg-yellow-50 text-yellow-700 border border-yellow-250';
                 if (m.status === 'VISITED') badgeClass = 'bg-blue-50 text-blue-700 border border-blue-250';
                 if (m.status === 'WON') badgeClass = 'bg-emerald-50 text-emerald-700 border border-emerald-250';
@@ -829,6 +901,98 @@
                             </select>
                         </td>
                     </tr>
+                `;
+            });
+        }
+
+        function filterMatchesTable(query) {
+            renderMatchesTable(allMatchesList);
+        }
+
+        function filterBySector(zone) {
+            const badge = document.getElementById('activeSectorBadge');
+            const badgeText = document.getElementById('activeSectorText');
+            const searchInput = document.getElementById('matchSearchInput');
+            
+            badgeText.textContent = `Secteur : ${zone}`;
+            badge.classList.remove('hidden');
+            searchInput.value = zone;
+            
+            // Switch tab to matches
+            switchTab('matches');
+            
+            // Trigger filter
+            filterMatchesTable(zone);
+        }
+
+        function clearSectorFilter() {
+            const badge = document.getElementById('activeSectorBadge');
+            const searchInput = document.getElementById('matchSearchInput');
+            
+            badge.classList.add('hidden');
+            searchInput.value = '';
+            filterMatchesTable('');
+        }
+
+        // SECTORS & ACTIVITY RENDERING
+        function renderSectors(sectors) {
+            const container = document.getElementById('sectors-container');
+            container.innerHTML = '';
+            if (sectors.length === 0) {
+                container.innerHTML = `<div class="text-xs text-gray-400 p-2">Aucun secteur enregistré</div>`;
+                return;
+            }
+            sectors.forEach(s => {
+                container.innerHTML += `
+                    <button onclick="filterBySector('${s.zone}')" class="px-3 py-1.5 bg-forest-50 hover:bg-forest-100 text-forest-755 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm border border-forest-100">
+                        📍 ${s.zone}
+                        <span class="bg-forest-600 text-white text-[10px] px-1.5 py-0.5 rounded-full">${s.count}</span>
+                    </button>
+                `;
+            });
+        }
+
+        function renderActivityFeed(matches) {
+            const container = document.getElementById('activity-feed');
+            container.innerHTML = '';
+            if (matches.length === 0) {
+                container.innerHTML = `<div class="text-xs text-gray-400 p-2">Aucune activité récente</div>`;
+                return;
+            }
+            
+            // Limit to top 6 recent matches
+            const recent = matches.slice(0, 6);
+            recent.forEach(m => {
+                let icon = '🔔';
+                let colorClass = 'text-gray-700 bg-gray-50';
+                let actionText = '';
+                
+                if (m.status === 'PENDING') {
+                    icon = '🕒';
+                    colorClass = 'text-amber-800 bg-amber-50 border-amber-100';
+                    actionText = `Mise en relation créée pour <strong>${m.visitor_name}</strong> avec <strong>${m.partner_name}</strong> à ${m.zone}.`;
+                } else if (m.status === 'VISITED') {
+                    icon = '🚶';
+                    colorClass = 'text-blue-800 bg-blue-50 border-blue-100';
+                    actionText = `Visite effectuée par <strong>${m.visitor_name}</strong> avec <strong>${m.partner_name}</strong>.`;
+                } else if (m.status === 'WON') {
+                    icon = '🎉';
+                    colorClass = 'text-emerald-800 bg-emerald-50 border-emerald-100';
+                    actionText = `Visite GAGNÉE ! Commission acquise pour <strong>${m.partner_name}</strong> (${m.price.toLocaleString('fr-FR')} FCFA).`;
+                } else if (m.status === 'LOST') {
+                    icon = '❌';
+                    colorClass = 'text-rose-800 bg-rose-50 border-rose-100';
+                    actionText = `Visite PERDUE pour <strong>${m.partner_name}</strong> avec <strong>${m.visitor_name}</strong>.`;
+                }
+                
+                container.innerHTML += `
+                    <div class="p-3 rounded-xl border flex items-start gap-3 shadow-sm ${colorClass}">
+                        <span class="text-base">${icon}</span>
+                        <div class="flex-1">
+                            <p class="leading-relaxed">${actionText}</p>
+                            <span class="text-[9px] text-gray-400 font-semibold block mt-1">${m.created_at}</span>
+                        </div>
+                    </div>
                 `;
             });
         }
