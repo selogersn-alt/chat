@@ -305,17 +305,49 @@ def whatsapp_webhook(request):
                 agents = User.objects.filter(role=User.RoleEnum.AGENT)
                 conversation.participants.add(*agents)
                 
-                # --- BOT D'ACCUEIL WHATSAPP ---
-                welcome_text = (
-                    "Bienvenue chez Loger Sénégal ! 🏡\n\n"
-                    "Pour que notre équipe vous propose les meilleures options, pouvez-vous nous préciser :\n\n"
-                    "1️⃣ *Quel type de bien cherchez-vous ?*\n"
-                    "(Appartement, Villa, Studio, Terrain, Bureau...)\n\n"
-                    "2️⃣ *Dans quel quartier ou ville ?*\n"
-                    "(Dakar Plateau, Almadies, Ngor, Ouakam, Saly, Thies... ou autre)\n\n"
-                    "3️⃣ *Quel est votre budget approximatif ?*\n\n"
-                    "Un de nos agents va prendre en charge votre demande dans quelques instants !"
-                )
+                # --- BOT D'ACCUEIL WHATSAPP INTEGRANT LES ICE BREAKERS ---
+                clean_content = content.strip().lower()
+                
+                if "louer" in clean_content or "location" in clean_content:
+                    welcome_text = (
+                        "Bienvenue chez Loger Sénégal ! 🏡\n"
+                        "Génial ! Nous avons de superbes opportunités de location. 🏢\n\n"
+                        "Pour vous proposer les meilleures options, précisez-nous :\n"
+                        "1️⃣ *Le quartier recherché* (ex: Ouakam, Mermoz, Almadies...)\n"
+                        "2️⃣ *Votre budget mensuel maximum* en FCFA."
+                    )
+                elif "acheter" in clean_content or "achat" in clean_content or "acquisition" in clean_content:
+                    welcome_text = (
+                        "Bienvenue chez Loger Sénégal ! 🏡\n"
+                        "Excellent projet d'achat ! 🔑\n\n"
+                        "Pour vous aider au mieux, précisez-nous :\n"
+                        "1️⃣ *La zone de recherche* (ex: Saly, Dakar, Diamniadio...)\n"
+                        "2️⃣ *Votre budget d'acquisition global* en FCFA."
+                    )
+                elif "tiktok" in clean_content or "facebook" in clean_content or "annonce" in clean_content:
+                    welcome_text = (
+                        "Bienvenue chez Loger Sénégal ! 🏡\n"
+                        "Super ! 📱\n\n"
+                        "Envoyez-nous le lien de la vidéo/publication ou une capture d'écran du bien afin que notre équipe l'identifie immédiatement."
+                    )
+                elif "conseiller" in clean_content or "parler" in clean_content:
+                    welcome_text = (
+                        "Bienvenue chez Loger Sénégal ! 🏡\n"
+                        "Très bien. 👤 Un conseiller va prendre en charge votre demande dans un instant.\n\n"
+                        "En attendant, vous pouvez nous préciser si votre projet concerne une location ou un achat."
+                    )
+                else:
+                    # Message de bienvenue général par défaut
+                    welcome_text = (
+                        "Bienvenue chez Loger Sénégal ! 🏡\n\n"
+                        "Pour que notre équipe vous propose les meilleures options, pouvez-vous nous préciser :\n\n"
+                        "1️⃣ *Quel type de bien cherchez-vous ?*\n"
+                        "(Appartement, Villa, Studio, Terrain, Bureau...)\n\n"
+                        "2️⃣ *Dans quel quartier ou ville ?*\n"
+                        "(Dakar Plateau, Almadies, Ngor, Ouakam, Saly, Thies...)\n\n"
+                        "3️⃣ *Quel est votre budget approximatif ?*\n\n"
+                        "Un conseiller va vous répondre dans un instant !"
+                    )
                 
                 # Send welcome message
                 success, msg_id = trigger_meta_whatsapp_api(sender_phone, welcome_text)
