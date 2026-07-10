@@ -16,7 +16,7 @@ from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.db.models import Q
 from django.core.cache import cache
-from .models import User, Conversation, Message, Property, QuickTemplate, Reminder
+from .models import User, Conversation, Message, Property, QuickTemplate, Reminder, Partner, PartnerMatch
 
 logger = logging.getLogger(__name__)
 
@@ -1116,3 +1116,203 @@ def manager_delegate(request):
     except Exception as e:
         logger.error(f"Error delegating conversation: {str(e)}", exc_info=True)
         return JsonResponse({'error': str(e)}, status=500)
+
+from urllib.parse import quote
+
+@login_required(login_url='login')
+def search_partners(request):
+    """GET: Search and filter partners dynamically."""
+    zone_filter = request.GET.get('zone', '').strip()
+    type_filter = request.GET.get('property_type', '').strip()
+    query = request.GET.get('query', '').strip()
+    
+    partners = Partner.objects.all()
+    
+    if zone_filter:
+        partners = partners.filter(zone__icontains=zone_filter)
+    if type_filter:
+        partners = partners.filter(property_type__icontains=type_filter)
+    if query:
+        partners = partners.filter(
+            Q(name__icontains=query) | Q(ref__icontains=query) | Q(zone__icontains=query)
+        )
+        
+    partners_data = [{
+        'id': str(p.id),
+        'name': p.name,
+        'ref': p.ref or '',
+        'contact_1': p.contact_1,
+        'contact_2': p.contact_2 or '',
+        'zone': p.zone,
+        'property_type': p.property_type,
+        'meteo': p.meteo,
+        'meteo_display': p.get_meteo_display()
+    } for p in partners[:30]] # Limit to 30 results for quick UI response
+    
+    return JsonResponse({'partners': partners_data})
+
+@csrf_exempt
+@login_required(login_url='login')
+def create_partner_match(request):
+    """POST: Match client with partner and notify client + generate wa.me link for partner."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+        
+    try:
+        data = json.loads(request.body)
+        conversation_id = data.get('conversation_id')
+        partner_id = data.get('partner_id')
+        visitor_name = data.get('visitor_name', '').strip()
+        visitor_phone = data.get('visitor_phone', '').strip()
+        price = data.get('price')
+        zone = data.get('zone', '').strip()
+        
+        if not conversation_id or not partner_id or not visitor_name or not visitor_phone or price is None or not zone:
+            return JsonResponse({'error': 'Tous les champs (Client, Partenaire, Visiteur, Prix, Zone) sont obligatoires.'}, status=400)
+            
+        # Get conversation & partner
+        if request.user.is_superuser or request.user.role == User.RoleEnum.MANAGER:
+            conversation = get_object_or_404(Conversation, id=conversation_id)
+        else:
+            conversation = get_object_or_404(Conversation, id=conversation_id, participants=request.user)
+            
+        partner = get_object_or_404(Partner, id=partner_id)
+        
+        # Create partner match in database
+        match = PartnerMatch.objects.create(
+            conversation=conversation,
+            partner=partner,
+            visitor_name=visitor_name,
+            visitor_phone=visitor_phone,
+            price=float(price),
+            zone=zone,
+            status=PartnerMatch.StatusEnum.PENDING
+        )
+        
+        # 1. Format the message for the CLIENT
+        client = conversation.participants.filter(role=User.RoleEnum.CLIENT).first()
+        client_name = client.first_name if client else "Client"
+        
+        client_text = (
+            f"Bonjour {client_name} ! 😊\n\n"
+            f"Pour la visite du bien situé à *{zone}* (Budget : {float(price):,.0f} FCFA), "
+            f"nous vous mettons en rapport avec notre partenaire local :\n"
+            f"👤 *{partner.name}*\n"
+            f"📞 Tel : *{partner.contact_1}*\n\n"
+            f"Vous pouvez le contacter de la part de *Loger Sénégal* pour planifier la visite."
+        )
+        
+        # Save message to conversation & send if WhatsApp is active
+        client_message = Message.objects.create(
+            conversation=conversation,
+            sender=request.user,
+            content=client_text
+        )
+        
+        conversation.last_message_at = timezone.now()
+        conversation.save()
+        
+        if conversation.is_whatsapp and client and client.phone_number:
+            success, msg_id = trigger_meta_whatsapp_api(client.phone_number, client_text)
+            if success and msg_id:
+                client_message.msg_id = msg_id
+                client_message.status = Message.StatusEnum.SENT
+                client_message.save()
+                
+        # 2. Format the message for the PARTNER (Pre-filled wa.me link)
+        partner_text = (
+            f"Bonjour {partner.name} ! 🏡\n\n"
+            f"Un client de *Loger Sénégal* va vous contacter pour visiter le bien situé à *{zone}* (Budget : {float(price):,.0f} FCFA).\n\n"
+            f"📋 *Détails du Visiteur :*\n"
+            f"- Nom : {visitor_name}\n"
+            f"- Contact : {visitor_phone}\n\n"
+            f"Merci de lui réserver un excellent accueil ! 🙏"
+        )
+        
+        # Hashed URL for whatsapp web redirection
+        encoded_text = quote(partner_text)
+        wa_link = f"https://wa.me/{partner.contact_1.replace(' ', '').replace('+', '')}?text={encoded_text}"
+        
+        # 3. Add system log in chat
+        system_text = (
+            f"[SYSTEME] Prospect mis en relation avec le partenaire {partner.name} ({partner.contact_1}). "
+            f"Visiteur : {visitor_name} ({visitor_phone}) pour le bien à {zone} (Budget: {float(price):,.0f} FCFA)."
+        )
+        Message.objects.create(
+            conversation=conversation,
+            sender=User.objects.filter(is_superuser=True).first() or request.user,
+            content=system_text
+        )
+        
+        return JsonResponse({
+            'status': 'created',
+            'match_id': str(match.id),
+            'wa_link': wa_link
+        })
+        
+    except Exception as e:
+        logger.error(f"Error creating partner match: {str(e)}", exc_info=True)
+        return JsonResponse({'error': str(e)}, status=500)
+
+@csrf_exempt
+@login_required(login_url='login')
+def manager_matches(request):
+    """
+    GET: List all matches (for manager).
+    POST: Update status of a match.
+    """
+    if request.user.role != User.RoleEnum.MANAGER and not request.user.is_superuser:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+        
+    if request.method == 'GET':
+        matches = PartnerMatch.objects.all().order_by('-created_at')
+        matches_data = []
+        for m in matches:
+            client = m.conversation.participants.filter(role=User.RoleEnum.CLIENT).first()
+            matches_data.append({
+                'id': str(m.id),
+                'client_name': client.get_full_name() or client.username if client else 'Client Inconnu',
+                'client_phone': client.phone_number if client else 'N/A',
+                'partner_name': m.partner.name,
+                'partner_contact': m.partner.contact_1,
+                'visitor_name': m.visitor_name,
+                'visitor_phone': m.visitor_phone,
+                'price': float(m.price),
+                'zone': m.zone,
+                'status': m.status,
+                'status_display': m.get_status_display(),
+                'created_at': m.created_at.strftime('%d/%m/%Y %H:%M')
+            })
+        return JsonResponse({'matches': matches_data})
+        
+    elif request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            match_id = data.get('match_id')
+            new_status = data.get('status')
+            
+            if not match_id or not new_status:
+                return JsonResponse({'error': 'Missing match_id or status'}, status=400)
+                
+            match = get_object_or_404(PartnerMatch, id=match_id)
+            if new_status not in PartnerMatch.StatusEnum.values:
+                return JsonResponse({'error': 'Invalid status'}, status=400)
+                
+            old_status_display = match.get_status_display()
+            match.status = new_status
+            match.save()
+            new_status_display = match.get_status_display()
+            
+            # Log system message in conversation
+            Message.objects.create(
+                conversation=match.conversation,
+                sender=request.user,
+                content=f"[SYSTEME] Suivi Visite Partenaire : Le statut de la visite est passé de '{old_status_display}' à '{new_status_display}'."
+            )
+            
+            return JsonResponse({'status': 'updated'})
+        except Exception as e:
+            logger.error(f"Error updating match status: {str(e)}", exc_info=True)
+            return JsonResponse({'error': str(e)}, status=500)
+            
+    return JsonResponse({'error': 'Method not allowed'}, status=405)

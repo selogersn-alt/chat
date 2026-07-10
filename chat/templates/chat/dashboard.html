@@ -575,6 +575,7 @@
                 </button>
                 <button onclick="setRightTab('CURRENT')" id="rightTabCurrent" class="right-tab-btn active flex-1">🏠 Fiche Prospect</button>
                 <button onclick="setRightTab('CATALOG')" id="rightTabCatalog" class="right-tab-btn flex-1">📋 Catalogue</button>
+                <button onclick="setRightTab('PARTNERS')" id="rightTabPartners" class="right-tab-btn flex-1">🤝 Partenaires</button>
             </div>
 
             <!-- Tab Content Container -->
@@ -708,6 +709,48 @@
                 <div id="catalogPropertyTab" class="hidden flex flex-col gap-4">
                     <div id="catalogList" class="flex flex-col gap-4">
                         <!-- Properties list will be injected here -->
+                    </div>
+                </div>
+
+                <!-- Partners Tab (Hidden initially) -->
+                <div id="partnersTab" class="hidden flex flex-col gap-4">
+                    <div class="crm-card bg-emerald-950/20 border border-emerald-500/20 p-4 rounded-2xl flex flex-col gap-3">
+                        <h4 class="text-xs font-bold text-white flex items-center gap-1.5">
+                            🤝 Mise en relation Partenaire
+                        </h4>
+                        
+                        <div class="flex flex-col gap-1">
+                            <label class="text-[9px] text-gray-400 font-semibold uppercase tracking-wider">Zone de Recherche</label>
+                            <input type="text" id="partnerZoneInput" oninput="searchPartners()" placeholder="Ex: Almadies, Ouakam..." class="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-forest-500">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="flex flex-col gap-1">
+                                <label class="text-[9px] text-gray-400 font-semibold uppercase tracking-wider">Prix du bien (FCFA)</label>
+                                <input type="number" id="partnerPriceInput" placeholder="Ex: 500000" class="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-forest-500">
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <label class="text-[9px] text-gray-400 font-semibold uppercase tracking-wider">Type de bien</label>
+                                <select id="partnerTypeInput" onchange="searchPartners()" class="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-forest-500">
+                                    <option value="VIDE">VIDE</option>
+                                    <option value="MEUBLE">MEUBLE</option>
+                                    <option value="VENTE">VENTE</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-white/5 pt-2 flex flex-col gap-2">
+                            <label class="text-[9px] text-gray-400 font-semibold uppercase tracking-wider">Coordonnées du Visiteur</label>
+                            <input type="text" id="partnerVisitorName" placeholder="Nom du visiteur" class="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-forest-500">
+                            <input type="text" id="partnerVisitorPhone" placeholder="Téléphone du visiteur" class="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-forest-500">
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col gap-2">
+                        <label class="text-[9px] text-gray-400 font-semibold uppercase tracking-wider">Partenaires Trouvés (<span id="partnerCount">0</span>)</label>
+                        <div id="partnerList" class="flex flex-col gap-2 max-h-[350px] overflow-y-auto custom-scrollbar">
+                            <!-- Dynamically loaded partners -->
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1049,6 +1092,10 @@
             document.getElementById('chatHeaderPhone').textContent = info.client_phone;
             document.getElementById('chatHeaderAvatar').textContent = info.client_name.charAt(0);
             
+            // Pre-fill Partner match visitor fields
+            document.getElementById('partnerVisitorName').value = info.client_name || "";
+            document.getElementById('partnerVisitorPhone').value = info.client_phone || "";
+            
             // Update presence UI (dot and badge)
             updatePresenceUI(info.client_last_message_at, info.client_name);
             
@@ -1253,6 +1300,18 @@
             // Look for matching property in loadedProperties from the topic title
             const match = loadedProperties.find(p => topic.includes(p.title));
             
+            // Guess Zone
+            let guessedZone = "";
+            const zones = ["ALMADIES", "NGOR", "OUAKAM", "PLATEAU", "FASS", "MEDINA", "MAMELLES", "ZONE DE CAPTAGE", "SACRE COEUR", "NORD FOIRE", "OUEST FOIRE", "MERMOZ", "SALY", "KEUR MASSAR", "LIBERTE", "YOFF", "HLM"];
+            const textToSearch = (topic + " " + (match ? match.title + " " + match.description : "")).toUpperCase();
+            for (let z of zones) {
+                if (textToSearch.includes(z)) {
+                    guessedZone = z;
+                    break;
+                }
+            }
+            document.getElementById('partnerZoneInput').value = guessedZone;
+
             if (match) {
                 noProp.classList.add('hidden');
                 card.classList.remove('hidden');
@@ -1266,9 +1325,14 @@
                 // Store active property data to easily share
                 card.dataset.url = match.url;
                 card.dataset.title = match.title;
+                
+                // Pre-fill partner price
+                document.getElementById('partnerPriceInput').value = match.price;
             } else {
                 noProp.classList.remove('hidden');
                 card.classList.add('hidden');
+                
+                document.getElementById('partnerPriceInput').value = "";
             }
         }
 
@@ -1348,20 +1412,145 @@
             
             const btnCurrent = document.getElementById('rightTabCurrent');
             const btnCatalog = document.getElementById('rightTabCatalog');
+            const btnPartners = document.getElementById('rightTabPartners');
             const currentTabDiv = document.getElementById('currentPropertyTab');
             const catalogTabDiv = document.getElementById('catalogPropertyTab');
+            const partnersTabDiv = document.getElementById('partnersTab');
+            
+            // Set all inactive
+            btnCurrent.classList.remove('active');
+            btnCatalog.classList.remove('active');
+            btnPartners.classList.remove('active');
+            
+            currentTabDiv.classList.add('hidden');
+            catalogTabDiv.classList.add('hidden');
+            partnersTabDiv.classList.add('hidden');
             
             if (tab === 'CURRENT') {
-                btnCurrent.className = 'flex-1 py-2 text-center border-b-2 border-forest-600 text-forest-900';
-                btnCatalog.className = 'flex-1 py-2 text-center border-b-2 border-transparent text-gray-500 hover:text-forest-900';
+                btnCurrent.classList.add('active');
                 currentTabDiv.classList.remove('hidden');
-                catalogTabDiv.classList.add('hidden');
-            } else {
-                btnCurrent.className = 'flex-1 py-2 text-center border-b-2 border-transparent text-gray-500 hover:text-forest-900';
-                btnCatalog.className = 'flex-1 py-2 text-center border-b-2 border-forest-600 text-forest-900';
-                currentTabDiv.classList.add('hidden');
+            } else if (tab === 'CATALOG') {
+                btnCatalog.classList.add('active');
                 catalogTabDiv.classList.remove('hidden');
+            } else if (tab === 'PARTNERS') {
+                btnPartners.classList.add('active');
+                partnersTabDiv.classList.remove('hidden');
+                searchPartners();
             }
+        }
+
+        // Search partners dynamically from API
+        function searchPartners() {
+            if (!activeConversation) return;
+            
+            const zoneInput = document.getElementById('partnerZoneInput').value;
+            const priceInput = document.getElementById('partnerPriceInput').value;
+            const typeInput = document.getElementById('partnerTypeInput').value;
+            
+            let url = `/api/partners/search/?zone=${encodeURIComponent(zoneInput)}&property_type=${encodeURIComponent(typeInput)}`;
+            
+            fetch(url)
+                .then(res => res.json())
+                .then(data => {
+                    const container = document.getElementById('partnerList');
+                    const countSpan = document.getElementById('partnerCount');
+                    container.innerHTML = '';
+                    
+                    if (!data.partners || data.partners.length === 0) {
+                        container.innerHTML = '<div class="text-xs text-gray-500 text-center py-4">Aucun partenaire trouvé.</div>';
+                        countSpan.innerText = '0';
+                        return;
+                    }
+                    
+                    countSpan.innerText = data.partners.length;
+                    
+                    data.partners.forEach(p => {
+                        let dotColor = 'bg-yellow-500';
+                        if (p.meteo === 'ENSOLEILLE') dotColor = 'bg-emerald-500';
+                        if (p.meteo === 'ORAGEUX') dotColor = 'bg-rose-500';
+                        
+                        const item = document.createElement('div');
+                        item.className = 'bg-white/5 border border-white/5 rounded-xl p-3 flex flex-col gap-2 hover:bg-white/10 transition-all';
+                        item.innerHTML = `
+                            <div class="flex items-start justify-between">
+                                <div>
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="w-2 h-2 rounded-full ${dotColor}"></span>
+                                        <span class="text-xs font-bold text-white">${p.name}</span>
+                                        ${p.ref ? `<span class="text-[9px] bg-white/10 text-gray-400 px-1 rounded font-mono">${p.ref}</span>` : ''}
+                                    </div>
+                                    <span class="text-[10px] text-gray-400">${p.zone} • ${p.property_type}</span>
+                                </div>
+                                <span class="text-[10px] text-gray-500 font-semibold">${p.meteo_display}</span>
+                            </div>
+                            <div class="flex items-center justify-between text-[11px] border-t border-white/5 pt-2">
+                                <span class="text-gray-400">📞 ${p.contact_1}</span>
+                                <button onclick="matchWithPartner('${p.id}', '${p.name}', '${p.contact_1}')" class="px-2.5 py-1 bg-forest-600 hover:bg-forest-700 text-white rounded-lg font-bold text-[10px] transition-all">Mettre en relation</button>
+                            </div>
+                        `;
+                        container.appendChild(item);
+                    });
+                })
+                .catch(err => console.error("Error searching partners:", err));
+        }
+
+        // Call matching API
+        function matchWithPartner(partnerId, partnerName, partnerPhone) {
+            if (!activeConversation) return;
+            
+            const visitorName = document.getElementById('partnerVisitorName').value.trim();
+            const visitorPhone = document.getElementById('partnerVisitorPhone').value.trim();
+            const price = document.getElementById('partnerPriceInput').value;
+            const zone = document.getElementById('partnerZoneInput').value.trim();
+            
+            if (!visitorName || !visitorPhone || !price || !zone) {
+                showToast("Veuillez remplir tous les champs (Visiteur, Prix, Zone) avant de valider.", "error");
+                return;
+            }
+            
+            const payload = {
+                conversation_id: activeConversation.id,
+                partner_id: partnerId,
+                visitor_name: visitorName,
+                visitor_phone: visitorPhone,
+                price: parseFloat(price),
+                zone: zone
+            };
+            
+            fetch('/api/partners/match/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) {
+                    showToast(data.error, "error");
+                    return;
+                }
+                
+                showToast(`Relation créée avec ${partnerName} !`, "success");
+                
+                // Show Partner Match Modal
+                const modal = document.getElementById('partnerMatchModal');
+                const btn = document.getElementById('partnerWaButton');
+                btn.href = data.wa_link;
+                modal.classList.remove('hidden');
+                
+                // Trigger refresh of messages
+                syncData();
+            })
+            .catch(err => {
+                console.error("Error matching with partner:", err);
+                showToast("Erreur lors de la mise en relation.", "error");
+            });
+        }
+
+        function closePartnerModal() {
+            document.getElementById('partnerMatchModal').classList.add('hidden');
         }
 
         // Dropdown toggle
@@ -2235,6 +2424,41 @@
         }
 
     </script>
+    <!-- PARTNER MATCH CONFIRMATION MODAL -->
+    <div id="partnerMatchModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-dark-900 border border-white/10 rounded-3xl max-w-md w-full p-6 flex flex-col gap-4 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-white/10 pb-3">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    ✅ Mise en relation créée !
+                </h3>
+                <button onclick="closePartnerModal()" class="p-1 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            
+            <p class="text-xs text-gray-300">
+                Le message de contact a été automatiquement envoyé à votre client.
+            </p>
+            
+            <div class="bg-forest-950/20 border border-forest-500/20 rounded-2xl p-4 flex flex-col gap-3">
+                <p class="text-xs text-gray-400 uppercase font-bold tracking-wider">Étape Suivante : Prévenir le Partenaire</p>
+                <p class="text-[11px] text-gray-300">
+                    Cliquez sur le bouton ci-dessous pour ouvrir WhatsApp avec le message pré-rempli contenant les coordonnées du visiteur et prévenir le partenaire (Gratuit).
+                </p>
+                <a id="partnerWaButton" href="#" target="_blank" onclick="closePartnerModal()" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-center rounded-xl text-xs transition-all flex items-center justify-center gap-2 shadow-lg">
+                    <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                        <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.455L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.37 9.864-9.799.002-2.63-1.023-5.101-2.885-6.97C16.59 1.966 14.12 1.012 12.009 1.012c-5.437 0-9.863 4.37-9.866 9.8.001 2.028.533 4.015 1.547 5.787l-.98 3.578 3.673-.963-.236-.375z"/>
+                    </svg>
+                    Notifier le Partenaire via WhatsApp
+                </a>
+            </div>
+            
+            <button onclick="closePartnerModal()" class="w-full py-2.5 bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white rounded-xl text-xs transition-all font-semibold">
+                Fermer
+            </button>
+        </div>
+    </div>
+
     <!-- Toast Notification Container -->
     <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm pointer-events-none"></div>
 </body>

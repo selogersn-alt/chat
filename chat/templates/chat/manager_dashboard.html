@@ -110,6 +110,9 @@
             <button onclick="switchTab('delegate')" id="tab-delegate-btn" class="py-3 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-forest-600 transition-all">
                 🔄 Attribution des Tâches
             </button>
+            <button onclick="switchTab('matches')" id="tab-matches-btn" class="py-3 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-forest-600 transition-all">
+                🤝 Suivi des Visites
+            </button>
         </div>
 
         <!-- TAB CONTENT: STATS -->
@@ -242,6 +245,35 @@
             </div>
         </div>
 
+        <!-- TAB CONTENT: MATCHES -->
+        <div id="tab-matches" class="tab-pane hidden flex flex-col gap-4">
+            <div class="flex justify-between items-center">
+                <h4 class="font-bold text-gray-800 text-lg">Suivi des Visites Clients</h4>
+                <p class="text-xs text-gray-500">Suivez et pilotez le statut des visites transmises aux partenaires immobiliers.</p>
+            </div>
+
+            <!-- Visits Tracking Table -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50 border-b border-gray-150 text-xs font-bold text-gray-500 uppercase">
+                            <th class="p-4">Date</th>
+                            <th class="p-4">Client</th>
+                            <th class="p-4">Visiteur</th>
+                            <th class="p-4">Partenaire</th>
+                            <th class="p-4">Bien / Zone</th>
+                            <th class="p-4">Budget (FCFA)</th>
+                            <th class="p-4">Statut de la Visite</th>
+                            <th class="p-4">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="matches-table-body" class="divide-y divide-gray-100 text-sm text-gray-700">
+                        <!-- Matches will be injected here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
     </div>
 
     <!-- MODAL: CREATE AGENT -->
@@ -351,6 +383,13 @@
                 .then(res => res.json())
                 .then(data => {
                     renderDelegateTable(data.conversations || []);
+                });
+
+            // Load Matches List (for visits tracking)
+            fetch('/api/manager/matches/')
+                .then(res => res.json())
+                .then(data => {
+                    renderMatchesTable(data.matches || []);
                 });
         }
 
@@ -611,6 +650,83 @@
                 toast.classList.add('opacity-0', 'translate-y-2');
                 setTimeout(() => toast.remove(), 300);
             }, 5000);
+        }
+
+        // MATCHES TABLE LOGIC
+        function renderMatchesTable(matches) {
+            const tbody = document.getElementById('matches-table-body');
+            tbody.innerHTML = '';
+            if (matches.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="p-6 text-center text-gray-400 text-xs">
+                            Aucune visite partenaire enregistrée pour le moment.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            matches.forEach(m => {
+                let badgeClass = 'bg-yellow-50 text-yellow-700 border border-yellow-250';
+                if (m.status === 'VISITED') badgeClass = 'bg-blue-50 text-blue-700 border border-blue-250';
+                if (m.status === 'WON') badgeClass = 'bg-emerald-50 text-emerald-700 border border-emerald-250';
+                if (m.status === 'LOST') badgeClass = 'bg-rose-50 text-rose-700 border border-rose-250';
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-gray-50/50 transition-colors border-b border-gray-100">
+                        <td class="p-4 text-xs text-gray-500">${m.created_at}</td>
+                        <td class="p-4 font-semibold text-gray-800">
+                            <div>${m.client_name}</div>
+                            <div class="text-[10px] text-gray-400 font-mono">${m.client_phone}</div>
+                        </td>
+                        <td class="p-4 text-gray-700">
+                            <div>${m.visitor_name}</div>
+                            <div class="text-[10px] text-gray-400 font-mono">${m.visitor_phone}</div>
+                        </td>
+                        <td class="p-4 font-medium text-gray-800">${m.partner_name} (${m.partner_contact})</td>
+                        <td class="p-4 text-gray-650">${m.zone}</td>
+                        <td class="p-4 font-semibold text-gray-900 font-mono">${m.price.toLocaleString('fr-FR')}</td>
+                        <td class="p-4">
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold ${badgeClass}">
+                                ${m.status_display}
+                            </span>
+                        </td>
+                        <td class="p-4">
+                            <select onchange="updateMatchStatus('${m.id}', this.value)" class="bg-gray-50 border border-gray-200 rounded-lg px-2 py-1 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-forest-500">
+                                <option value="PENDING" ${m.status === 'PENDING' ? 'selected' : ''}>En attente</option>
+                                <option value="VISITED" ${m.status === 'VISITED' ? 'selected' : ''}>Visité</option>
+                                <option value="WON" ${m.status === 'WON' ? 'selected' : ''}>Gagné (Commission)</option>
+                                <option value="LOST" ${m.status === 'LOST' ? 'selected' : ''}>Perdu</option>
+                            </select>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function updateMatchStatus(matchId, status) {
+            fetch('/api/manager/matches/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify({ match_id: matchId, status: status })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'updated') {
+                    showToast('Statut de visite mis à jour avec succès !');
+                    loadDashboardData();
+                } else {
+                    showToast('Erreur: ' + data.error, 'error');
+                }
+            })
+            .catch(err => {
+                console.error("Error updating match status:", err);
+                showToast("Erreur lors de la mise à jour.", "error");
+            });
         }
     </script>
 

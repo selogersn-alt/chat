@@ -1,7 +1,7 @@
 from datetime import timedelta
 from django.core.management.base import BaseCommand
 from django.utils import timezone
-from chat.models import User, Conversation, Message, Property, QuickTemplate
+from chat.models import User, Conversation, Message, Property, QuickTemplate, Partner, PartnerMatch
 
 class Command(BaseCommand):
     help = 'Seeds initial data for Loger Sénégal Chat Dashboard (Properties, Templates, Agent, and Client)'
@@ -30,6 +30,8 @@ class Command(BaseCommand):
         QuickTemplate.objects.all().delete()
         Message.objects.all().delete()
         Conversation.objects.all().delete()
+        Partner.objects.all().delete()
+        PartnerMatch.objects.all().delete()
         # Delete demo users to avoid conflict, keeping admin if created via createsuperuser
         User.objects.filter(username__in=['agent_demo', 'manager_demo', 'wa_221771234567', 'wa_221778901234']).delete()
 
@@ -187,6 +189,76 @@ class Command(BaseCommand):
         )
         # Update auto_now_add field directly in the DB
         Message.objects.filter(id=msg2.id).update(created_at=past_time)
+
+        # 8. Create partners
+        self.stdout.write("Création des partenaires (54)...")
+        partners_list = [
+            ("PRESTA IMMO", "PREST", "772380835", "705657870", "PLATEAU", "MEUBLE", "NUAGEUX"),
+            ("NOUROULAHI", "NRI", "778374545", None, "FOIRE LIB SC", "VIDE", "ENSOLEILLE"),
+            ("WOURA BUILDING", "WRA", "764372365", None, "DAKAR", "VIDE", "ENSOLEILLE"),
+            ("GUEYE IMMO", "ADR", "775478818", None, "FOIRE LIB SC", "VIDE", "ENSOLEILLE"),
+            ("LUXURA", "LUX", "772286467", None, "FASS MEDINA", "VIDE", "ENSOLEILLE"),
+            ("KING IMMO", "KNG", "778339425", None, "OUAKAM MAMELLES", "VIDES", "NUAGEUX"),
+            ("SEYLON IMMO", "SLY", "775149985", None, "OUAKAM", "VIDE", "NUAGEUX"),
+            ("TERANGA IMMO", "HFL", "776898987", None, "ZONE DE CAPTAGE", "VIDE", "NUAGEUX"),
+            ("SANE IMMO", "SNE", "771996326", None, "SACRE CŒUR", "VIDE", "NUAGEUX"),
+            ("MOUHAMED IMMO", "ADF", "776966605", None, "NORD FOIRE", "VIDE", "ENSOLEILLE"),
+            ("BARRY IMMO", "MMB", "779024571", None, "SACRE CŒUR", "VIDE", "ENSOLEILLE"),
+            ("YEUF IMMO", "YEUF", "774577031", None, "DAKAR", "VIDE", "ORAGEUX"),
+            ("GILBERT", "GILB", "774454442", None, "SACRE CŒUR", "VIDE", "ENSOLEILLE"),
+            ("MOHAMED COURTIER", "MHD", "772727478", None, "OUAKAM", "VIDE", "ENSOLEILLE"),
+            ("AMADOU OUSSAS", "AMD", "776941371", None, "OUAKAM MONUMENT", "VIDE", "ENSOLEILLE"),
+            ("ADAMA", "ADM", "778893740", None, "MAMELLES", "VIDE", "ENSOLEILLE"),
+            ("NOUROU", "NOK", "764747161", None, "MBAO", "VIDE", "NUAGEUX"),
+            ("DARROU SALAM", "DROU", "789742269", None, "OUEST FOIRE", "VIDE", "NUAGEUX"),
+            ("BLOIM HUB", "BLO", "784396060", None, "OUAKAM", "VIDE", "NUAGEUX"),
+            ("HASSAN SOLUTION", "HAS", "761957082", None, "DAKAR", "VIDE", "ORAGEUX"),
+            ("JAMM IMMO", "JAMM", "761660377", None, "SACRE CŒUR", "VIDE", "NUAGEUX"),
+            ("AMB IMMO", "ABM", "778314975", None, "MERMOZ", "VIDE", "NUAGEUX"),
+            ("AMB IMMO (2)", "ABM", "773693368", None, "MERMOZ", "VIDE", "ORAGEUX"),
+            ("BEU IMMO", "BEU", "784581818", None, "DAKAR", "MEUBLE", "NUAGEUX"),
+            ("SASSOUMAN", "SSM", "774637679", None, "DAKAR", "VIDE", "NUAGEUX"),
+            ("CABINET OMEGA", "CAB", "774061261", None, "MERMOZ", "VIDE", "ORAGEUX"),
+            ("ALASSANE", "ALN", "771727438", None, "DAKAR", "VIDE", "NUAGEUX"),
+            ("MBALLO IMMO", "MBA", "708525372", None, "MAMELELS", "VIDE", "NUAGEUX"),
+            ("SEN IMMO", "IFN", "785532017", None, "MARISTES", "VIDE", "ORAGEUX"),
+            ("YVAN IMMO", "BANNI", "784814614", None, "OUAKAM", "VIDE", "NUAGEUX"),
+            ("MAODO IMMO", "MAO", "783879676", None, "OUAKAM", "VIDE", "NUAGEUX"),
+            ("TAWFIK IMMO", "TAW", "772739362", None, "SALY", "MEUBLE", "ORAGEUX"),
+            ("OUM SARA", "OUM", "776629544", None, "MAMELLES", "VIDE", "NUAGEUX"),
+            ("DJIBRIL IMMO", "DJI", "765999588", None, "SACRE CŒUR", "VIDE", "NUAGEUX"),
+            ("ADJI IMMO", "ADJ", "774848342", None, "SALY", "VENTE", "ORAGEUX"),
+            ("MMS SERVICE", "MMS", "774723333", None, "DAKAR", "VIDE", "NUAGEUX"),
+            ("BOBO DIALLO", "BOBO", "705322000", None, "MBAO", "VIDE", "NUAGEUX"),
+            ("ABOUBACRY", "HAN", "779441330", None, "KEUR MASSAR", "VIDE", "ORAGEUX"),
+            ("NGM IMMO", "NGM", "757476776", None, "ALMADIES 2", "VENTE", "NUAGEUX"),
+            ("NDELLA IMMO", "NDEL", "775002757", None, "DAKAR", "VIDE", "NUAGEUX"),
+            ("MADJI IMMO", "MADJ", "704826376", None, "MAMELLES", "VIDE", "ORAGEUX"),
+            ("JULES LONDON", "JULES", "784378837", None, "KEUR MASSAR", "VIDE", "NUAGEUX"),
+            ("PHILLIPE", "PHIL", "775920361", None, "MERMOZ", "VIDE", "NUAGEUX"),
+            ("YOUSRA", "YSH", "762555274", None, "OUAKAM", "VIDE", "ORAGEUX"),
+            ("MR DIAKHATE", "DKH", "784980959", None, "NGOR", "VIDE", "NUAGEUX"),
+            ("Barry", "bar", "761343074", None, "DAKAR", "VIDE", "NUAGEUX"),
+            ("ABOU IMMO", "ABI", "783969472", None, "Rufisque", "VIDE", "NUAGEUX"),
+            ("AZIZ IMMO", "AZZ", "772327868", None, "LIBERTE", "VIDE", "NUAGEUX"),
+            ("AXEL", "AXE", "781379788", None, "OUAKAM", "VIDE", "NUAGEUX"),
+            ("TOUBA KHELCOM", "MSA", "765406039", "784905306", "ZONE DE CAPTAGE", "VIDE", "NUAGEUX"),
+            ("NDIOGOU NDIAYE", "NDA", "775500847", None, "LIBERTE 6", "VIDE", "ENSOLEILLE"),
+            ("GAYE", "GAY", "775173845", None, "YOFF", "VIDE", "NUAGEUX"),
+            ("TINE", "TIN", "776358282", None, "LIBERTE 6", "VIDE", "NUAGEUX"),
+            ("aboulabas immo // Cheikh tidiane", "TID", "778628019", None, "HLM 5", "VIDE", "NUAGEUX")
+        ]
+
+        for name, ref, c1, c2, zone_val, p_type, meteo_val in partners_list:
+            Partner.objects.create(
+                name=name,
+                ref=ref,
+                contact_1=c1,
+                contact_2=c2,
+                zone=zone_val,
+                property_type=p_type,
+                meteo=meteo_val
+            )
 
         self.stdout.write(self.style.SUCCESS("Base de données peuplée avec succès !"))
         self.stdout.write(self.style.SUCCESS("Agent de démo : agent_demo / agent123"))

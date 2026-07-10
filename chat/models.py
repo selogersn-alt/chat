@@ -117,3 +117,43 @@ class Reminder(models.Model):
 
     def __str__(self):
         return f"Rappel: {self.title} pour {self.conversation.topic}"
+
+class Partner(models.Model):
+    class MeteoEnum(models.TextChoices):
+        ENSOLEILLE = 'ENSOLEILLE', '☀️ Ensoleillée (Très réactif)'
+        NUAGEUX = 'NUAGEUX', '☁️ Nuageux (Réactif)'
+        ORAGEUX = 'ORAGEUX', '⛈️ Orageux (Peu réactif / Problèmes)'
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=255)
+    ref = models.CharField(max_length=50, blank=True, null=True)
+    contact_1 = models.CharField(max_length=30)
+    contact_2 = models.CharField(max_length=30, blank=True, null=True)
+    zone = models.CharField(max_length=150)
+    property_type = models.CharField(max_length=50, default='VIDE') # VIDE ou MEUBLE
+    meteo = models.CharField(max_length=20, choices=MeteoEnum.choices, default=MeteoEnum.NUAGEUX)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.name} ({self.zone})"
+
+class PartnerMatch(models.Model):
+    class StatusEnum(models.TextChoices):
+        PENDING = 'PENDING', 'En attente'
+        VISITED = 'VISITED', 'Visité'
+        WON = 'WON', 'Gagné'
+        LOST = 'LOST', 'Perdu'
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name='partner_matches')
+    partner = models.ForeignKey(Partner, on_delete=models.CASCADE, related_name='matches')
+    visitor_name = models.CharField(max_length=255)
+    visitor_phone = models.CharField(max_length=30)
+    price = models.DecimalField(max_digits=12, decimal_places=2)
+    zone = models.CharField(max_length=150)
+    status = models.CharField(max_length=20, choices=StatusEnum.choices, default=StatusEnum.PENDING)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Match: {self.visitor_name} ➔ {self.partner.name}"

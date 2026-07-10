@@ -24,4 +24,9 @@ urlpatterns = [
     path('api/manager/stats/', views.manager_stats, name='manager_stats'),
     path('api/manager/agents/', views.manager_agents, name='manager_agents'),
     path('api/manager/delegate/', views.manager_delegate, name='manager_delegate'),
+    path('api/manager/matches/', views.manager_matches, name='manager_matches'),
+    
+    # Partner APIs
+    path('api/partners/search/', views.search_partners, name='search_partners'),
+    path('api/partners/match/', views.create_partner_match, name='create_partner_match'),
 ]
