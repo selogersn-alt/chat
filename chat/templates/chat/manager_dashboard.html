@@ -52,12 +52,7 @@
     <!-- HEADER -->
     <header class="app-header h-16 flex items-center justify-between px-6 z-10 text-white">
         <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-white shadow-md">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6a7.5 7.5 0 1 0 7.5 7.5h-7.5V6Z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0 0 13.5 3v7.5Z" />
-                </svg>
-            </div>
+            <img src="{% static 'logo.png' %}" class="w-10 h-10 rounded-xl object-cover shadow-md" alt="Logo">
             <div class="flex items-center gap-2">
                 <span class="font-extrabold text-lg tracking-wide">Loger Sénégal</span>
                 <span class="text-xs bg-white/20 text-white font-semibold px-2 py-0.5 rounded-full">Console Manager</span>
