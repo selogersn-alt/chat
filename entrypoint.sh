@@ -11,6 +11,8 @@ python manage.py collectstatic --noinput
 
 echo "Checking if database is empty..."
 python -c "
+import os
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'chatproject.settings')
 import django
 django.setup()
 from chat.models import User
