@@ -535,6 +535,25 @@
                                     <div id="templatesList"></div>
                                 </div>
                             </div>
+
+                            <!-- Partner Recommendation Dropdown -->
+                            <div class="relative">
+                                <button type="button" onclick="toggleQuickPartnersDropdown()" class="flex items-center gap-1.5 px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-800 text-xs font-semibold rounded-lg transition-all">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3.5 h-3.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
+                                    </svg>
+                                    🤝 Partenaires
+                                </button>
+                                <!-- Dropdown List -->
+                                <div id="quickPartnersDropdown" class="absolute left-0 bottom-full mb-2 w-72 bg-white border border-gray-200 rounded-2xl shadow-xl hidden z-30 p-3 flex flex-col gap-2">
+                                    <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Recommander un partenaire</div>
+                                    <!-- Search Box -->
+                                    <input type="text" id="quickPartnerSearch" oninput="filterQuickPartners(this.value)" placeholder="Rechercher par nom/zone..." class="w-full px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-forest-500">
+                                    <div id="quickPartnersList" class="flex flex-col gap-1 max-h-48 overflow-y-auto custom-scrollbar">
+                                        <!-- Injected via JS -->
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         
                         <!-- Right: SLA Selector -->
@@ -719,6 +738,11 @@
                             🤝 Mise en relation Partenaire
                         </h4>
                         
+                        <div class="flex flex-col gap-1">
+                            <label class="text-[9px] text-gray-400 font-semibold uppercase tracking-wider">Recherche par Nom / Réf / Mots-clés</label>
+                            <input type="text" id="partnerKeywordInput" oninput="searchPartners()" placeholder="Ex: Presta, Abdu, SEYLON..." class="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-forest-500">
+                        </div>
+
                         <div class="flex flex-col gap-1">
                             <label class="text-[9px] text-gray-400 font-semibold uppercase tracking-wider">Zone de Recherche</label>
                             <input type="text" id="partnerZoneInput" oninput="searchPartners()" placeholder="Ex: Almadies, Ouakam..." class="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-forest-500">
@@ -1446,8 +1470,9 @@
             const zoneInput = document.getElementById('partnerZoneInput').value;
             const priceInput = document.getElementById('partnerPriceInput').value;
             const typeInput = document.getElementById('partnerTypeInput').value;
+            const keywordInput = document.getElementById('partnerKeywordInput') ? document.getElementById('partnerKeywordInput').value : '';
             
-            let url = `/api/partners/search/?zone=${encodeURIComponent(zoneInput)}&property_type=${encodeURIComponent(typeInput)}`;
+            let url = `/api/partners/search/?zone=${encodeURIComponent(zoneInput)}&property_type=${encodeURIComponent(typeInput)}&query=${encodeURIComponent(keywordInput)}`;
             
             fetch(url)
                 .then(res => res.json())
@@ -1592,6 +1617,7 @@
             
             input.value = formattedText;
             input.focus();
+            adjustTextareaHeight(input);
             
             // Hide dropdown
             document.getElementById('templatesDropdown').classList.add('hidden');
@@ -1672,6 +1698,7 @@
             
             // Clear input immediately to feel instant
             input.value = '';
+            input.style.height = 'auto';
             
             fetch('/api/send/', {
                 method: 'POST',
@@ -2112,8 +2139,14 @@
         let activeSlashIndex = 0;
         let visibleSlashTemplates = [];
 
+        function adjustTextareaHeight(input) {
+            input.style.height = 'auto';
+            input.style.height = (input.scrollHeight) + 'px';
+        }
+
         function handleInputSlash(e) {
             const input = e.target;
+            adjustTextareaHeight(input);
             const val = input.value;
             const dropdown = document.getElementById('slashTemplatesDropdown');
             const listContainer = document.getElementById('slashTemplatesList');
@@ -2422,6 +2455,80 @@
             let url = `/api/leads/export/?status=${currentFilter}&tag=${currentTagFilter}&agent=${currentAgentFilter}`;
             window.open(url, '_blank');
         }
+
+        // QUICK PARTNER RECOMMENDATION LOGIC
+        function toggleQuickPartnersDropdown() {
+            const dropdown = document.getElementById('quickPartnersDropdown');
+            const isHidden = dropdown.classList.contains('hidden');
+            
+            // Close other dropdowns
+            document.getElementById('templatesDropdown').classList.add('hidden');
+            
+            if (isHidden) {
+                dropdown.classList.remove('hidden');
+                document.getElementById('quickPartnerSearch').focus();
+                filterQuickPartners('');
+            } else {
+                dropdown.classList.add('hidden');
+            }
+        }
+        
+        function filterQuickPartners(query) {
+            fetch(`/api/partners/search/?query=${encodeURIComponent(query)}`)
+                .then(res => res.json())
+                .then(data => {
+                    const listContainer = document.getElementById('quickPartnersList');
+                    listContainer.innerHTML = '';
+                    const partners = data.partners || [];
+                    
+                    if (partners.length === 0) {
+                        listContainer.innerHTML = `<div class="text-[10px] text-gray-400 p-2 text-center">Aucun partenaire trouvé</div>`;
+                        return;
+                    }
+                    
+                    partners.forEach(p => {
+                        listContainer.innerHTML += `
+                            <div onclick="selectQuickPartner('${p.name.replace(/'/g, "\\'")}', '${p.contact_1}')" class="px-2.5 py-1.5 hover:bg-gray-50 rounded-lg cursor-pointer text-xs flex flex-col gap-0.5 border border-transparent hover:border-gray-150 transition-all text-left">
+                                <div class="flex justify-between items-center">
+                                    <span class="font-semibold text-gray-800">${p.name}</span>
+                                    <span class="text-[9px] text-gray-400 font-mono">${p.ref || ''}</span>
+                                </div>
+                                <div class="flex justify-between text-[10px] text-gray-500">
+                                    <span>📍 ${p.zone}</span>
+                                    <span>📞 ${p.contact_1}</span>
+                                </div>
+                            </div>
+                        `;
+                    });
+                })
+                .catch(err => console.error("Error filtering quick partners:", err));
+        }
+        
+        function selectQuickPartner(partnerName, partnerPhone) {
+            // Try to read property details if associated
+            const card = document.getElementById('associatedPropertyCard');
+            let details = "";
+            if (card && !card.classList.contains('hidden')) {
+                const title = card.dataset.title;
+                details = ` pour le bien "${title}"`;
+            }
+            
+            const text = `Bonjour ! Je vous mets en rapport avec notre partenaire ${partnerName}. Vous pouvez le contacter au ${partnerPhone}${details}. Veuillez lui préciser la zone et le prix du bien. Merci de me faire un retour après votre visite pour me dire si elle a eu lieu.`;
+            
+            insertText(text);
+            document.getElementById('quickPartnersDropdown').classList.add('hidden');
+            // Clear search
+            document.getElementById('quickPartnerSearch').value = '';
+        }
+
+        // Close dropdowns on outside click
+        document.addEventListener('click', function(event) {
+            const partnersDropdown = document.getElementById('quickPartnersDropdown');
+            const partnersBtn = partnersDropdown ? partnersDropdown.previousElementSibling : null;
+            if (partnersDropdown && !partnersDropdown.contains(event.target) && event.target !== partnersBtn && !partnersBtn.contains(event.target)) {
+                partnersDropdown.classList.add('hidden');
+            }
+        });
 
     </script>
     <!-- PARTNER MATCH CONFIRMATION MODAL -->
