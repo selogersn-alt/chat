@@ -1213,7 +1213,7 @@ def search_partners(request):
         'property_type': p.property_type,
         'meteo': p.meteo,
         'meteo_display': p.get_meteo_display()
-    } for p in partners[:30]] # Limit to 30 results for quick UI response
+    } for p in partners]
     
     return JsonResponse({'partners': partners_data})
 
