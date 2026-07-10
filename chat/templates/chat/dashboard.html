@@ -6,6 +6,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Console Agent | Loger Sénégal Chat</title>
     <link rel="shortcut icon" type="image/png" href="{% static 'favicon.png' %}">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ request.build_absolute_uri }}">
+    <meta property="og:title" content="Loger Sénégal Chat — Console Agent">
+    <meta property="og:description" content="Plateforme de gestion de prospects immobiliers WhatsApp et Web pour Loger Sénégal.">
+    <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'logo.png' %}">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="{{ request.build_absolute_uri }}">
+    <meta property="twitter:title" content="Loger Sénégal Chat — Console Agent">
+    <meta property="twitter:description" content="Plateforme de gestion de prospects immobiliers WhatsApp et Web pour Loger Sénégal.">
+    <meta property="twitter:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'logo.png' %}">
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1360,15 +1374,34 @@
         function insertText(text) {
             const input = document.getElementById('messageInput');
             
+            // Format agent name dynamically
+            let formattedText = text;
+            const agentName = "{{ request.user.first_name }} {{ request.user.last_name }}".trim() || "{{ request.user.username }}";
+            
+            // Replace placeholder if exists
+            if (formattedText.includes("[Nom de l'agent]")) {
+                formattedText = formattedText.replaceAll("[Nom de l'agent]", agentName);
+            } else if (formattedText.includes("[Agent]")) {
+                formattedText = formattedText.replaceAll("[Agent]", agentName);
+            } else {
+                // If it is a greeting message (starts with "Bonjour" or "Salut" or contains "Je suis ravi") 
+                // and doesn't already contain the agent's name, append it
+                const lowerText = formattedText.toLowerCase();
+                if ((lowerText.includes("bonjour") || lowerText.includes("je suis ravi") || lowerText.includes("ravi de vous aider")) 
+                    && !formattedText.includes(agentName)) {
+                    formattedText += "\n\n- " + agentName;
+                }
+            }
+            
             // If input is disabled (session expired), offer to send directly
             if (input.hasAttribute('disabled')) {
-                if (confirm(`La session libre de 24h est expirée. Souhaitez-vous envoyer ce modèle directement pour réengager le client ?\n\n"${text}"`)) {
-                    sendDirectTemplate(text);
+                if (confirm(`La session libre de 24h est expirée. Souhaitez-vous envoyer ce modèle directement pour réengager le client ?\n\n"${formattedText}"`)) {
+                    sendDirectTemplate(formattedText);
                 }
                 return;
             }
             
-            input.value = text;
+            input.value = formattedText;
             input.focus();
             
             // Hide dropdown

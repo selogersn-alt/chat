@@ -6,6 +6,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Connexion | Loger Sénégal Chat</title>
     <link rel="shortcut icon" type="image/png" href="{% static 'favicon.png' %}">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ request.build_absolute_uri }}">
+    <meta property="og:title" content="Loger Sénégal Chat — Console Agent">
+    <meta property="og:description" content="Plateforme de gestion de prospects immobiliers WhatsApp et Web pour Loger Sénégal.">
+    <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'logo.png' %}">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="{{ request.build_absolute_uri }}">
+    <meta property="twitter:title" content="Loger Sénégal Chat — Console Agent">
+    <meta property="twitter:description" content="Plateforme de gestion de prospects immobiliers WhatsApp et Web pour Loger Sénégal.">
+    <meta property="twitter:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'logo.png' %}">
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
