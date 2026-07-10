@@ -860,7 +860,7 @@
                                       (c.tags && c.tags.some(t => t.toLowerCase().includes(searchVal)));
                 
                 let matchesAgent = true;
-                if (currentAgentFilter === 'MY') {
+                if (currentAgentFilter === 'MY' && currentFilter !== 'PENDING') {
                     matchesAgent = (c.assigned_to_username === currentAgentUsername);
                 }
                 

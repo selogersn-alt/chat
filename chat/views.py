@@ -79,7 +79,7 @@ def get_live_properties():
 def custom_login_view(request):
     """Simple login view for agents and managers."""
     if request.user.is_authenticated:
-        if request.user.role == User.RoleEnum.MANAGER:
+        if request.user.role == User.RoleEnum.MANAGER or request.user.is_superuser:
             return redirect('manager_dashboard')
         return redirect('dashboard')
         
@@ -110,7 +110,7 @@ def custom_login_view(request):
         if form.is_valid():
             user = form.get_user()
             login(request, user)
-            if user.role == User.RoleEnum.MANAGER:
+            if user.role == User.RoleEnum.MANAGER or user.is_superuser:
                 return redirect('manager_dashboard')
             return redirect('dashboard')
     else:
@@ -128,7 +128,7 @@ def dashboard_view(request):
     """Main Agent Chat Dashboard. Réservé aux agents uniquement."""
     # Refuser l'accès si l'utilisateur n'est pas un AGENT
     # (ne jamais modifier le rôle silencieusement en base de données)
-    if request.user.role != User.RoleEnum.AGENT:
+    if request.user.role != User.RoleEnum.AGENT and not request.user.is_superuser:
         return redirect('login')
         
     # Ensure some mock data exists for testing if properties/templates are empty
@@ -298,7 +298,7 @@ def whatsapp_webhook(request):
                 conversation = Conversation.objects.create(
                     topic=f"WhatsApp de {sender_name}",
                     is_whatsapp=True,
-                    status=Conversation.StatusEnum.ACTIVE
+                    status=Conversation.StatusEnum.PENDING
                 )
                 conversation.participants.add(client_user)
                 agents = User.objects.filter(role=User.RoleEnum.AGENT)
@@ -383,7 +383,12 @@ def sync_messages(request):
     active_conv_id = request.GET.get('conversation_id')
     
     # Get all conversations the agent has access to
-    conversations = agent.conversations.all().order_by('-last_message_at', '-updated_at')
+    if agent.is_superuser or agent.role == User.RoleEnum.MANAGER:
+        conversations = Conversation.objects.all().order_by('-last_message_at', '-updated_at')
+    else:
+        conversations = Conversation.objects.filter(
+            Q(participants=agent) | Q(status=Conversation.StatusEnum.PENDING)
+        ).distinct().order_by('-last_message_at', '-updated_at')
     
     conv_data = []
     for conv in conversations:
@@ -433,7 +438,13 @@ def sync_messages(request):
     
     if active_conv_id:
         try:
-            active_conv = Conversation.objects.get(id=active_conv_id, participants=agent)
+            if agent.is_superuser or agent.role == User.RoleEnum.MANAGER:
+                active_conv = Conversation.objects.get(id=active_conv_id)
+            else:
+                queryset = Conversation.objects.filter(
+                    Q(participants=agent) | Q(status=Conversation.StatusEnum.PENDING)
+                ).distinct()
+                active_conv = get_object_or_404(queryset, id=active_conv_id)
             
             # Fetch active client
             client = active_conv.participants.filter(role=User.RoleEnum.CLIENT).first()
@@ -552,7 +563,10 @@ def send_message(request):
         if not conversation_id or not content:
             return JsonResponse({'error': 'Missing conversation_id or content'}, status=400)
             
-        conversation = get_object_or_404(Conversation, id=conversation_id, participants=request.user)
+        if request.user.is_superuser or request.user.role == User.RoleEnum.MANAGER:
+            conversation = get_object_or_404(Conversation, id=conversation_id)
+        else:
+            conversation = get_object_or_404(Conversation, id=conversation_id, participants=request.user)
         
         # Save the message in our DB
         message = Message.objects.create(
@@ -659,7 +673,13 @@ def claim_conversation(request):
         if not conversation_id:
             return JsonResponse({'error': 'Missing conversation_id'}, status=400)
             
-        conversation = get_object_or_404(Conversation, id=conversation_id, participants=request.user)
+        if request.user.is_superuser or request.user.role == User.RoleEnum.MANAGER:
+            conversation = get_object_or_404(Conversation, id=conversation_id)
+        else:
+            queryset = Conversation.objects.filter(
+                Q(participants=request.user) | Q(status=Conversation.StatusEnum.PENDING)
+            ).distinct()
+            conversation = get_object_or_404(queryset, id=conversation_id)
         
         # Claim
         conversation.assigned_to = request.user
@@ -688,7 +708,10 @@ def update_conversation_notes(request):
         data = json.loads(request.body)
         conversation_id = data.get('conversation_id')
         notes = data.get('notes', '')
-        conversation = get_object_or_404(Conversation, id=conversation_id, participants=request.user)
+        if request.user.is_superuser or request.user.role == User.RoleEnum.MANAGER:
+            conversation = get_object_or_404(Conversation, id=conversation_id)
+        else:
+            conversation = get_object_or_404(Conversation, id=conversation_id, participants=request.user)
         conversation.notes = notes
         conversation.save()
         return JsonResponse({'status': 'updated'})
@@ -707,7 +730,10 @@ def update_conversation_pipeline(request):
         if not stage:
             return JsonResponse({'error': 'Missing pipeline_stage'}, status=400)
         
-        conversation = get_object_or_404(Conversation, id=conversation_id, participants=request.user)
+        if request.user.is_superuser or request.user.role == User.RoleEnum.MANAGER:
+            conversation = get_object_or_404(Conversation, id=conversation_id)
+        else:
+            conversation = get_object_or_404(Conversation, id=conversation_id, participants=request.user)
         old_stage_display = conversation.get_pipeline_stage_display()
         conversation.pipeline_stage = stage
         conversation.save()
@@ -737,7 +763,10 @@ def create_reminder(request):
         if not conversation_id or not title or not remind_at_str:
             return JsonResponse({'error': 'Missing required fields'}, status=400)
             
-        conversation = get_object_or_404(Conversation, id=conversation_id, participants=request.user)
+        if request.user.is_superuser or request.user.role == User.RoleEnum.MANAGER:
+            conversation = get_object_or_404(Conversation, id=conversation_id)
+        else:
+            conversation = get_object_or_404(Conversation, id=conversation_id, participants=request.user)
         remind_at = parse_datetime(remind_at_str)
         if not remind_at:
             return JsonResponse({'error': 'Invalid datetime format'}, status=400)
@@ -767,7 +796,10 @@ def complete_reminder(request):
         if not reminder_id:
             return JsonResponse({'error': 'Missing reminder_id'}, status=400)
             
-        reminder = get_object_or_404(Reminder, id=reminder_id, agent=request.user)
+        if request.user.is_superuser or request.user.role == User.RoleEnum.MANAGER:
+            reminder = get_object_or_404(Reminder, id=reminder_id)
+        else:
+            reminder = get_object_or_404(Reminder, id=reminder_id, agent=request.user)
         reminder.is_done = True
         reminder.save()
         return JsonResponse({'status': 'completed'})
@@ -780,7 +812,10 @@ def export_leads_csv(request):
     tag_filter = request.GET.get('tag', '')
     agent_filter = request.GET.get('agent', 'MY')
     
-    conversations = Conversation.objects.filter(participants=request.user)
+    if request.user.is_superuser or request.user.role == User.RoleEnum.MANAGER:
+        conversations = Conversation.objects.all()
+    else:
+        conversations = Conversation.objects.filter(participants=request.user)
     
     if status_filter:
         conversations = conversations.filter(status=status_filter)
@@ -854,7 +889,10 @@ def update_conversation_tags(request):
         if not conversation_id:
             return JsonResponse({'error': 'Missing conversation_id'}, status=400)
             
-        conversation = get_object_or_404(Conversation, id=conversation_id, participants=request.user)
+        if request.user.is_superuser or request.user.role == User.RoleEnum.MANAGER:
+            conversation = get_object_or_404(Conversation, id=conversation_id)
+        else:
+            conversation = get_object_or_404(Conversation, id=conversation_id, participants=request.user)
         conversation.tags = ",".join([t.strip() for t in tags_list if t.strip()])
         conversation.save()
         
@@ -879,7 +917,10 @@ def update_conversation_sla_limit(request):
         if not conversation_id or limit is None:
             return JsonResponse({'error': 'Missing conversation_id or sla_limit_minutes'}, status=400)
             
-        conversation = get_object_or_404(Conversation, id=conversation_id, participants=request.user)
+        if request.user.is_superuser or request.user.role == User.RoleEnum.MANAGER:
+            conversation = get_object_or_404(Conversation, id=conversation_id)
+        else:
+            conversation = get_object_or_404(Conversation, id=conversation_id, participants=request.user)
         conversation.sla_limit_minutes = int(limit)
         conversation.sla_started_at = timezone.now()
         conversation.save()
@@ -892,7 +933,7 @@ def update_conversation_sla_limit(request):
 @login_required(login_url='login')
 def manager_dashboard_view(request):
     """Manager Dashboard Panel."""
-    if request.user.role != User.RoleEnum.MANAGER:
+    if request.user.role != User.RoleEnum.MANAGER and not request.user.is_superuser:
         return redirect('dashboard')
     return render(request, 'chat/manager_dashboard.html', {'user': request.user})
 
@@ -908,7 +949,10 @@ def close_conversation(request):
         if not conversation_id:
             return JsonResponse({'error': 'Missing conversation_id'}, status=400)
             
-        conversation = get_object_or_404(Conversation, id=conversation_id, participants=request.user)
+        if request.user.is_superuser or request.user.role == User.RoleEnum.MANAGER:
+            conversation = get_object_or_404(Conversation, id=conversation_id)
+        else:
+            conversation = get_object_or_404(Conversation, id=conversation_id, participants=request.user)
         conversation.status = Conversation.StatusEnum.CLOSED
         conversation.sla_started_at = None
         conversation.save()
@@ -927,7 +971,7 @@ def close_conversation(request):
 @login_required(login_url='login')
 def manager_stats(request):
     """GET: Returns manager stats."""
-    if request.user.role != User.RoleEnum.MANAGER:
+    if request.user.role != User.RoleEnum.MANAGER and not request.user.is_superuser:
         return JsonResponse({'error': 'Unauthorized'}, status=403)
         
     try:
@@ -972,7 +1016,7 @@ def manager_agents(request):
     GET: List all agents.
     POST: Create a new agent.
     """
-    if request.user.role != User.RoleEnum.MANAGER:
+    if request.user.role != User.RoleEnum.MANAGER and not request.user.is_superuser:
         return JsonResponse({'error': 'Unauthorized'}, status=403)
         
     if request.method == 'GET':
@@ -1029,7 +1073,7 @@ def manager_agents(request):
 @login_required(login_url='login')
 def manager_delegate(request):
     """POST: Delegate a conversation to an agent."""
-    if request.user.role != User.RoleEnum.MANAGER:
+    if request.user.role != User.RoleEnum.MANAGER and not request.user.is_superuser:
         return JsonResponse({'error': 'Unauthorized'}, status=403)
         
     if request.method != 'POST':
