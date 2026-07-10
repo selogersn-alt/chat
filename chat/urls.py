@@ -5,10 +5,13 @@ urlpatterns = [
     path('', views.dashboard_view, name='dashboard'),
     path('login/', views.custom_login_view, name='login'),
     path('logout/', views.custom_logout_view, name='logout'),
+    path('manager/', views.manager_dashboard_view, name='manager_dashboard'),
+    
     path('api/webhook/', views.whatsapp_webhook, name='whatsapp_webhook'),
     path('api/sync/', views.sync_messages, name='sync_messages'),
     path('api/send/', views.send_message, name='send_message'),
     path('api/claim/', views.claim_conversation, name='claim_conversation'),
+    path('api/conversation/close/', views.close_conversation, name='close_conversation'),
     path('api/conversation/tags/', views.update_conversation_tags, name='update_conversation_tags'),
     path('api/conversation/notes/', views.update_conversation_notes, name='update_conversation_notes'),
     path('api/conversation/pipeline/', views.update_conversation_pipeline, name='update_conversation_pipeline'),
@@ -16,4 +19,9 @@ urlpatterns = [
     path('api/reminders/create/', views.create_reminder, name='create_reminder'),
     path('api/reminders/complete/', views.complete_reminder, name='complete_reminder'),
     path('api/leads/export/', views.export_leads_csv, name='export_leads_csv'),
+    
+    # Manager APIs
+    path('api/manager/stats/', views.manager_stats, name='manager_stats'),
+    path('api/manager/agents/', views.manager_agents, name='manager_agents'),
+    path('api/manager/delegate/', views.manager_delegate, name='manager_delegate'),
 ]

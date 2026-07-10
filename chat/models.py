@@ -4,6 +4,7 @@ from django.contrib.auth.models import AbstractUser
 
 class User(AbstractUser):
     class RoleEnum(models.TextChoices):
+        MANAGER = 'MANAGER', 'Manager'
         AGENT = 'AGENT', 'Agent Immobilier'
         CLIENT = 'CLIENT', 'Client'
 

@@ -77,8 +77,10 @@ def get_live_properties():
     return list(Property.objects.all().values('id', 'title', 'price', 'description', 'image_url', 'url'))
 
 def custom_login_view(request):
-    """Simple login view for agents."""
+    """Simple login view for agents and managers."""
     if request.user.is_authenticated:
+        if request.user.role == User.RoleEnum.MANAGER:
+            return redirect('manager_dashboard')
         return redirect('dashboard')
         
     if request.GET.get('auto_login') == 'true':
@@ -92,11 +94,24 @@ def custom_login_view(request):
                 login(request, fallback_agent)
                 return redirect('dashboard')
                 
+    elif request.GET.get('auto_login') == 'manager':
+        user = authenticate(username='manager_demo', password='manager123')
+        if user is not None:
+            login(request, user)
+            return redirect('manager_dashboard')
+        else:
+            fallback_manager = User.objects.filter(role=User.RoleEnum.MANAGER).first()
+            if fallback_manager:
+                login(request, fallback_manager)
+                return redirect('manager_dashboard')
+                
     if request.method == 'POST':
         form = AuthenticationForm(request, data=request.POST)
         if form.is_valid():
             user = form.get_user()
             login(request, user)
+            if user.role == User.RoleEnum.MANAGER:
+                return redirect('manager_dashboard')
             return redirect('dashboard')
     else:
         form = AuthenticationForm()
@@ -872,4 +887,188 @@ def update_conversation_sla_limit(request):
         return JsonResponse({'status': 'updated', 'sla_limit_minutes': conversation.sla_limit_minutes})
     except Exception as e:
         logger.error(f"Error updating SLA limit: {str(e)}", exc_info=True)
+        return JsonResponse({'error': str(e)}, status=500)
+
+@login_required(login_url='login')
+def manager_dashboard_view(request):
+    """Manager Dashboard Panel."""
+    if request.user.role != User.RoleEnum.MANAGER:
+        return redirect('dashboard')
+    return render(request, 'chat/manager_dashboard.html', {'user': request.user})
+
+@csrf_exempt
+@login_required(login_url='login')
+def close_conversation(request):
+    """POST: Close a conversation (sets status to CLOSED)."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    try:
+        data = json.loads(request.body)
+        conversation_id = data.get('conversation_id')
+        if not conversation_id:
+            return JsonResponse({'error': 'Missing conversation_id'}, status=400)
+            
+        conversation = get_object_or_404(Conversation, id=conversation_id, participants=request.user)
+        conversation.status = Conversation.StatusEnum.CLOSED
+        conversation.sla_started_at = None
+        conversation.save()
+        
+        # Log system message
+        Message.objects.create(
+            conversation=conversation,
+            sender=User.objects.filter(is_superuser=True).first() or request.user,
+            content="[SYSTEME] La conversation a été résolue par l'agent."
+        )
+        return JsonResponse({'status': 'closed'})
+    except Exception as e:
+        logger.error(f"Error closing conversation: {str(e)}", exc_info=True)
+        return JsonResponse({'error': str(e)}, status=500)
+
+@login_required(login_url='login')
+def manager_stats(request):
+    """GET: Returns manager stats."""
+    if request.user.role != User.RoleEnum.MANAGER:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+        
+    try:
+        total_clients = User.objects.filter(role=User.RoleEnum.CLIENT).count()
+        total_agents = User.objects.filter(role=User.RoleEnum.AGENT).count()
+        
+        conversations = Conversation.objects.all()
+        total_convs = conversations.count()
+        active_convs = conversations.filter(status=Conversation.StatusEnum.ACTIVE).count()
+        pending_convs = conversations.filter(status=Conversation.StatusEnum.PENDING).count()
+        closed_convs = conversations.filter(status=Conversation.StatusEnum.CLOSED).count()
+        
+        # Conversations per agent
+        agents = User.objects.filter(role=User.RoleEnum.AGENT)
+        agents_list = []
+        for a in agents:
+            assigned_count = conversations.filter(assigned_to=a, status=Conversation.StatusEnum.ACTIVE).count()
+            agents_list.append({
+                'id': str(a.id),
+                'name': a.get_full_name() or a.username,
+                'username': a.username,
+                'active_conversations_count': assigned_count
+            })
+            
+        return JsonResponse({
+            'total_clients': total_clients,
+            'total_agents': total_agents,
+            'total_conversations': total_convs,
+            'active_conversations': active_convs,
+            'pending_conversations': pending_convs,
+            'closed_conversations': closed_convs,
+            'agents_performance': agents_list
+        })
+    except Exception as e:
+        logger.error(f"Error getting manager stats: {str(e)}", exc_info=True)
+        return JsonResponse({'error': str(e)}, status=500)
+
+@csrf_exempt
+@login_required(login_url='login')
+def manager_agents(request):
+    """
+    GET: List all agents.
+    POST: Create a new agent.
+    """
+    if request.user.role != User.RoleEnum.MANAGER:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+        
+    if request.method == 'GET':
+        agents = User.objects.filter(role=User.RoleEnum.AGENT)
+        agents_data = [{
+            'id': str(a.id),
+            'username': a.username,
+            'first_name': a.first_name,
+            'last_name': a.last_name,
+            'phone_number': a.phone_number or '',
+            'is_active': a.is_active
+        } for a in agents]
+        return JsonResponse({'agents': agents_data})
+        
+    elif request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            username = data.get('username')
+            password = data.get('password')
+            first_name = data.get('first_name', '')
+            last_name = data.get('last_name', '')
+            phone_number = data.get('phone_number', '')
+            
+            if not username or not password:
+                return JsonResponse({'error': 'Username and password are required'}, status=400)
+                
+            if User.objects.filter(username=username).exists():
+                return JsonResponse({'error': 'A user with this username already exists'}, status=400)
+                
+            new_agent = User.objects.create_user(
+                username=username,
+                password=password,
+                first_name=first_name,
+                last_name=last_name,
+                phone_number=phone_number,
+                role=User.RoleEnum.AGENT
+            )
+            return JsonResponse({
+                'status': 'created',
+                'agent': {
+                    'id': str(new_agent.id),
+                    'username': new_agent.username,
+                    'first_name': new_agent.first_name,
+                    'last_name': new_agent.last_name
+                }
+            })
+        except Exception as e:
+            logger.error(f"Error creating agent: {str(e)}", exc_info=True)
+            return JsonResponse({'error': str(e)}, status=500)
+            
+    return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+@csrf_exempt
+@login_required(login_url='login')
+def manager_delegate(request):
+    """POST: Delegate a conversation to an agent."""
+    if request.user.role != User.RoleEnum.MANAGER:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+        
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+        
+    try:
+        data = json.loads(request.body)
+        conversation_id = data.get('conversation_id')
+        agent_id = data.get('agent_id') # Can be null or 'unassigned' to clear
+        
+        if not conversation_id:
+            return JsonResponse({'error': 'Missing conversation_id'}, status=400)
+            
+        conversation = get_object_or_404(Conversation, id=conversation_id)
+        
+        if agent_id and agent_id != 'unassigned':
+            agent = get_object_or_404(User, id=agent_id, role=User.RoleEnum.AGENT)
+            conversation.assigned_to = agent
+            conversation.status = Conversation.StatusEnum.ACTIVE
+            
+            # Make sure agent is a participant
+            if not conversation.participants.filter(id=agent.id).exists():
+                conversation.participants.add(agent)
+                
+            agent_name = agent.get_full_name() or agent.username
+            msg_content = f"[SYSTEME] La conversation a été déléguée à l'agent {agent_name} par le manager."
+        else:
+            conversation.assigned_to = None
+            msg_content = "[SYSTEME] La conversation a été libérée (non assignée) par le manager."
+            
+        conversation.save()
+        
+        # Log system message
+        Message.objects.create(
+            conversation=conversation,
+            sender=request.user,
+            content=msg_content
+        )
+        return JsonResponse({'status': 'delegated'})
+    except Exception as e:
+        logger.error(f"Error delegating conversation: {str(e)}", exc_info=True)
         return JsonResponse({'error': str(e)}, status=500)

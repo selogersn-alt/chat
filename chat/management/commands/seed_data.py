@@ -31,7 +31,7 @@ class Command(BaseCommand):
         Message.objects.all().delete()
         Conversation.objects.all().delete()
         # Delete demo users to avoid conflict, keeping admin if created via createsuperuser
-        User.objects.filter(username__in=['agent_demo', 'wa_221771234567', 'wa_221778901234']).delete()
+        User.objects.filter(username__in=['agent_demo', 'manager_demo', 'wa_221771234567', 'wa_221778901234']).delete()
 
         # 2. Create properties
         self.stdout.write("Création des biens immobiliers...")
@@ -87,7 +87,7 @@ class Command(BaseCommand):
             category="MARKETING"
         )
 
-        # 4. Create default agent
+        # 4. Create default agent and manager
         self.stdout.write("Création des profils d'utilisateurs...")
         agent = User.objects.create_user(
             username='agent_demo',
@@ -100,6 +100,18 @@ class Command(BaseCommand):
         )
         agent.set_password('agent123')
         agent.save()
+
+        manager = User.objects.create_user(
+            username='manager_demo',
+            phone_number='+221711111111',
+            first_name='Adama',
+            last_name='Diop',
+            role=User.RoleEnum.MANAGER,
+            is_staff=True,
+            is_superuser=True
+        )
+        manager.set_password('manager123')
+        manager.save()
 
         # 5. Create default clients
         client1 = User.objects.create_user(

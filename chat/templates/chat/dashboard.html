@@ -1476,24 +1476,18 @@
             .catch(err => console.error("Error sending message:", err));
         }
 
-        // Close/resolve current conversation (mock set to CLOSED)
+        // Close/resolve current conversation (sets status to CLOSED)
         function closeCurrentConversation() {
             if (!currentConversationId) return;
             
-            // Simple mockup closed logic in UI, sets status to closed
-            // Since we don't have a specific edit endpoint, we can expand our api send to support system messages or add a views action.
-            // For now we send a system log message notifying closing, 
-            // In a real app we'd have a POST endpoint. Let's send a close system notification!
-            
-            fetch('/api/send/', {
+            fetch('/api/conversation/close/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRFToken': csrftoken
                 },
                 body: JSON.stringify({
-                    conversation_id: currentConversationId,
-                    content: "[SYSTEME] La conversation a été résolue par l'agent."
+                    conversation_id: currentConversationId
                 })
             })
             .then(res => res.json())

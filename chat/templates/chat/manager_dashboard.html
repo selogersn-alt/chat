@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Console Manager | Loger Sénégal</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                    },
+                    colors: {
+                        forest: {
+                            50: '#f2f8f5',
+                            100: '#e1efe7',
+                            200: '#c5e0cf',
+                            500: '#1b6b3e',
+                            600: '#0f4f2c',
+                            700: '#0b3c21',
+                            900: '#052212',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Chart.js via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            background: #f8fafc;
+            -webkit-font-smoothing: antialiased;
+        }
+        .app-header {
+            background: linear-gradient(135deg, #052212 0%, #0f4f2c 60%, #1b6b3e 100%);
+            box-shadow: 0 2px 20px rgba(15, 81, 50, 0.3);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col font-sans">
+
+    <!-- HEADER -->
+    <header class="app-header h-16 flex items-center justify-between px-6 z-10 text-white">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-white shadow-md">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6a7.5 7.5 0 1 0 7.5 7.5h-7.5V6Z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0 0 13.5 3v7.5Z" />
+                </svg>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="font-extrabold text-lg tracking-wide">Loger Sénégal</span>
+                <span class="text-xs bg-white/20 text-white font-semibold px-2 py-0.5 rounded-full">Console Manager</span>
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-4">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-full bg-white/25 flex items-center justify-center font-bold text-white text-sm">
+                    M
+                </div>
+                <div class="hidden md:block text-left">
+                    <p class="text-xs font-semibold text-white">{{ user.first_name|default:user.username }}</p>
+                    <p class="text-[10px] text-teal-200/70">Manager connecté</p>
+                </div>
+            </div>
+            
+            <a href="{% url 'dashboard' %}" class="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-xs font-bold rounded-xl transition-all" title="Accéder à la console Agent">
+                Console Agent ➔
+            </a>
+            
+            <a href="{% url 'logout' %}" class="p-2 text-white/50 hover:text-white hover:bg-white/10 rounded-xl transition-all duration-200" title="Se déconnecter">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M19 12H9m10 0l-3-3m3 3l-3 3" />
+                </svg>
+            </a>
+        </div>
+    </header>
+
+    <!-- CONTAINER -->
+    <div class="flex-1 max-w-7xl w-full mx-auto p-6 flex flex-col gap-6">
+        
+        <!-- NAVIGATION TABS -->
+        <div class="flex border-b border-gray-200 gap-6">
+            <button onclick="switchTab('stats')" id="tab-stats-btn" class="py-3 text-sm font-bold border-b-2 border-forest-600 text-forest-600 transition-all">
+                📊 Statistiques de Performance
+            </button>
+            <button onclick="switchTab('agents')" id="tab-agents-btn" class="py-3 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-forest-600 transition-all">
+                👥 Gestion des Agents
+            </button>
+            <button onclick="switchTab('delegate')" id="tab-delegate-btn" class="py-3 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-forest-600 transition-all">
+                🔄 Attribution des Tâches
+            </button>
+        </div>
+
+        <!-- TAB CONTENT: STATS -->
+        <div id="tab-stats" class="tab-pane flex flex-col gap-6">
+            <!-- STATS CARDS -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Clients Assistés</p>
+                        <h3 class="text-3xl font-extrabold text-gray-800 mt-1" id="stat-total-clients">-</h3>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-forest-50 flex items-center justify-center text-forest-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.109A11.386 11.386 0 0 1 10.089 18M15 19.128a9.38 9.38 0 0 1-2.625.372 9.336 9.336 0 0 1-4.121-.952 4.125 4.125 0 0 1 7.533-2.493M10.089 18v-.003c0-1.113.285-2.16.786-3.07M10.089 18A11.386 11.386 0 0 0 15 19.128M10.089 18a11.386 11.386 0 0 1-4.917-1.128M8 21.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M8 21.128v-.003c0-1.113-.285-2.16-.786-3.07M8 21.128a9.38 9.38 0 0 1-2.625.372 9.336 9.336 0 0 1-4.121-.952 4.125 4.125 0 0 1 7.533-2.493M3.758 18.093A11.386 11.386 0 0 0 8 19.128" />
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Discussions Actives</p>
+                        <h3 class="text-3xl font-extrabold text-forest-600 mt-1" id="stat-active-convs">-</h3>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-teal-50 flex items-center justify-center text-teal-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 18.09a8.967 8.967 0 0 1-.334-3.472C3.393 13.434 2.25 11.233 2.25 9c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z" />
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">En Attente</p>
+                        <h3 class="text-3xl font-extrabold text-amber-500 mt-1" id="stat-pending-convs">-</h3>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Discussions Clôturées</p>
+                        <h3 class="text-3xl font-extrabold text-gray-500 mt-1" id="stat-closed-convs">-</h3>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center text-gray-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CHART SECTIONS -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Status Distribution Chart -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center">
+                    <h4 class="font-bold text-gray-800 text-sm mb-4 self-start">Distribution des États</h4>
+                    <div class="w-56 h-56">
+                        <canvas id="chart-status"></canvas>
+                    </div>
+                </div>
+
+                <!-- Agent Load Chart -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 col-span-2 flex flex-col">
+                    <h4 class="font-bold text-gray-800 text-sm mb-4">Charge de travail par Agent (Actives)</h4>
+                    <div class="flex-1 min-h-[220px]">
+                        <canvas id="chart-agents-load"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB CONTENT: AGENTS -->
+        <div id="tab-agents" class="tab-pane hidden flex flex-col gap-4">
+            <div class="flex justify-between items-center">
+                <h4 class="font-bold text-gray-800 text-lg">Conseillers &amp; Agents Enregistrés</h4>
+                <button onclick="openCreateAgentModal()" class="px-4 py-2 bg-forest-600 hover:bg-forest-700 text-white font-bold rounded-xl text-sm transition-all flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M18 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0ZM3 19.235v-.11a6 6 0 0 1 7.952-5.698a6 6 0 0 1 7.952 5.698v.11" />
+                    </svg>
+                    Ajouter un Agent
+                </button>
+            </div>
+
+            <!-- Agents List Table -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50 border-b border-gray-150 text-xs font-bold text-gray-500 uppercase">
+                            <th class="p-4">Nom Complet</th>
+                            <th class="p-4">Identifiant</th>
+                            <th class="p-4">Téléphone</th>
+                            <th class="p-4">Statut</th>
+                        </tr>
+                    </thead>
+                    <tbody id="agents-table-body" class="divide-y divide-gray-100 text-sm text-gray-700">
+                        <!-- Agents will be injected here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TAB CONTENT: DELEGATE -->
+        <div id="tab-delegate" class="tab-pane hidden flex flex-col gap-4">
+            <div class="flex justify-between items-center">
+                <h4 class="font-bold text-gray-800 text-lg">Affectation des Discussions</h4>
+                <p class="text-xs text-gray-500">Distribuez et réassignez les conversations aux agents en temps réel.</p>
+            </div>
+
+            <!-- Conversations List Table -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50 border-b border-gray-150 text-xs font-bold text-gray-500 uppercase">
+                            <th class="p-4">Client</th>
+                            <th class="p-4">Sujet</th>
+                            <th class="p-4">Canal</th>
+                            <th class="p-4">Statut</th>
+                            <th class="p-4">Agent Actuellement Assigné</th>
+                            <th class="p-4">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="delegate-table-body" class="divide-y divide-gray-100 text-sm text-gray-700">
+                        <!-- Conversations will be injected here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- MODAL: CREATE AGENT -->
+    <div id="create-agent-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4 z-50 transition-all">
+        <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden transform scale-95 transition-all">
+            <div class="p-6 border-b border-gray-100 flex justify-between items-center">
+                <h3 class="font-bold text-gray-800 text-lg">Nouveau Conseiller Agent</h3>
+                <button onclick="closeCreateAgentModal()" class="text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button>
+            </div>
+            <form onsubmit="submitCreateAgent(event)" class="p-6 flex flex-col gap-4">
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5">Identifiant de connexion *</label>
+                    <input type="text" id="new-agent-username" required class="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-forest-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5">Mot de passe *</label>
+                    <input type="password" id="new-agent-password" required class="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-forest-500">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5">Prénom</label>
+                        <input type="text" id="new-agent-firstname" class="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-forest-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5">Nom de famille</label>
+                        <input type="text" id="new-agent-lastname" class="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-forest-500">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5">Téléphone WhatsApp</label>
+                    <input type="text" id="new-agent-phone" placeholder="ex: 221771234567" class="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-forest-500">
+                </div>
+                <button type="submit" class="w-full py-3 bg-forest-600 hover:bg-forest-700 text-white font-bold rounded-xl text-sm transition-all mt-2">
+                    Créer le profil Agent
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- CSRF Token helper -->
+    <script>
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        const csrftoken = getCookie('csrftoken');
+    </script>
+
+    <!-- CORE SCRIPT -->
+    <script>
+        let currentTab = 'stats';
+        let chartStatusInstance = null;
+        let chartAgentsInstance = null;
+        let agentsList = [];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadDashboardData();
+            // Poll stats and lists every 5 seconds
+            setInterval(loadDashboardData, 5000);
+        });
+
+        function switchTab(tabId) {
+            currentTab = tabId;
+            document.querySelectorAll('.tab-pane').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+
+            document.querySelectorAll('[id^="tab-"][id$="-btn"]').forEach(btn => {
+                btn.className = 'py-3 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-forest-600 transition-all';
+            });
+            document.getElementById(`tab-${tabId}-btn`).className = 'py-3 text-sm font-bold border-b-2 border-forest-600 text-forest-600 transition-all';
+        }
+
+        function loadDashboardData() {
+            // Load stats & charts
+            fetch('/api/manager/stats/')
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('stat-total-clients').textContent = data.total_clients;
+                    document.getElementById('stat-active-convs').textContent = data.active_conversations;
+                    document.getElementById('stat-pending-convs').textContent = data.pending_conversations;
+                    document.getElementById('stat-closed-convs').textContent = data.closed_conversations;
+
+                    updateStatusChart(data.active_conversations, data.pending_conversations, data.closed_conversations);
+                    updateAgentsChart(data.agents_performance);
+                });
+
+            // Load Agents List
+            fetch('/api/manager/agents/')
+                .then(res => res.json())
+                .then(data => {
+                    agentsList = data.agents || [];
+                    renderAgentsTable();
+                });
+
+            // Load Conversations (for delegation)
+            fetch('/api/sync/')
+                .then(res => res.json())
+                .then(data => {
+                    renderDelegateTable(data.conversations || []);
+                });
+        }
+
+        // CHARTS LOGIC
+        function updateStatusChart(active, pending, closed) {
+            const ctx = document.getElementById('chart-status').getContext('2d');
+            if (chartStatusInstance) {
+                chartStatusInstance.data.datasets[0].data = [active, pending, closed];
+                chartStatusInstance.update();
+                return;
+            }
+
+            chartStatusInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Actives', 'En attente', 'Clôturées'],
+                    datasets: [{
+                        data: [active, pending, closed],
+                        backgroundColor: ['#1b6b3e', '#fb923c', '#94a3b8'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                font: { size: 11, weight: 'bold' },
+                                boxWidth: 12
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateAgentsChart(agentsPerf) {
+            const ctx = document.getElementById('chart-agents-load').getContext('2d');
+            const labels = agentsPerf.map(a => a.name);
+            const counts = agentsPerf.map(a => a.active_conversations_count);
+
+            if (chartAgentsInstance) {
+                chartAgentsInstance.data.labels = labels;
+                chartAgentsInstance.data.datasets[0].data = counts;
+                chartAgentsInstance.update();
+                return;
+            }
+
+            chartAgentsInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Conversations Actives',
+                        data: counts,
+                        backgroundColor: '#1b6b3e',
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { stepSize: 1 }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        // TABLE RENDERING
+        function renderAgentsTable() {
+            const tbody = document.getElementById('agents-table-body');
+            let html = '';
+            
+            if (agentsList.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-400">Aucun agent disponible</td></tr>';
+                return;
+            }
+
+            agentsList.forEach(a => {
+                const name = `${a.first_name} ${a.last_name}`.trim() || 'Sans nom';
+                const statusBadge = a.is_active 
+                    ? '<span class="px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded-full font-bold">Actif</span>'
+                    : '<span class="px-2 py-0.5 text-xs bg-red-100 text-red-700 rounded-full font-bold">Inactif</span>';
+                
+                html += `
+                    <tr class="hover:bg-gray-50/50">
+                        <td class="p-4 font-bold text-gray-800">${name}</td>
+                        <td class="p-4 font-medium text-gray-500">${a.username}</td>
+                        <td class="p-4 text-gray-600">${a.phone_number || 'Non renseigné'}</td>
+                        <td class="p-4">${statusBadge}</td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
+
+        function renderDelegateTable(conversations) {
+            const tbody = document.getElementById('delegate-table-body');
+            let html = '';
+            
+            // Only show ACTIVE and PENDING conversations for delegation
+            const delegable = conversations.filter(c => c.status !== 'CLOSED');
+
+            if (delegable.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-gray-400">Aucune conversation active ou en attente à déléguer</td></tr>';
+                return;
+            }
+
+            delegable.forEach(c => {
+                const channelBadge = c.is_whatsapp 
+                    ? '<span class="inline-flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full font-bold">WhatsApp</span>'
+                    : '<span class="inline-flex items-center gap-1 text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full font-bold">Web Chat</span>';
+                
+                const statusBadge = c.status === 'PENDING'
+                    ? '<span class="text-xs font-bold px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full">En attente</span>'
+                    : '<span class="text-xs font-bold px-2 py-0.5 bg-green-100 text-green-700 rounded-full">Active</span>';
+
+                // Dropdown select options for agents
+                let selectOptions = '<option value="unassigned">Non assigné</option>';
+                agentsList.forEach(a => {
+                    const name = `${a.first_name} ${a.last_name}`.trim() || a.username;
+                    const isSelected = c.assigned_to === name ? 'selected' : '';
+                    selectOptions += `<option value="${a.id}" ${isSelected}>${name}</option>`;
+                });
+
+                html += `
+                    <tr class="hover:bg-gray-50/50">
+                        <td class="p-4 font-bold text-gray-800">${c.client_name}</td>
+                        <td class="p-4"><span class="px-2 py-0.5 text-xs bg-gray-100 rounded font-semibold text-gray-600">${c.topic}</span></td>
+                        <td class="p-4">${channelBadge}</td>
+                        <td class="p-4">${statusBadge}</td>
+                        <td class="p-4 text-gray-500 font-medium">${c.assigned_to || 'Non assigné'}</td>
+                        <td class="p-4">
+                            <select onchange="delegateConversation('${c.id}', this)" class="bg-gray-50 border border-gray-200 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-gray-700 focus:outline-none focus:ring-1 focus:ring-forest-500 cursor-pointer">
+                                ${selectOptions}
+                            </select>
+                        </td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
+
+        // DELEGATE CONVERSATION API
+        function delegateConversation(convId, select) {
+            const agentId = select.value;
+            fetch('/api/manager/delegate/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify({
+                    conversation_id: convId,
+                    agent_id: agentId
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'delegated') {
+                    showToast('Discussion déléguée avec succès', 'success');
+                    loadDashboardData();
+                } else {
+                    showToast('Erreur: ' + data.error, 'error');
+                }
+            })
+            .catch(() => showToast('Erreur réseau lors de la délégation', 'error'));
+        }
+
+        // CREATE AGENT FORM SUBMIT
+        function submitCreateAgent(e) {
+            e.preventDefault();
+            const username = document.getElementById('new-agent-username').value.trim();
+            const password = document.getElementById('new-agent-password').value;
+            const firstName = document.getElementById('new-agent-firstname').value.trim();
+            const lastName = document.getElementById('new-agent-lastname').value.trim();
+            const phone = document.getElementById('new-agent-phone').value.trim();
+
+            fetch('/api/manager/agents/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify({
+                    username: username,
+                    password: password,
+                    first_name: firstName,
+                    last_name: lastName,
+                    phone_number: phone
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'created') {
+                    showToast('Agent créé avec succès !', 'success');
+                    closeCreateAgentModal();
+                    loadDashboardData();
+                } else {
+                    showToast('Erreur: ' + data.error, 'error');
+                }
+            })
+            .catch(() => showToast('Erreur lors de la création du profil', 'error'));
+        }
+
+        // MODAL TOGGLES
+        function openCreateAgentModal() {
+            const modal = document.getElementById('create-agent-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => {
+                modal.firstElementChild.classList.remove('scale-95');
+                modal.firstElementChild.classList.add('scale-100');
+            }, 10);
+        }
+
+        function closeCreateAgentModal() {
+            const modal = document.getElementById('create-agent-modal');
+            modal.firstElementChild.classList.remove('scale-100');
+            modal.firstElementChild.classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                // Reset inputs
+                document.getElementById('new-agent-username').value = '';
+                document.getElementById('new-agent-password').value = '';
+                document.getElementById('new-agent-firstname').value = '';
+                document.getElementById('new-agent-lastname').value = '';
+                document.getElementById('new-agent-phone').value = '';
+            }, 150);
+        }
+
+        // TOAST NOTIFICATIONS
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            const colorClass = type === 'success' ? 'bg-forest-600 border-l-4 border-l-teal-400' : 'bg-red-600 border-l-4 border-l-red-400';
+            
+            toast.className = `pointer-events-auto text-white rounded-2xl p-4 shadow-xl flex items-center justify-between gap-3 text-xs font-semibold ${colorClass} transition-all duration-300 transform translate-y-2 opacity-0`;
+            toast.innerHTML = `
+                <span>${message}</span>
+                <button onclick="this.parentNode.remove()" class="text-white/60 hover:text-white">&times;</button>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.remove('opacity-0', 'translate-y-2');
+            }, 10);
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 5000);
+        }
+    </script>
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm pointer-events-none"></div>
+</body>
+</html>
