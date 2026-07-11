@@ -555,6 +555,9 @@ def sync_messages(request):
         # Check if last message is from client for SLA tracking
         is_last_msg_from_client = (last_msg.sender.role == User.RoleEnum.CLIENT) if last_msg else False
         
+        # Count unread messages from client
+        unread_count = conv.messages.filter(sender__role=User.RoleEnum.CLIENT, is_read=False).count()
+        
         conv_data.append({
             'id': str(conv.id),
             'topic': conv.topic,
@@ -574,6 +577,7 @@ def sync_messages(request):
             'is_last_msg_from_client': is_last_msg_from_client,
             'sla_limit_minutes': conv.sla_limit_minutes,
             'sla_started_at': conv.sla_started_at.isoformat() if conv.sla_started_at else None,
+            'unread_count': unread_count,
         })
         
     messages_data = []
@@ -597,6 +601,9 @@ def sync_messages(request):
             # Locate last message sent by client
             last_client_msg = active_conv.messages.filter(sender__role=User.RoleEnum.CLIENT).order_by('-created_at').first()
             client_last_message_at = last_client_msg.created_at.isoformat() if last_client_msg else active_conv.created_at.isoformat()
+            
+            # Mark incoming messages as read
+            active_conv.messages.filter(sender__role=User.RoleEnum.CLIENT, is_read=False).update(is_read=True)
             
             active_last_msg = active_conv.messages.all().order_by('-created_at').first()
             active_is_last_msg_from_client = (active_last_msg.sender.role == User.RoleEnum.CLIENT) if active_last_msg else False
