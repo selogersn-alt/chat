@@ -1598,15 +1598,42 @@ def whatsapp_media_proxy(request, media_id):
         media_url = media_data.get('url')
         mime_type = media_data.get('mime_type', 'application/octet-stream')
         
+        # Simple extension guessing
+        file_extension = mime_type.split('/')[-1] if '/' in mime_type else 'bin'
+        if mime_type == 'audio/ogg; codecs=opus': file_extension = 'ogg'
+        
         if not media_url:
             return HttpResponse('Invalid media data', status=404)
             
-        # 2. Fetch binary data
-        img_resp = requests.get(media_url, headers=headers, timeout=15)
-        if img_resp.status_code == 200:
-            return HttpResponse(img_resp.content, content_type=mime_type)
+        is_download = request.GET.get('download') == '1'
+        
+        # 2. Fetch binary data, forwarding Range headers for seeking support
+        req_headers = {"Authorization": f"Bearer {token}"}
+        if 'Range' in request.headers:
+            req_headers['Range'] = request.headers['Range']
             
-        return HttpResponse('Failed to download media bytes', status=500)
+        img_resp = requests.get(media_url, headers=req_headers, stream=True, timeout=15)
+        
+        from django.http import StreamingHttpResponse
+        if img_resp.status_code in [200, 206]:
+            response = StreamingHttpResponse(img_resp.iter_content(chunk_size=8192), content_type=mime_type, status=img_resp.status_code)
+            
+            # Forward essential headers for audio/video playback
+            if 'Content-Length' in img_resp.headers:
+                response['Content-Length'] = img_resp.headers['Content-Length']
+            if 'Content-Range' in img_resp.headers:
+                response['Content-Range'] = img_resp.headers['Content-Range']
+            if 'Accept-Ranges' in img_resp.headers:
+                response['Accept-Ranges'] = img_resp.headers['Accept-Ranges']
+                
+            if is_download:
+                response['Content-Disposition'] = f'attachment; filename="media_{media_id}.{file_extension}"'
+            else:
+                response['Content-Disposition'] = f'inline; filename="media_{media_id}.{file_extension}"'
+                
+            return response
+            
+        return HttpResponse('Failed to download media bytes', status=img_resp.status_code)
     except Exception as e:
         logger.error(f"Exception in media proxy: {str(e)}", exc_info=True)
         return HttpResponse('Internal Server Error', status=500)
