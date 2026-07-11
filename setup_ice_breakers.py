@@ -13,34 +13,20 @@ def setup_ice_breakers():
         print("Erreur: Les variables d'environnement WA_ACCESS_TOKEN et WA_PHONE_NUMBER_ID doivent être définies dans votre fichier .env")
         return
         
-    # URL de l'API Graph Meta pour le profil WhatsApp Business
-    url = f"https://graph.facebook.com/v20.0/{phone_id}/whatsapp_business_profile"
+    # URL de l'API Graph Meta pour les composants conversationnels (Ice Breakers)
+    url = f"https://graph.facebook.com/v20.0/{phone_id}/conversational_automation"
     
     headers = {
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json"
     }
     
-    # Configuration des Conversational Components (Ice Breakers)
+    # Configuration des Ice Breakers
     payload = {
-        "messaging_product": "whatsapp",
-        "commands": [
-            {
-                "commands": [
-                    {
-                        "command": "Je cherche un bien à louer",
-                        "description": "Recherche de location"
-                    },
-                    {
-                        "command": "Je cherche à acheter un bien",
-                        "description": "Projet d'achat"
-                    },
-                    {
-                        "command": "Je souhaite confier un bien",
-                        "description": "Gestion locative"
-                    }
-                ]
-            }
+        "prompts": [
+            "Je cherche un bien à louer",
+            "Je cherche à acheter un bien",
+            "Je souhaite confier un bien"
         ]
     }
     

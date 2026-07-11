@@ -113,6 +113,9 @@
             <button onclick="switchTab('matches')" id="tab-matches-btn" class="py-3 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-forest-600 transition-all">
                 🤝 Suivi des Visites
             </button>
+            <button onclick="switchTab('templates')" id="tab-templates-btn" class="py-3 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-forest-600 transition-all">
+                💬 Modèles de Réponses
+            </button>
             <button onclick="switchTab('help')" id="tab-help-btn" class="py-3 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-forest-600 transition-all">
                 ℹ️ Centre d'Aide
             </button>
@@ -380,6 +383,38 @@
             </div>
         </div>
 
+        <!-- TAB CONTENT: TEMPLATES -->
+        <div id="tab-templates" class="tab-pane hidden flex-col gap-6">
+            <div class="flex justify-between items-end">
+                <div>
+                    <h3 class="text-xl font-bold text-gray-800">Modèles de Réponses</h3>
+                    <p class="text-xs text-gray-500 mt-1">Gérez les messages prédéfinis que les agents peuvent envoyer en un clic.</p>
+                </div>
+                <button onclick="openTemplateModal()" class="px-4 py-2.5 bg-forest-600 hover:bg-forest-700 text-white font-bold rounded-xl text-xs flex items-center gap-2 shadow-sm transition-all">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+                    Ajouter un modèle
+                </button>
+            </div>
+
+            <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-50/80 border-b border-gray-200">
+                                <th class="p-4 text-[10px] uppercase tracking-wider font-bold text-gray-400">Titre</th>
+                                <th class="p-4 text-[10px] uppercase tracking-wider font-bold text-gray-400">Catégorie</th>
+                                <th class="p-4 text-[10px] uppercase tracking-wider font-bold text-gray-400">Contenu</th>
+                                <th class="p-4 text-[10px] uppercase tracking-wider font-bold text-gray-400 w-32">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="templates-table-body" class="divide-y divide-gray-100">
+                            <!-- Templates injected here via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
         <!-- TAB CONTENT: HELP -->
         <div id="tab-help" class="tab-pane hidden flex flex-col gap-6">
             <div class="flex justify-between items-center">
@@ -575,6 +610,9 @@
                     renderMatchesTable(data.matches || []);
                     renderActivityFeed(data.matches || []);
                 });
+
+            // Load Templates
+            loadTemplates();
         }
 
         // CHARTS LOGIC
@@ -1020,7 +1058,184 @@
                 showToast("Erreur lors de la mise à jour.", "error");
             });
         }
+
+        // TEMPLATES LOGIC
+        let allTemplates = [];
+
+        function loadTemplates() {
+            fetch('/api/manager/templates/')
+                .then(res => res.json())
+                .then(data => {
+                    allTemplates = data.templates || [];
+                    renderTemplatesTable();
+                })
+                .catch(err => console.error("Error loading templates:", err));
+        }
+
+        function renderTemplatesTable() {
+            const tbody = document.getElementById('templates-table-body');
+            tbody.innerHTML = '';
+            if (allTemplates.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-400 text-xs">Aucun modèle de réponse disponible</td></tr>';
+                return;
+            }
+            
+            allTemplates.forEach(t => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-gray-50/50 transition-colors border-b border-gray-100">
+                        <td class="p-4 font-bold text-gray-800 text-xs">${t.title}</td>
+                        <td class="p-4 text-xs font-mono text-gray-500">
+                            <span class="px-2 py-1 bg-gray-100 rounded-md">${t.category || 'UTILITY'}</span>
+                        </td>
+                        <td class="p-4 text-xs text-gray-600 truncate max-w-xs" title="${t.content.replace(/"/g, '&quot;')}">${t.content}</td>
+                        <td class="p-4 flex gap-2">
+                            <button onclick="editTemplate('${t.id}')" class="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-all" title="Modifier">
+                                ✏️
+                            </button>
+                            <button onclick="deleteTemplate('${t.id}')" class="p-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition-all" title="Supprimer">
+                                🗑️
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function openTemplateModal(id = null) {
+            const modal = document.getElementById('template-modal');
+            const titleEl = document.getElementById('templateModalTitle');
+            const formTitle = document.getElementById('template-title');
+            const formCategory = document.getElementById('template-category');
+            const formContent = document.getElementById('template-content');
+            const formId = document.getElementById('template-id');
+            
+            if (id) {
+                const t = allTemplates.find(x => x.id === id);
+                if (t) {
+                    titleEl.textContent = "Modifier le Modèle";
+                    formId.value = t.id;
+                    formTitle.value = t.title;
+                    formCategory.value = t.category;
+                    formContent.value = t.content;
+                }
+            } else {
+                titleEl.textContent = "Nouveau Modèle";
+                formId.value = '';
+                formTitle.value = '';
+                formCategory.value = 'UTILITY';
+                formContent.value = '';
+            }
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => {
+                modal.firstElementChild.classList.remove('scale-95');
+                modal.firstElementChild.classList.add('scale-100');
+            }, 10);
+        }
+
+        function closeTemplateModal() {
+            const modal = document.getElementById('template-modal');
+            modal.firstElementChild.classList.remove('scale-100');
+            modal.firstElementChild.classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 150);
+        }
+
+        function editTemplate(id) {
+            openTemplateModal(id);
+        }
+
+        function deleteTemplate(id) {
+            if (!confirm("Voulez-vous vraiment supprimer ce modèle ?")) return;
+            
+            fetch('/api/manager/templates/', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify({ id: id })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'deleted') {
+                    showToast('Modèle supprimé avec succès !');
+                    loadTemplates();
+                } else {
+                    showToast('Erreur: ' + data.error, 'error');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                showToast("Erreur de suppression.", "error");
+            });
+        }
+
+        function saveTemplate(e) {
+            e.preventDefault();
+            const payload = {
+                id: document.getElementById('template-id').value,
+                title: document.getElementById('template-title').value,
+                category: document.getElementById('template-category').value,
+                content: document.getElementById('template-content').value
+            };
+            
+            fetch('/api/manager/templates/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'created' || data.status === 'updated') {
+                    showToast('Modèle enregistré avec succès !');
+                    closeTemplateModal();
+                    loadTemplates();
+                } else {
+                    showToast('Erreur: ' + data.error, 'error');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                showToast("Erreur d'enregistrement.", "error");
+            });
+        }
     </script>
+
+    <!-- TEMPLATE MODAL -->
+    <div id="template-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 flex flex-col gap-4 shadow-2xl transform scale-95 transition-all duration-150 relative">
+            <h3 class="text-lg font-bold text-gray-800" id="templateModalTitle">Nouveau Modèle</h3>
+            <button onclick="closeTemplateModal()" class="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full text-gray-400 transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+            <form onsubmit="saveTemplate(event)" class="flex flex-col gap-4">
+                <input type="hidden" id="template-id">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Titre du modèle *</label>
+                    <input type="text" id="template-title" required placeholder="Ex: Bonjour par défaut" class="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-forest-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Catégorie</label>
+                    <input type="text" id="template-category" placeholder="Ex: ACCUEIL" class="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-forest-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Contenu du message *</label>
+                    <textarea id="template-content" required rows="4" placeholder="Tapez le message complet ici..." class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-forest-500 resize-none"></textarea>
+                </div>
+                <div class="flex justify-end gap-3 mt-2">
+                    <button type="button" onclick="closeTemplateModal()" class="px-5 py-2 text-gray-600 font-bold hover:bg-gray-100 rounded-xl text-sm transition-all">Annuler</button>
+                    <button type="submit" class="px-5 py-2 bg-forest-600 hover:bg-forest-700 text-white font-bold rounded-xl shadow-md text-sm transition-all">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <!-- Toast Notification Container -->
     <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm pointer-events-none"></div>

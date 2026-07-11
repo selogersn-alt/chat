@@ -1494,3 +1494,53 @@ def whatsapp_media_proxy(request, media_id):
     except Exception as e:
         logger.error(f"Exception in media proxy: {str(e)}", exc_info=True)
         return HttpResponse('Internal Server Error', status=500)
+
+@login_required(login_url='login')
+def manager_templates_api(request):
+    """
+    CRUD API for QuickTemplates. Managers only.
+    """
+    if request.user.role not in [User.RoleEnum.MANAGER] and not request.user.is_superuser:
+        return JsonResponse({'error': 'Non autorisé'}, status=403)
+        
+    if request.method == 'GET':
+        templates = QuickTemplate.objects.all().order_by('title')
+        data = [{'id': str(t.id), 'title': t.title, 'category': t.category, 'content': t.content} for t in templates]
+        return JsonResponse({'templates': data})
+        
+    elif request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            t_id = data.get('id')
+            title = data.get('title', '').strip()
+            content = data.get('content', '').strip()
+            category = data.get('category', 'UTILITY')
+            
+            if not title or not content:
+                return JsonResponse({'error': 'Le titre et le contenu sont obligatoires'}, status=400)
+                
+            if t_id:
+                t = get_object_or_404(QuickTemplate, id=t_id)
+                t.title = title
+                t.content = content
+                t.category = category
+                t.save()
+                return JsonResponse({'status': 'updated'})
+            else:
+                QuickTemplate.objects.create(title=title, content=content, category=category)
+                return JsonResponse({'status': 'created'})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+            
+    elif request.method == 'DELETE':
+        try:
+            data = json.loads(request.body)
+            t_id = data.get('id')
+            if not t_id:
+                return JsonResponse({'error': 'ID obligatoire'}, status=400)
+            get_object_or_404(QuickTemplate, id=t_id).delete()
+            return JsonResponse({'status': 'deleted'})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+            
+    return JsonResponse({'error': 'Method not allowed'}, status=405)

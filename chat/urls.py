@@ -26,6 +26,7 @@ urlpatterns = [
     path('api/manager/stats/', views.manager_stats, name='manager_stats'),
     path('api/manager/agents/', views.manager_agents, name='manager_agents'),
     path('api/manager/delegate/', views.manager_delegate, name='manager_delegate'),
+    path('api/manager/templates/', views.manager_templates_api, name='manager_templates_api'),
     path('api/manager/matches/', views.manager_matches, name='manager_matches'),
     
     # Partner APIs
