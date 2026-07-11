@@ -17,6 +17,8 @@ from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.db.models import Q
 from django.core.cache import cache
+from django.core.files.storage import FileSystemStorage
+from django.conf import settings
 from .models import User, Conversation, Message, Property, QuickTemplate, Reminder, Partner, PartnerMatch
 
 logger = logging.getLogger(__name__)
@@ -1012,6 +1014,10 @@ def export_leads_csv(request):
         'Canal', 
         'Agent Assigné', 
         'Étape du Pipeline', 
+        'Projet Client',
+        'Type de Bien',
+        'Zone / Quartier',
+        'Note Satisfaction (/5)',
         'Étiquettes / Catégories', 
         'Notes de l\'Agent', 
         'Dernier Message'
@@ -1028,10 +1034,14 @@ def export_leads_csv(request):
         writer.writerow([
             client_name,
             client_phone,
-            conv.status,
+            conv.get_status_display(),
             'WhatsApp' if conv.is_whatsapp else 'Web Chat',
             conv.assigned_to.get_full_name() or conv.assigned_to.username if conv.assigned_to else 'Non assigné',
             conv.get_pipeline_stage_display(),
+            conv.client_project or "",
+            conv.client_property_type or "",
+            conv.client_zone or "",
+            conv.satisfaction_rating or "",
             conv.tags,
             conv.notes,
             last_msg_content
@@ -1615,10 +1625,12 @@ def whatsapp_media_proxy(request, media_id):
             req_headers['Range'] = request.headers['Range']
             
         # Download the file completely into memory (fast from Meta CDN, avoids holding open connections)
-        img_resp = requests.get(media_url, headers=req_headers, timeout=20)
+        # UPDATE: Now using stream=True and StreamingHttpResponse to fix audio/video playback issues
+        img_resp = requests.get(media_url, headers=req_headers, stream=True, timeout=20)
         
         if img_resp.status_code in [200, 206]:
-            response = HttpResponse(img_resp.content, content_type=mime_type, status=img_resp.status_code)
+            from django.http import StreamingHttpResponse
+            response = StreamingHttpResponse(img_resp.iter_content(chunk_size=8192), content_type=mime_type, status=img_resp.status_code)
             
             # Forward essential headers for audio/video playback
             if 'Content-Length' in img_resp.headers:
@@ -1727,4 +1739,22 @@ def send_survey(request):
             
     except Exception as e:
         logger.error(f"Error sending survey: {str(e)}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+@login_required(login_url='login')
+@require_POST
+def upload_media(request):
+    try:
+        if 'file' not in request.FILES:
+            return JsonResponse({'error': 'Aucun fichier sélectionné'}, status=400)
+            
+        file = request.FILES['file']
+        fs = FileSystemStorage(location=settings.MEDIA_ROOT)
+        filename = fs.save(file.name, file)
+        file_url = fs.url(filename)
+        absolute_url = request.build_absolute_uri(file_url)
+        
+        return JsonResponse({'status': 'uploaded', 'url': absolute_url})
+    except Exception as e:
+        logger.error(f"Error uploading media: {str(e)}")
         return JsonResponse({'error': str(e)}, status=500)

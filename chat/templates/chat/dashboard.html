@@ -573,6 +573,17 @@
                                 <button type="button" onclick="appendEmoji('📞')" class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-200 text-base transition-colors" title="Appeler">📞</button>
                             </div>
 
+                            <!-- Media Upload -->
+                            <div class="flex items-center border-l border-gray-200 pl-2 ml-1">
+                                <input type="file" id="mediaUploadInput" class="hidden" accept="image/*,video/*,audio/*,application/pdf" onchange="handleMediaUpload(event)">
+                                <button type="button" onclick="document.getElementById('mediaUploadInput').click()" class="w-8 h-8 flex items-center justify-center rounded hover:bg-gray-200 text-gray-500 hover:text-forest-600 transition-colors" title="Joindre un fichier (Image, Vidéo, Audio, PDF)">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32m.009-.01l-.01.01m5.699-9.941l-7.81 7.81a1.5 1.5 0 002.112 2.13"/></svg>
+                                </button>
+                                <div id="uploadSpinner" class="hidden ml-1">
+                                    <svg class="animate-spin h-4 w-4 text-forest-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                </div>
+                            </div>
+
                         </div>
                         
                         <!-- Right: SLA Selector -->
@@ -636,6 +647,8 @@
                         <div class="flex gap-2">
                             <select id="tagSelect" class="flex-1 bg-white border border-gray-200 rounded-xl px-2.5 py-1.5 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-forest-500">
                                 <option value="" disabled selected>+ Étiquette...</option>
+                                <option value="VISITE EFFECTUÉE">VISITE EFFECTUÉE</option>
+                                <option value="PAIEMENT EFFECTUÉ">PAIEMENT EFFECTUÉ</option>
                                 <option value="Chambres">Chambres</option>
                                 <option value="Chambre sdb">Chambre sdb</option>
                                 <option value="Studio">Studio</option>
@@ -1792,6 +1805,47 @@
                 e.preventDefault();
                 handleSendSubmit(e);
             }
+        }
+
+        // Handle Media Upload
+        function handleMediaUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const spinner = document.getElementById('uploadSpinner');
+            const urlInput = document.getElementById('attachmentUrlInput');
+            
+            if (spinner) spinner.classList.remove('hidden');
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            fetch('/api/upload/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrftoken
+                },
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (spinner) spinner.classList.add('hidden');
+                if (data.status === 'uploaded') {
+                    if (urlInput) {
+                        urlInput.value = data.url;
+                        // Trigger visual feedback to the user
+                        urlInput.classList.add('ring-2', 'ring-forest-500', 'bg-green-50');
+                        setTimeout(() => urlInput.classList.remove('ring-2', 'ring-forest-500', 'bg-green-50'), 1000);
+                    }
+                } else {
+                    alert("Erreur lors de l'upload: " + (data.error || "Inconnue"));
+                }
+            })
+            .catch(err => {
+                if (spinner) spinner.classList.add('hidden');
+                console.error("Upload error:", err);
+                alert("Erreur réseau lors de l'upload.");
+            });
         }
 
         // Handle sending message
