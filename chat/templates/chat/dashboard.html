@@ -847,12 +847,14 @@
             }
         }
 
-        // Run sync loop immediately, and poll every 3 seconds
+        // Run sync loop immediately, and poll every 5 seconds
         syncData();
-        setInterval(syncData, 3000);
+        setInterval(syncData, 5000);
         // Update the session countdown every second for real-time HH:MM:SS
         setInterval(updateSessionCountdown, 1000);
         setInterval(updateSLATimers, 1000);
+
+        let syncFailures = 0;
 
         function syncData() {
             let url = `/api/sync/`;
@@ -863,6 +865,7 @@
             fetch(url)
                 .then(res => res.json())
                 .then(data => {
+                    syncFailures = 0; // Reset failures on success
                     loadedConversations = data.conversations || [];
                     loadedProperties = data.properties || [];
                     loadedTemplates = data.templates || [];
@@ -948,11 +951,14 @@
                 })
                 .catch(err => {
                     console.error("Error syncing dashboard:", err);
-                    // ── Connection badge: offline ──
-                    const badge = document.getElementById('connBadge');
-                    if (badge) {
-                        badge.classList.add('offline');
-                        badge.innerHTML = `<span class="flex h-1.5 w-1.5 relative"><span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-400"></span></span> Déconnecté`;
+                    syncFailures++;
+                    if (syncFailures >= 3) {
+                        // ── Connection badge: offline ──
+                        const badge = document.getElementById('connBadge');
+                        if (badge) {
+                            badge.classList.add('offline');
+                            badge.innerHTML = `<span class="flex h-1.5 w-1.5 relative"><span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-400"></span></span> Déconnecté`;
+                        }
                     }
                 });
         }
@@ -1149,6 +1155,8 @@
         // Select active conversation
         function selectConversation(id) {
             currentConversationId = id;
+            currentMessagesJson = "";
+            lastMessageCount = 0;
             
             // UI Toggle
             document.querySelectorAll('.conv-tile').forEach(el => el.classList.remove('active'));
@@ -1174,6 +1182,7 @@
 
         // Render Column 2 Chat View
         let lastMessageCount = 0;
+        let currentMessagesJson = "";
         let activeSessionTimerInterval = null;
         let clientLastMessageAt = null;
 
@@ -1387,21 +1396,27 @@
                 </div>
             `;
             
-            container.innerHTML = html;
+            const newMessagesJson = JSON.stringify(messages);
             
-            // Auto scroll to bottom only if there are new messages
-            if (messages.length > lastMessageCount) {
-                container.scrollTop = container.scrollHeight;
+            // Only update DOM if messages actually changed to prevent focus loss and text selection issues
+            if (newMessagesJson !== currentMessagesJson) {
+                container.innerHTML = html;
+                currentMessagesJson = newMessagesJson;
                 
-                // If the last message was from the client, trigger typing indicator to show they are active
-                if (messages.length > 0) {
-                    const lastMsg = messages[messages.length - 1];
-                    if (!lastMsg.sender_is_self && !lastMsg.content.startsWith('[SYSTEME]')) {
-                        triggerTypingIndicator(info.client_name);
+                // Auto scroll to bottom only if there are new messages
+                if (messages.length > lastMessageCount) {
+                    container.scrollTop = container.scrollHeight;
+                    
+                    // If the last message was from the client, trigger typing indicator to show they are active
+                    if (messages.length > 0) {
+                        const lastMsg = messages[messages.length - 1];
+                        if (!lastMsg.sender_is_self && !lastMsg.content.startsWith('[SYSTEME]')) {
+                            triggerTypingIndicator(info.client_name);
+                        }
                     }
+                    
+                    lastMessageCount = messages.length;
                 }
-                
-                lastMessageCount = messages.length;
             }
             
             // Update Right Property Tab Details if a property link is mentioned in topic

@@ -703,7 +703,6 @@ def sync_messages(request):
     })
 
 @login_required(login_url='login')
-@csrf_exempt
 def send_message(request):
     """
     Endpoint to send message from the agent.
@@ -831,7 +830,6 @@ def trigger_meta_whatsapp_api(to_phone, message_text=None, attachment_url=None, 
         return False, None
 
 @login_required(login_url='login')
-@csrf_exempt
 def claim_conversation(request):
     """
     Endpoint for an agent to claim an unassigned conversation.
@@ -873,7 +871,6 @@ def claim_conversation(request):
 
 
 @login_required(login_url='login')
-@csrf_exempt
 def update_conversation_notes(request):
     if request.method != 'POST':
         return JsonResponse({'error': 'Method not allowed'}, status=405)
@@ -892,7 +889,6 @@ def update_conversation_notes(request):
         return JsonResponse({'error': str(e)}, status=500)
 
 @login_required(login_url='login')
-@csrf_exempt
 def update_conversation_pipeline(request):
     if request.method != 'POST':
         return JsonResponse({'error': 'Method not allowed'}, status=405)
@@ -923,7 +919,6 @@ def update_conversation_pipeline(request):
         return JsonResponse({'error': str(e)}, status=500)
 
 @login_required(login_url='login')
-@csrf_exempt
 def create_reminder(request):
     if request.method != 'POST':
         return JsonResponse({'error': 'Method not allowed'}, status=405)
@@ -959,7 +954,6 @@ def create_reminder(request):
         return JsonResponse({'error': str(e)}, status=500)
 
 @login_required(login_url='login')
-@csrf_exempt
 def complete_reminder(request):
     if request.method != 'POST':
         return JsonResponse({'error': 'Method not allowed'}, status=405)
