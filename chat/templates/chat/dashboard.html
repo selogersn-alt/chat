@@ -560,6 +560,19 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- Emojis Bar -->
+                            <div class="hidden sm:flex items-center gap-0.5 border-l border-gray-200 pl-1.5 ml-1">
+                                <button type="button" onclick="appendEmoji('😊')" class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-200 text-base transition-colors" title="Sourire">😊</button>
+                                <button type="button" onclick="appendEmoji('🙏')" class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-200 text-base transition-colors" title="Merci">🙏</button>
+                                <button type="button" onclick="appendEmoji('🤝')" class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-200 text-base transition-colors" title="Accord">🤝</button>
+                                <button type="button" onclick="appendEmoji('👍')" class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-200 text-base transition-colors" title="Bien">👍</button>
+                                <button type="button" onclick="appendEmoji('🏠')" class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-200 text-base transition-colors" title="Maison">🏠</button>
+                                <button type="button" onclick="appendEmoji('✅')" class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-200 text-base transition-colors" title="Valider">✅</button>
+                                <button type="button" onclick="appendEmoji('📍')" class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-200 text-base transition-colors" title="Position">📍</button>
+                                <button type="button" onclick="appendEmoji('📞')" class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-200 text-base transition-colors" title="Appeler">📞</button>
+                            </div>
+
                         </div>
                         
                         <!-- Right: SLA Selector -->
@@ -2528,6 +2541,15 @@
         function triggerExportCSV() {
             let url = `/api/leads/export/?status=${currentFilter}&tag=${currentTagFilter}&agent=${currentAgentFilter}`;
             window.open(url, '_blank');
+        }
+
+        // Append Emoji
+        function appendEmoji(emoji) {
+            const input = document.getElementById('messageInput');
+            if (input) {
+                input.value += emoji;
+                input.focus();
+            }
         }
 
         // QUICK PARTNER RECOMMENDATION LOGIC

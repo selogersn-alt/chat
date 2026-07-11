@@ -1613,11 +1613,11 @@ def whatsapp_media_proxy(request, media_id):
         if 'Range' in request.headers:
             req_headers['Range'] = request.headers['Range']
             
-        img_resp = requests.get(media_url, headers=req_headers, stream=True, timeout=15)
+        # Download the file completely into memory (fast from Meta CDN, avoids holding open connections)
+        img_resp = requests.get(media_url, headers=req_headers, timeout=20)
         
-        from django.http import StreamingHttpResponse
         if img_resp.status_code in [200, 206]:
-            response = StreamingHttpResponse(img_resp.iter_content(chunk_size=8192), content_type=mime_type, status=img_resp.status_code)
+            response = HttpResponse(img_resp.content, content_type=mime_type, status=img_resp.status_code)
             
             # Forward essential headers for audio/video playback
             if 'Content-Length' in img_resp.headers:
