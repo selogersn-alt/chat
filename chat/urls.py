@@ -36,6 +36,11 @@ urlpatterns = [
     path('api/manager/templates/', views.manager_templates_api, name='manager_templates_api'),
     path('api/manager/matches/', views.manager_matches, name='manager_matches'),
     
+    # Mobile App APIs
+    path('api/mobile/login/', views.mobile_login, name='mobile_login'),
+    path('api/mobile/conversations/', views.mobile_conversations, name='mobile_conversations'),
+    path('api/mobile/conversations/<uuid:conversation_id>/messages/', views.mobile_messages, name='mobile_messages'),
+    
     # Partner APIs
     path('api/partners/search/', views.search_partners, name='search_partners'),
     path('api/partners/match/', views.create_partner_match, name='create_partner_match'),

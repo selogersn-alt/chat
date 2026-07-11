@@ -1844,3 +1844,119 @@ def list_visits(request):
     except Exception as e:
         logger.error(f"Error listing visits: {str(e)}")
         return JsonResponse({'error': str(e)}, status=500)
+
+from rest_framework.authtoken.models import Token
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def mobile_login(request):
+    try:
+        username = request.data.get('username')
+        password = request.data.get('password')
+        if not username or not password:
+            return JsonResponse({'error': 'Veuillez saisir votre nom d\'utilisateur et mot de passe.'}, status=400)
+        
+        user = authenticate(username=username, password=password)
+        if not user:
+            return JsonResponse({'error': 'Identifiants invalides.'}, status=400)
+            
+        if user.role not in [User.RoleEnum.AGENT, User.RoleEnum.MANAGER]:
+            return JsonResponse({'error': 'Accès interdit. Réservé aux conseillers et managers.'}, status=403)
+            
+        token, created = Token.objects.get_or_create(user=user)
+        return JsonResponse({
+            'status': 'success',
+            'token': token.key,
+            'username': user.username,
+            'full_name': user.get_full_name() or user.username,
+            'role': user.role
+        })
+    except Exception as e:
+        logger.error(f"Error in mobile login: {str(e)}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+@api_view(['GET'])
+def mobile_conversations(request):
+    try:
+        # Returns conversations assigned to the current agent, or all if manager
+        if request.user.role == User.RoleEnum.MANAGER:
+            convs = Conversation.objects.all()
+        else:
+            convs = Conversation.objects.filter(assigned_to=request.user)
+            
+        # We can filter by status if passed (ACTIVE, PENDING, CLOSED)
+        status_filter = request.query_params.get('status')
+        if status_filter:
+            convs = convs.filter(status=status_filter)
+            
+        data = []
+        for c in convs.order_by('-last_message_at'):
+            # Get client name/phone (which is the participant with role=CLIENT)
+            client = c.participants.filter(role=User.RoleEnum.CLIENT).first()
+            client_name = client.get_full_name() or client.username if client else "Client inconnu"
+            client_phone = client.phone_number if client else ""
+            
+            # Get last message snippet
+            last_msg = c.messages.order_by('-created_at').first()
+            last_msg_text = last_msg.text if last_msg else ""
+            last_msg_time = last_msg.created_at.isoformat() if last_msg else c.created_at.isoformat()
+            
+            data.append({
+                'id': str(c.id),
+                'client_name': client_name,
+                'client_phone': client_phone,
+                'status': c.status,
+                'pipeline_stage': c.pipeline_stage,
+                'last_message_text': last_msg_text,
+                'last_message_time': last_msg_time,
+                'unread_count': c.messages.filter(is_read=False).exclude(sender=request.user).count()
+            })
+            
+        return JsonResponse({'status': 'success', 'conversations': data})
+    except Exception as e:
+        logger.error(f"Error listing mobile conversations: {str(e)}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+@api_view(['GET'])
+def mobile_messages(request, conversation_id):
+    try:
+        conv = get_object_or_404(Conversation, id=conversation_id)
+        # Check permissions
+        if request.user.role != User.RoleEnum.MANAGER and conv.assigned_to != request.user:
+            return JsonResponse({'error': 'Accès interdit'}, status=403)
+            
+        # Mark messages as read
+        conv.messages.exclude(sender=request.user).update(is_read=True)
+        
+        msgs = conv.messages.order_by('created_at')
+        data = []
+        for m in msgs:
+            data.append({
+                'id': str(m.id),
+                'sender_username': m.sender.username,
+                'sender_role': m.sender.role,
+                'text': m.text,
+                'media_url': m.media_url if m.media_url else '',
+                'mime_type': m.mime_type if m.mime_type else '',
+                'created_at': m.created_at.isoformat(),
+                'is_read': m.is_read
+            })
+            
+        # Get conversation meta-info
+        client = conv.participants.filter(role=User.RoleEnum.CLIENT).first()
+        client_name = client.get_full_name() or client.username if client else "Client inconnu"
+        client_phone = client.phone_number if client else ""
+        
+        return JsonResponse({
+            'status': 'success',
+            'client_name': client_name,
+            'client_phone': client_phone,
+            'pipeline_stage': conv.pipeline_stage,
+            'messages': data
+        })
+    except Exception as e:
+        logger.error(f"Error loading mobile messages: {str(e)}")
+        return JsonResponse({'error': str(e)}, status=500)
+
