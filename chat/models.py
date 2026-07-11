@@ -165,3 +165,27 @@ class PartnerMatch(models.Model):
 
     def __str__(self):
         return f"Match: {self.visitor_name} ➔ {self.partner.name}"
+
+class Visit(models.Model):
+    class StatusEnum(models.TextChoices):
+        PLANNED = 'PLANNED', 'Planifiée'
+        COMPLETED = 'COMPLETED', 'Effectuée'
+        CANCELED = 'CANCELED', 'Annulée'
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name='visits')
+    agent = models.ForeignKey(User, on_delete=models.CASCADE, related_name='visits_assigned')
+    property_title = models.CharField(max_length=255)
+    visit_date = models.DateTimeField()
+    status = models.CharField(max_length=20, choices=StatusEnum.choices, default=StatusEnum.PLANNED)
+    client_name = models.CharField(max_length=255, blank=True)
+    client_phone = models.CharField(max_length=30, blank=True)
+    notes = models.TextField(blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['visit_date']
+
+    def __str__(self):
+        return f"Visite: {self.client_name} - {self.property_title} le {self.visit_date.strftime('%d/%m/%Y')}"

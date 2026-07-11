@@ -19,7 +19,7 @@ from django.db.models import Q
 from django.core.cache import cache
 from django.core.files.storage import FileSystemStorage
 from django.conf import settings
-from .models import User, Conversation, Message, Property, QuickTemplate, Reminder, Partner, PartnerMatch
+from .models import User, Conversation, Message, Property, QuickTemplate, Reminder, Partner, PartnerMatch, Visit
 
 logger = logging.getLogger(__name__)
 
@@ -1757,4 +1757,90 @@ def upload_media(request):
         return JsonResponse({'status': 'uploaded', 'url': absolute_url})
     except Exception as e:
         logger.error(f"Error uploading media: {str(e)}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+@login_required(login_url='login')
+@require_POST
+def create_visit(request):
+    try:
+        data = json.loads(request.body)
+        conv_id = data.get('conversation_id')
+        visit_date_str = data.get('visit_date')
+        property_title = data.get('property_title')
+        client_name = data.get('client_name', '')
+        client_phone = data.get('client_phone', '')
+        
+        if not conv_id or not visit_date_str or not property_title:
+            return JsonResponse({'error': 'Missing required fields'}, status=400)
+            
+        conv = get_object_or_404(Conversation, id=conv_id)
+        visit_date = parse_datetime(visit_date_str)
+        
+        if not visit_date:
+            return JsonResponse({'error': 'Invalid date format'}, status=400)
+            
+        visit = Visit.objects.create(
+            conversation=conv,
+            agent=request.user,
+            property_title=property_title,
+            visit_date=visit_date,
+            client_name=client_name,
+            client_phone=client_phone,
+            status=Visit.StatusEnum.PLANNED
+        )
+        
+        return JsonResponse({'status': 'success', 'visit_id': str(visit.id)})
+    except Exception as e:
+        logger.error(f"Error creating visit: {str(e)}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+@login_required(login_url='login')
+@require_POST
+def update_visit(request):
+    try:
+        data = json.loads(request.body)
+        visit_id = data.get('visit_id')
+        new_status = data.get('status')
+        
+        if not visit_id or not new_status:
+            return JsonResponse({'error': 'Missing required fields'}, status=400)
+            
+        visit = get_object_or_404(Visit, id=visit_id)
+        visit.status = new_status
+        visit.save()
+        
+        # If visit completed, update pipeline stage to VISIT automatically
+        if new_status == Visit.StatusEnum.COMPLETED.value:
+            visit.conversation.pipeline_stage = Conversation.PipelineStageEnum.VISIT
+            visit.conversation.save()
+            
+        return JsonResponse({'status': 'success'})
+    except Exception as e:
+        logger.error(f"Error updating visit: {str(e)}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+@login_required(login_url='login')
+def list_visits(request):
+    try:
+        if request.user.role == User.RoleEnum.MANAGER:
+            visits = Visit.objects.all().select_related('agent', 'conversation')
+        else:
+            visits = Visit.objects.filter(agent=request.user).select_related('agent', 'conversation')
+            
+        visits_data = []
+        for v in visits.order_by('-visit_date')[:50]:
+            visits_data.append({
+                'id': str(v.id),
+                'property_title': v.property_title,
+                'visit_date': v.visit_date.isoformat(),
+                'status': v.status,
+                'client_name': v.client_name,
+                'client_phone': v.client_phone,
+                'agent_name': v.agent.get_full_name() or v.agent.username,
+                'conv_id': str(v.conversation.id)
+            })
+            
+        return JsonResponse({'status': 'success', 'visits': visits_data})
+    except Exception as e:
+        logger.error(f"Error listing visits: {str(e)}")
         return JsonResponse({'error': str(e)}, status=500)

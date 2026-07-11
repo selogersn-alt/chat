@@ -24,6 +24,11 @@ urlpatterns = [
     path('api/leads/export/', views.export_leads_csv, name='export_leads_csv'),
     path('api/conversation/send-survey/', views.send_survey, name='send_survey'),
     
+    # Visits APIs
+    path('api/visits/create/', views.create_visit, name='create_visit'),
+    path('api/visits/update/', views.update_visit, name='update_visit'),
+    path('api/visits/list/', views.list_visits, name='list_visits'),
+    
     # Manager APIs
     path('api/manager/stats/', views.manager_stats, name='manager_stats'),
     path('api/manager/agents/', views.manager_agents, name='manager_agents'),

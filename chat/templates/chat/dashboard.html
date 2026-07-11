@@ -621,12 +621,13 @@
         <!-- COLUMN 3: PROPERTIES & CATALOG SIDEBAR -->
         <aside id="colRight" class="hidden md:flex col-right w-full md:w-80 lg:w-96 flex-col h-full flex-shrink-0 transition-transform duration-300">
             <!-- Sidebar Tabs -->
-            <div class="border-b border-white/10 flex px-3 pt-3 relative">
+            <div class="border-b border-white/10 flex px-3 pt-3 relative text-[10px]">
                 <button onclick="mobileCloseCRM()" class="md:hidden absolute right-3 top-3 p-1.5 text-white/50 hover:bg-white/10 rounded-lg">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
-                <button onclick="setRightTab('CURRENT')" id="rightTabCurrent" class="right-tab-btn active flex-1">🏠 Fiche Prospect</button>
+                <button onclick="setRightTab('CURRENT')" id="rightTabCurrent" class="right-tab-btn active flex-1">🏠 Fiche</button>
                 <button onclick="setRightTab('CATALOG')" id="rightTabCatalog" class="right-tab-btn flex-1">📋 Catalogue</button>
+                <button onclick="setRightTab('VISITS')" id="rightTabVisits" class="right-tab-btn flex-1">📅 Visites</button>
                 <button onclick="setRightTab('PARTNERS')" id="rightTabPartners" class="right-tab-btn flex-1">🤝 Partenaires</button>
             </div>
 
@@ -809,6 +810,25 @@
                         <label class="text-[9px] text-gray-400 font-semibold uppercase tracking-wider">Partenaires Trouvés (<span id="partnerCount">0</span>)</label>
                         <div id="partnerList" class="flex flex-col gap-2 max-h-[350px] overflow-y-auto custom-scrollbar">
                             <!-- Dynamically loaded partners -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Visits Tab -->
+                <div id="visitsTab" class="hidden flex flex-col gap-4">
+                    <div class="crm-card">
+                        <div class="crm-card-label" style="color: #6366f1;">📅 Planifier une visite</div>
+                        <div class="flex flex-col gap-2">
+                            <input type="text" id="visitPropertyTitle" placeholder="Bien immobilier à visiter..." class="w-full bg-white border border-gray-200 rounded-xl px-2.5 py-1.5 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-forest-500">
+                            <input type="datetime-local" id="visitDate" class="w-full bg-white border border-gray-200 rounded-xl px-2.5 py-1.5 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-forest-500">
+                            <button onclick="scheduleVisit()" class="w-full py-1.5 bg-forest-600 hover:bg-forest-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm">Planifier la visite</button>
+                        </div>
+                    </div>
+                    
+                    <div class="crm-card">
+                        <div class="crm-card-label" style="color: #10b981;">📋 Visites Programmées</div>
+                        <div id="visitsListContainer" class="flex flex-col gap-2 max-h-[350px] overflow-y-auto custom-scrollbar">
+                            <div class="text-xs text-gray-400 text-center py-4">Sélectionnez une discussion</div>
                         </div>
                     </div>
                 </div>
@@ -1294,6 +1314,10 @@
                 notesArea.value = info.notes || '';
             }
             
+            if (currentRightTab === 'VISITS') {
+                loadVisits();
+            }
+            
             const container = document.getElementById('messagesContainer');
             
             let html = '';
@@ -1557,18 +1581,22 @@
             const btnCurrent = document.getElementById('rightTabCurrent');
             const btnCatalog = document.getElementById('rightTabCatalog');
             const btnPartners = document.getElementById('rightTabPartners');
+            const btnVisits = document.getElementById('rightTabVisits');
             const currentTabDiv = document.getElementById('currentPropertyTab');
             const catalogTabDiv = document.getElementById('catalogPropertyTab');
             const partnersTabDiv = document.getElementById('partnersTab');
+            const visitsTabDiv = document.getElementById('visitsTab');
             
             // Set all inactive
             btnCurrent.classList.remove('active');
             btnCatalog.classList.remove('active');
             btnPartners.classList.remove('active');
+            if(btnVisits) btnVisits.classList.remove('active');
             
             currentTabDiv.classList.add('hidden');
             catalogTabDiv.classList.add('hidden');
             partnersTabDiv.classList.add('hidden');
+            if(visitsTabDiv) visitsTabDiv.classList.add('hidden');
             
             if (tab === 'CURRENT') {
                 btnCurrent.classList.add('active');
@@ -1580,8 +1608,135 @@
                 btnPartners.classList.add('active');
                 partnersTabDiv.classList.remove('hidden');
                 searchPartners();
+            } else if (tab === 'VISITS') {
+                if(btnVisits) btnVisits.classList.add('active');
+                if(visitsTabDiv) visitsTabDiv.classList.remove('hidden');
+                loadVisits();
             }
         }
+
+        // --- VISITS LOGIC ---
+        function scheduleVisit() {
+            if (!activeConversation) return;
+            const propTitle = document.getElementById('visitPropertyTitle').value;
+            const vDate = document.getElementById('visitDate').value;
+            
+            if (!propTitle || !vDate) {
+                alert("Veuillez remplir le bien et la date.");
+                return;
+            }
+            
+            fetch('/api/visits/create/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify({
+                    conversation_id: activeConversation,
+                    visit_date: vDate,
+                    property_title: propTitle,
+                    client_name: document.getElementById('chatHeaderName').innerText,
+                    client_phone: document.getElementById('chatHeaderPhone').innerText
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.status === 'success') {
+                    document.getElementById('visitPropertyTitle').value = '';
+                    document.getElementById('visitDate').value = '';
+                    loadVisits();
+                    
+                    // Optionnel : Ajouter un message dans le chat pour prévenir le client
+                    const dateObj = new Date(vDate);
+                    const formattedDate = dateObj.toLocaleDateString('fr-FR') + ' à ' + dateObj.toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'});
+                    const draftMsg = `*VISITE PLANIFIÉE* 📅\nNous confirmons votre visite pour le bien: ${propTitle}.\nDate: ${formattedDate}.`;
+                    insertText(draftMsg);
+                } else {
+                    alert("Erreur: " + data.error);
+                }
+            });
+        }
+        
+        function loadVisits() {
+            if (!activeConversation) return;
+            
+            fetch('/api/visits/list/')
+                .then(res => res.json())
+                .then(data => {
+                    const container = document.getElementById('visitsListContainer');
+                    if (data.status === 'success') {
+                        // Filter visits for current conversation
+                        const convVisits = data.visits.filter(v => v.conv_id === activeConversation);
+                        
+                        if (convVisits.length === 0) {
+                            container.innerHTML = '<div class="text-xs text-gray-400 text-center py-4">Aucune visite programmée</div>';
+                            return;
+                        }
+                        
+                        let html = '';
+                        convVisits.forEach(v => {
+                            const d = new Date(v.visit_date);
+                            const ds = d.toLocaleDateString('fr-FR') + ' ' + d.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+                            
+                            let statusColor = 'bg-yellow-100 text-yellow-800 border-yellow-200';
+                            if(v.status === 'COMPLETED') statusColor = 'bg-green-100 text-green-800 border-green-200';
+                            if(v.status === 'CANCELED') statusColor = 'bg-red-100 text-red-800 border-red-200';
+                            
+                            html += `
+                                <div class="p-3 bg-white border border-gray-200 rounded-xl flex justify-between items-start">
+                                    <div>
+                                        <div class="text-xs font-bold text-gray-800">${v.property_title}</div>
+                                        <div class="text-[10px] text-gray-500 mt-0.5">${ds}</div>
+                                    </div>
+                                    <div class="flex flex-col items-end gap-1">
+                                        <span class="text-[9px] font-bold px-1.5 py-0.5 rounded border ${statusColor}">
+                                            ${v.status}
+                                        </span>
+                                        ${v.status === 'PLANNED' ? `
+                                            <div class="flex gap-1 mt-1">
+                                                <button onclick="updateVisitStatus('${v.id}', 'COMPLETED')" class="text-[9px] bg-green-500 text-white px-2 py-0.5 rounded">Fait</button>
+                                                <button onclick="updateVisitStatus('${v.id}', 'CANCELED')" class="text-[9px] bg-red-500 text-white px-2 py-0.5 rounded">Annuler</button>
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        container.innerHTML = html;
+                    }
+                });
+        }
+        
+        function updateVisitStatus(visitId, status) {
+            fetch('/api/visits/update/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify({
+                    visit_id: visitId,
+                    status: status
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.status === 'success') {
+                    loadVisits();
+                    // Sync pipeline step if completed
+                    if(status === 'COMPLETED') {
+                        document.getElementById('pipelineSelect').value = 'VISIT';
+                        document.getElementById('pipelineSelect').dispatchEvent(new Event('change'));
+                        
+                        // Suggest sending a survey
+                        const draftMsg = `*VISITE EFFECTUÉE* ✅\nMerci pour votre visite ! Avez-vous un moment pour noter notre prestation sur ce lien ?\nhttps://logersenegal.com/survey/`;
+                        insertText(draftMsg);
+                    }
+                }
+            });
+        }
+
 
         // Search partners dynamically from API
         function searchPartners() {
