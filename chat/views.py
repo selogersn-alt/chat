@@ -256,19 +256,19 @@ def whatsapp_webhook(request):
             elif message_type == 'image':
                 media_id = message_data.get('image', {}).get('id')
                 content = message_data.get('image', {}).get('caption', '[Image WhatsApp]')
-                attachment_url = media_id if media_id and (media_id.startswith('http://') or media_id.startswith('https://')) else f"https://graph.facebook.com/v19.0/{media_id}"
+                attachment_url = f"/api/media/{media_id}/" if media_id else None
             elif message_type == 'document':
                 media_id = message_data.get('document', {}).get('id')
                 content = message_data.get('document', {}).get('filename', '[Document WhatsApp]')
-                attachment_url = media_id if media_id and (media_id.startswith('http://') or media_id.startswith('https://')) else f"https://graph.facebook.com/v19.0/{media_id}"
+                attachment_url = f"/api/media/{media_id}/" if media_id else None
             elif message_type == 'audio':
                 media_id = message_data.get('audio', {}).get('id')
                 content = "[Note Vocale WhatsApp]"
-                attachment_url = media_id if media_id and (media_id.startswith('http://') or media_id.startswith('https://')) else f"https://graph.facebook.com/v19.0/{media_id}"
+                attachment_url = f"/api/media/{media_id}/" if media_id else None
             elif message_type == 'video':
                 media_id = message_data.get('video', {}).get('id')
                 content = message_data.get('video', {}).get('caption', '[Vidéo WhatsApp]')
-                attachment_url = media_id if media_id and (media_id.startswith('http://') or media_id.startswith('https://')) else f"https://graph.facebook.com/v19.0/{media_id}"
+                attachment_url = f"/api/media/{media_id}/" if media_id else None
             elif message_type == 'location':
                 loc = message_data.get('location', {})
                 content = f"Localisation : Lat {loc.get('latitude')}, Lng {loc.get('longitude')}"
@@ -603,10 +603,11 @@ def send_message(request):
     try:
         data = json.loads(request.body)
         conversation_id = data.get('conversation_id')
-        content = data.get('content')
+        content = data.get('content', '')
+        attachment_url = data.get('attachment_url', None)
         
-        if not conversation_id or not content:
-            return JsonResponse({'error': 'Missing conversation_id or content'}, status=400)
+        if not conversation_id or (not content and not attachment_url):
+            return JsonResponse({'error': 'Missing conversation_id or content/attachment'}, status=400)
             
         if request.user.is_superuser or request.user.role == User.RoleEnum.MANAGER:
             conversation = get_object_or_404(Conversation, id=conversation_id)
@@ -617,7 +618,8 @@ def send_message(request):
         message = Message.objects.create(
             conversation=conversation,
             sender=request.user,
-            content=content
+            content=content,
+            attachment_url=attachment_url
         )
         
         conversation.last_message_at = timezone.now()
@@ -629,7 +631,7 @@ def send_message(request):
             client = conversation.participants.filter(role=User.RoleEnum.CLIENT).first()
             if client and client.phone_number:
                 # Trigger the webhook request to Meta
-                success, msg_id = trigger_meta_whatsapp_api(client.phone_number, content)
+                success, msg_id = trigger_meta_whatsapp_api(client.phone_number, content, attachment_url)
                 if success and msg_id:
                     message.msg_id = msg_id
                     message.status = Message.StatusEnum.SENT
@@ -658,7 +660,7 @@ def send_message(request):
         logger.error(f"Error sending message: {str(e)}", exc_info=True)
         return JsonResponse({'error': str(e)}, status=500)
 
-def trigger_meta_whatsapp_api(to_phone, message_text):
+def trigger_meta_whatsapp_api(to_phone, message_text, attachment_url=None):
     """
     Wrapper to call Meta's Cloud API endpoint.
     Returns (success, msg_id) tuple.
@@ -671,7 +673,7 @@ def trigger_meta_whatsapp_api(to_phone, message_text):
     if not token or token == "your_permanent_access_token_here" or not phone_id:
         import uuid
         mock_id = f"mock_wamid_{uuid.uuid4().hex}"
-        logger.info(f"MOCK API WhatsApp ➔ To: {to_phone} | Msg: {message_text} | ID: {mock_id}")
+        logger.info(f"MOCK API WhatsApp ➔ To: {to_phone} | Msg: {message_text} | Attachment: {attachment_url} | ID: {mock_id}")
         return True, mock_id
         
     url = f"https://graph.facebook.com/{version}/{phone_id}/messages"
@@ -679,16 +681,27 @@ def trigger_meta_whatsapp_api(to_phone, message_text):
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json"
     }
+    
     payload = {
         "messaging_product": "whatsapp",
         "recipient_type": "individual",
         "to": to_phone,
-        "type": "text",
-        "text": {
+    }
+    
+    if attachment_url:
+        # Assuming image for now, can be extended for document/video based on extension
+        payload["type"] = "image"
+        payload["image"] = {
+            "link": attachment_url
+        }
+        if message_text:
+            payload["image"]["caption"] = message_text
+    else:
+        payload["type"] = "text"
+        payload["text"] = {
             "preview_url": True,
             "body": message_text
         }
-    }
     
     try:
         response = requests.post(url, json=payload, headers=headers, timeout=10)
@@ -1444,3 +1457,40 @@ def manager_matches(request):
             return JsonResponse({'error': str(e)}, status=500)
             
     return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+@login_required(login_url='login')
+def whatsapp_media_proxy(request, media_id):
+    """
+    Proxy to fetch secure media from Meta API and serve it to the authenticated frontend.
+    """
+    token = os.getenv('WA_ACCESS_TOKEN')
+    version = os.getenv('WA_API_VERSION', 'v19.0')
+    
+    if not token:
+        return HttpResponse('Unauthorized', status=401)
+        
+    # 1. Fetch media URL metadata
+    url_req = f"https://graph.facebook.com/{version}/{media_id}"
+    headers = {"Authorization": f"Bearer {token}"}
+    try:
+        resp = requests.get(url_req, headers=headers, timeout=5)
+        if resp.status_code != 200:
+            logger.error(f"Media Proxy Meta Error: {resp.text}")
+            return HttpResponse('Media not found', status=404)
+            
+        media_data = resp.json()
+        media_url = media_data.get('url')
+        mime_type = media_data.get('mime_type', 'application/octet-stream')
+        
+        if not media_url:
+            return HttpResponse('Invalid media data', status=404)
+            
+        # 2. Fetch binary data
+        img_resp = requests.get(media_url, headers=headers, timeout=15)
+        if img_resp.status_code == 200:
+            return HttpResponse(img_resp.content, content_type=mime_type)
+            
+        return HttpResponse('Failed to download media bytes', status=500)
+    except Exception as e:
+        logger.error(f"Exception in media proxy: {str(e)}", exc_info=True)
+        return HttpResponse('Internal Server Error', status=500)

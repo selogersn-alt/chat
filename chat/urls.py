@@ -9,6 +9,7 @@ urlpatterns = [
     path('manager/', views.manager_dashboard_view, name='manager_dashboard'),
     
     path('api/webhook/', views.whatsapp_webhook, name='whatsapp_webhook'),
+    path('api/media/<str:media_id>/', views.whatsapp_media_proxy, name='whatsapp_media_proxy'),
     path('api/sync/', views.sync_messages, name='sync_messages'),
     path('api/send/', views.send_message, name='send_message'),
     path('api/claim/', views.claim_conversation, name='claim_conversation'),
