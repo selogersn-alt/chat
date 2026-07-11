@@ -395,6 +395,28 @@ def whatsapp_webhook(request):
                             content=f"[SYSTEME] Le client a partagé le bien : {matched_property.title} ({matched_property.price:,.0f} FCFA)"
                         )
 
+            # 3.5 Intercept Satisfaction Rating
+            rating_intercepted = False
+            if conversation.survey_sent and conversation.satisfaction_rating is None and message_type == 'text':
+                rating_match = re.match(r'^\s*([1-5])\s*$', content)
+                if rating_match:
+                    conversation.satisfaction_rating = int(rating_match.group(1))
+                    conversation.save()
+                    rating_intercepted = True
+                    
+                    # Send thank you message
+                    thank_you_msg = "Merci beaucoup pour votre retour ! Excellente journée. 😊"
+                    success, msg_id = trigger_meta_whatsapp_api(sender_phone, thank_you_msg)
+                    
+                    system_agent = User.objects.filter(is_superuser=True).first()
+                    Message.objects.create(
+                        conversation=conversation,
+                        sender=system_agent if system_agent else client_user,
+                        content=thank_you_msg,
+                        status=Message.StatusEnum.SENT if success else Message.StatusEnum.SENT,
+                        msg_id=msg_id if msg_id else ""
+                    )
+
             # 4. Save the actual message (with msg_id and READ status since it is incoming)
             Message.objects.create(
                 conversation=conversation,
@@ -518,6 +540,8 @@ def sync_messages(request):
                 'is_last_msg_from_client': active_is_last_msg_from_client,
                 'sla_limit_minutes': active_conv.sla_limit_minutes,
                 'sla_started_at': active_conv.sla_started_at.isoformat() if active_conv.sla_started_at else None,
+                'survey_sent': active_conv.survey_sent,
+                'satisfaction_rating': active_conv.satisfaction_rating,
             }
             
             # Fetch messages
@@ -1109,6 +1133,13 @@ def manager_stats(request):
                 'active_conversations_count': assigned_count
             })
             
+        # 4. Satisfaction Rating
+        rated_convs = convs_qs.filter(satisfaction_rating__isnull=False)
+        avg_rating = 0.0
+        total_rated = rated_convs.count()
+        if total_rated > 0:
+            avg_rating = sum(c.satisfaction_rating for c in rated_convs) / total_rated
+            
         return JsonResponse({
             'total_clients': total_clients,
             'total_agents': total_agents,
@@ -1123,6 +1154,8 @@ def manager_stats(request):
             'pending_matches': pending_matches,
             'conversion_rate': round(conversion_rate, 1),
             'sla_violations': sla_violations,
+            'avg_satisfaction': round(avg_rating, 1),
+            'total_rated': total_rated,
             'sectors': sectors_list,
             'agents_performance': agents_list
         })
@@ -1544,3 +1577,42 @@ def manager_templates_api(request):
             return JsonResponse({'error': str(e)}, status=500)
             
     return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+@login_required(login_url='login')
+@require_POST
+def send_survey(request):
+    try:
+        data = json.loads(request.body)
+        conversation_id = data.get('conversation_id')
+        conversation = get_object_or_404(Conversation, id=conversation_id)
+        
+        if not conversation.is_whatsapp:
+            return JsonResponse({'error': 'Enquête disponible uniquement pour WhatsApp'}, status=400)
+            
+        client = conversation.participants.filter(role=User.RoleEnum.CLIENT).first()
+        if not client or not client.phone_number:
+            return JsonResponse({'error': 'Client introuvable'}, status=400)
+            
+        survey_text = "Merci d'avoir contacté Loger Sénégal ! Pour nous aider à nous améliorer, veuillez noter notre service de 1 à 5 en répondant simplement par un chiffre (1 = Très déçu, 5 = Très satisfait). ⭐"
+        
+        success, msg_id = trigger_meta_whatsapp_api(client.phone_number, survey_text)
+        
+        if success:
+            conversation.survey_sent = True
+            conversation.status = Conversation.StatusEnum.CLOSED
+            conversation.save()
+            
+            Message.objects.create(
+                conversation=conversation,
+                sender=request.user,
+                content=survey_text,
+                status=Message.StatusEnum.SENT,
+                msg_id=msg_id
+            )
+            return JsonResponse({'status': 'sent'})
+        else:
+            return JsonResponse({'error': "Échec de l'envoi de l'enquête"}, status=500)
+            
+    except Exception as e:
+        logger.error(f"Error sending survey: {str(e)}")
+        return JsonResponse({'error': str(e)}, status=500)

@@ -21,6 +21,7 @@ urlpatterns = [
     path('api/reminders/create/', views.create_reminder, name='create_reminder'),
     path('api/reminders/complete/', views.complete_reminder, name='complete_reminder'),
     path('api/leads/export/', views.export_leads_csv, name='export_leads_csv'),
+    path('api/conversation/send-survey/', views.send_survey, name='send_survey'),
     
     # Manager APIs
     path('api/manager/stats/', views.manager_stats, name='manager_stats'),

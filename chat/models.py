@@ -46,6 +46,9 @@ class Conversation(models.Model):
     sla_limit_minutes = models.IntegerField(default=15)
     sla_started_at = models.DateTimeField(null=True, blank=True)
     
+    survey_sent = models.BooleanField(default=False)
+    satisfaction_rating = models.IntegerField(null=True, blank=True)
+    
     last_message_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
