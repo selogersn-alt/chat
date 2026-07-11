@@ -272,8 +272,22 @@ def whatsapp_webhook(request):
             elif message_type == 'location':
                 loc = message_data.get('location', {})
                 content = f"Localisation : Lat {loc.get('latitude')}, Lng {loc.get('longitude')}"
+            elif message_type == 'interactive':
+                interactive_data = message_data.get('interactive', {})
+                if interactive_data.get('type') == 'button_reply':
+                    content = interactive_data.get('button_reply', {}).get('title', '')
+                    interactive_id = interactive_data.get('button_reply', {}).get('id', '')
+                elif interactive_data.get('type') == 'list_reply':
+                    content = interactive_data.get('list_reply', {}).get('title', '')
+                    interactive_id = interactive_data.get('list_reply', {}).get('id', '')
+                else:
+                    content = "[Message Interactif]"
+                    interactive_id = None
             else:
                 content = f"[{message_type.capitalize()} Message]"
+                
+            if message_type != 'interactive':
+                interactive_id = None
 
             # 1. Get or Create user
             username = f"wa_{sender_phone}"
@@ -305,64 +319,43 @@ def whatsapp_webhook(request):
                 agents = User.objects.filter(role=User.RoleEnum.AGENT)
                 conversation.participants.add(*agents)
                 
-                # --- BOT D'ACCUEIL WHATSAPP INTEGRANT LES ICE BREAKERS ---
-                clean_content = content.strip().lower()
+                # --- NOUVEAU FLUX INTERACTIF WHATSAPP ---
+                interactive_payload = {
+                    "type": "button",
+                    "body": {
+                        "text": "Bienvenue chez Loger Sénégal ! 🏡\nQuel est votre projet immobilier aujourd'hui ?"
+                    },
+                    "action": {
+                        "buttons": [
+                            {
+                                "type": "reply",
+                                "reply": {
+                                    "id": "PROJET_LOUER",
+                                    "title": "Louer"
+                                }
+                            },
+                            {
+                                "type": "reply",
+                                "reply": {
+                                    "id": "PROJET_ACHETER",
+                                    "title": "Acheter"
+                                }
+                            },
+                            {
+                                "type": "reply",
+                                "reply": {
+                                    "id": "PROJET_CONFIER",
+                                    "title": "Confier un bien"
+                                }
+                            }
+                        ]
+                    }
+                }
                 
-                if "louer" in clean_content or "location" in clean_content:
-                    conversation.tags = "#location"
-                    welcome_text = (
-                        "Bienvenue chez Loger Sénégal ! 🏡\n"
-                        "Génial ! Nous avons de superbes opportunités de location. 🏢\n\n"
-                        "Pour vous proposer les meilleures options, précisez-nous :\n"
-                        "1️⃣ *Le quartier recherché* (ex: Ouakam, Mermoz, Almadies...)\n"
-                        "2️⃣ *Votre budget mensuel maximum* en FCFA."
-                    )
-                elif "acheter" in clean_content or "achat" in clean_content or "acquisition" in clean_content:
-                    conversation.tags = "#achat"
-                    welcome_text = (
-                        "Bienvenue chez Loger Sénégal ! 🏡\n"
-                        "Excellent projet d'achat ! 🔑\n\n"
-                        "Pour vous aider au mieux, précisez-nous :\n"
-                        "1️⃣ *La zone de recherche* (ex: Saly, Dakar, Diamniadio...)\n"
-                        "2️⃣ *Votre budget d'acquisition global* en FCFA."
-                    )
-                elif "tiktok" in clean_content or "facebook" in clean_content or "annonce" in clean_content:
-                    welcome_text = (
-                        "Bienvenue chez Loger Sénégal ! 🏡\n"
-                        "Super ! 📱\n\n"
-                        "Envoyez-nous le lien de la vidéo/publication ou une capture d'écran du bien afin que notre équipe l'identifie immédiatement."
-                    )
-                elif "confier" in clean_content or "gestion" in clean_content:
-                    conversation.tags = "#gestion"
-                    welcome_text = (
-                        "Bienvenue chez Loger Sénégal ! 🏡\n"
-                        "Nous serions ravis de gérer votre bien. 🤝\n\n"
-                        "Pourriez-vous nous donner quelques détails sur le bien ?\n"
-                        "1️⃣ *Type de bien* (Appartement, Villa, Immeuble...)\n"
-                        "2️⃣ *Emplacement*\n"
-                        "3️⃣ *Est-il vide ou meublé ?*"
-                    )
-                elif "conseiller" in clean_content or "parler" in clean_content:
-                    welcome_text = (
-                        "Bienvenue chez Loger Sénégal ! 🏡\n"
-                        "Très bien. 👤 Un conseiller va prendre en charge votre demande dans un instant.\n\n"
-                        "En attendant, vous pouvez nous préciser si votre projet concerne une location ou un achat."
-                    )
-                else:
-                    # Message de bienvenue général par défaut
-                    welcome_text = (
-                        "Bienvenue chez Loger Sénégal ! 🏡\n\n"
-                        "Pour que notre équipe vous propose les meilleures options, pouvez-vous nous préciser :\n\n"
-                        "1️⃣ *Quel type de bien cherchez-vous ?*\n"
-                        "(Appartement, Villa, Studio, Terrain, Bureau...)\n\n"
-                        "2️⃣ *Dans quel quartier ou ville ?*\n"
-                        "(Dakar Plateau, Almadies, Ngor, Ouakam, Saly, Thies...)\n\n"
-                        "3️⃣ *Quel est votre budget approximatif ?*\n\n"
-                        "Un conseiller va vous répondre dans un instant !"
-                    )
+                welcome_text = "Menu de bienvenue envoyé."
                 
-                # Send welcome message
-                success, msg_id = trigger_meta_whatsapp_api(sender_phone, welcome_text)
+                # Send welcome interactive message
+                success, msg_id = trigger_meta_whatsapp_api(sender_phone, interactive_payload=interactive_payload)
                 
                 # Save it in DB
                 system_user = User.objects.filter(is_superuser=True).first()
@@ -378,6 +371,90 @@ def whatsapp_webhook(request):
                 )
                 conversation.last_message_at = timezone.now()
                 conversation.save()
+
+            # --- FLUX INTERACTIF CONTINUATION ---
+            if interactive_id:
+                if interactive_id.startswith('PROJET_'):
+                    conversation.client_project = content
+                    conversation.save()
+                    
+                    # Next Step: Type de bien (Liste)
+                    interactive_payload = {
+                        "type": "list",
+                        "header": {"type": "text", "text": "Type de bien"},
+                        "body": {"text": "Quel type de bien recherchez-vous ?"},
+                        "footer": {"text": "Loger Sénégal"},
+                        "action": {
+                            "button": "Choisir le type",
+                            "sections": [
+                                {
+                                    "title": "Types de biens",
+                                    "rows": [
+                                        {"id": "TYPE_APPARTEMENT", "title": "Appartement"},
+                                        {"id": "TYPE_VILLA", "title": "Villa"},
+                                        {"id": "TYPE_STUDIO", "title": "Studio"},
+                                        {"id": "TYPE_TERRAIN", "title": "Terrain"},
+                                        {"id": "TYPE_BUREAU", "title": "Bureau"}
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                    trigger_meta_whatsapp_api(sender_phone, interactive_payload=interactive_payload)
+                    
+                elif interactive_id.startswith('TYPE_'):
+                    conversation.client_property_type = content
+                    conversation.save()
+                    
+                    # Next Step: Zone (Liste)
+                    interactive_payload = {
+                        "type": "list",
+                        "header": {"type": "text", "text": "Zone"},
+                        "body": {"text": "Dans quelle zone ou quartier ?"},
+                        "footer": {"text": "Loger Sénégal"},
+                        "action": {
+                            "button": "Choisir la zone",
+                            "sections": [
+                                {
+                                    "title": "Dakar & Alentours",
+                                    "rows": [
+                                        {"id": "ZONE_ALMADIES", "title": "Almadies / Ngor"},
+                                        {"id": "ZONE_OUAKAM", "title": "Ouakam / Mamelles"},
+                                        {"id": "ZONE_PLATEAU", "title": "Dakar Plateau"},
+                                        {"id": "ZONE_MERMOZ", "title": "Mermoz / Sacré-Cœur"},
+                                        {"id": "ZONE_YOFF", "title": "Yoff / Foire"},
+                                        {"id": "ZONE_KEURMASSAR", "title": "Keur Massar"},
+                                        {"id": "ZONE_DIAMNIADIO", "title": "Diamniadio"}
+                                    ]
+                                },
+                                {
+                                    "title": "Hors Dakar",
+                                    "rows": [
+                                        {"id": "ZONE_SALY", "title": "Saly / Somone"},
+                                        {"id": "ZONE_THIES", "title": "Thiès"},
+                                        {"id": "ZONE_AUTRE", "title": "Autre"}
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                    trigger_meta_whatsapp_api(sender_phone, interactive_payload=interactive_payload)
+                    
+                elif interactive_id.startswith('ZONE_'):
+                    conversation.client_zone = content
+                    conversation.save()
+                    
+                    # Final step: Confirmation
+                    final_msg = "Parfait ! 🚀 Vos critères ont été enregistrés.\nUn conseiller prend le relais dans un instant pour vous proposer nos meilleures offres."
+                    success, final_msg_id = trigger_meta_whatsapp_api(sender_phone, final_msg)
+                    system_agent = User.objects.filter(is_superuser=True).first()
+                    Message.objects.create(
+                        conversation=conversation,
+                        sender=system_agent if system_agent else client_user,
+                        content=final_msg,
+                        status=Message.StatusEnum.SENT if success else Message.StatusEnum.SENT,
+                        msg_id=final_msg_id if final_msg_id else ""
+                    )
 
             # 3. Parse URLs for properties
             urls = re.findall(r'(https?://\S+)', content)
@@ -542,6 +619,9 @@ def sync_messages(request):
                 'sla_started_at': active_conv.sla_started_at.isoformat() if active_conv.sla_started_at else None,
                 'survey_sent': active_conv.survey_sent,
                 'satisfaction_rating': active_conv.satisfaction_rating,
+                'client_project': active_conv.client_project,
+                'client_property_type': active_conv.client_property_type,
+                'client_zone': active_conv.client_zone,
             }
             
             # Fetch messages
@@ -684,7 +764,7 @@ def send_message(request):
         logger.error(f"Error sending message: {str(e)}", exc_info=True)
         return JsonResponse({'error': str(e)}, status=500)
 
-def trigger_meta_whatsapp_api(to_phone, message_text, attachment_url=None):
+def trigger_meta_whatsapp_api(to_phone, message_text=None, attachment_url=None, interactive_payload=None):
     """
     Wrapper to call Meta's Cloud API endpoint.
     Returns (success, msg_id) tuple.
@@ -697,7 +777,7 @@ def trigger_meta_whatsapp_api(to_phone, message_text, attachment_url=None):
     if not token or token == "your_permanent_access_token_here" or not phone_id:
         import uuid
         mock_id = f"mock_wamid_{uuid.uuid4().hex}"
-        logger.info(f"MOCK API WhatsApp ➔ To: {to_phone} | Msg: {message_text} | Attachment: {attachment_url} | ID: {mock_id}")
+        logger.info(f"MOCK API WhatsApp ➔ To: {to_phone} | Msg: {message_text} | Interactive: {interactive_payload is not None} | ID: {mock_id}")
         return True, mock_id
         
     url = f"https://graph.facebook.com/{version}/{phone_id}/messages"
@@ -712,7 +792,10 @@ def trigger_meta_whatsapp_api(to_phone, message_text, attachment_url=None):
         "to": to_phone,
     }
     
-    if attachment_url:
+    if interactive_payload:
+        payload["type"] = "interactive"
+        payload["interactive"] = interactive_payload
+    elif attachment_url:
         # Assuming image for now, can be extended for document/video based on extension
         payload["type"] = "image"
         payload["image"] = {
@@ -724,7 +807,7 @@ def trigger_meta_whatsapp_api(to_phone, message_text, attachment_url=None):
         payload["type"] = "text"
         payload["text"] = {
             "preview_url": True,
-            "body": message_text
+            "body": message_text or ""
         }
     
     try:

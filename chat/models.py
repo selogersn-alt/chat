@@ -49,6 +49,11 @@ class Conversation(models.Model):
     survey_sent = models.BooleanField(default=False)
     satisfaction_rating = models.IntegerField(null=True, blank=True)
     
+    # Interactive flow fields
+    client_project = models.CharField(max_length=50, blank=True, null=True)
+    client_property_type = models.CharField(max_length=50, blank=True, null=True)
+    client_zone = models.CharField(max_length=150, blank=True, null=True)
+    
     last_message_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

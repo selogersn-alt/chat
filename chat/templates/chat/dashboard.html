@@ -1129,6 +1129,17 @@
             document.getElementById('partnerVisitorName').value = info.client_name || "";
             document.getElementById('partnerVisitorPhone').value = info.client_phone || "";
             
+            if (info.client_property_type) {
+                const pt = info.client_property_type.toUpperCase();
+                const select = document.getElementById('partnerTypeInput');
+                if (["APPARTEMENT", "VILLA", "TERRAIN", "STUDIO", "BUREAU"].includes(pt)) {
+                    select.value = pt;
+                }
+            }
+            if (info.client_zone) {
+                document.getElementById('partnerZoneInput').value = info.client_zone || "";
+            }
+            
             // Update presence UI (dot and badge)
             updatePresenceUI(info.client_last_message_at, info.client_name);
             
@@ -1183,6 +1194,10 @@
             
             // Populate and render active conversation tags
             currentProspectTags = info.tags || [];
+            if (info.client_project) currentProspectTags.push(info.client_project);
+            if (info.client_property_type) currentProspectTags.push(info.client_property_type);
+            if (info.client_zone) currentProspectTags.push(info.client_zone);
+            currentProspectTags = [...new Set(currentProspectTags)];
             renderProspectTags();
 
             // Populate and render pipeline stage
