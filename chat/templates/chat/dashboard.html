@@ -1236,8 +1236,8 @@
                     if (m.attachment_url && !m.content.includes('[Note Vocale WhatsApp]')) {
                         const urlLower = m.attachment_url.toLowerCase();
                         const contentLower = m.content.toLowerCase();
-                        const isImg = urlLower.includes('.jpg') || urlLower.includes('.jpeg') || urlLower.includes('.png') || urlLower.includes('.webp') || contentLower.includes('[image]');
-                        const isVid = urlLower.includes('.mp4') || urlLower.includes('.mov') || urlLower.includes('.avi') || urlLower.includes('.webm') || contentLower.includes('[vidéo]') || contentLower.includes('[video]');
+                        const isImg = urlLower.includes('.jpg') || urlLower.includes('.jpeg') || urlLower.includes('.png') || urlLower.includes('.webp') || contentLower.includes('image');
+                        const isVid = urlLower.includes('.mp4') || urlLower.includes('.mov') || urlLower.includes('.avi') || urlLower.includes('.webm') || contentLower.includes('vidéo') || contentLower.includes('video');
                         
                         let mediaPreview = '';
                         if (isImg) {
