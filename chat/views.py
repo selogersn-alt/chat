@@ -1960,3 +1960,148 @@ def mobile_messages(request, conversation_id):
         logger.error(f"Error loading mobile messages: {str(e)}")
         return JsonResponse({'error': str(e)}, status=500)
 
+@api_view(['POST'])
+def mobile_update_conversation(request):
+    try:
+        conversation_id = request.data.get('conversation_id')
+        if not conversation_id:
+            return JsonResponse({'error': 'Missing conversation_id'}, status=400)
+            
+        conv = get_object_or_404(Conversation, id=conversation_id)
+        if request.user.role != User.RoleEnum.MANAGER and conv.assigned_to != request.user:
+            return JsonResponse({'error': 'Accès interdit'}, status=403)
+            
+        updated_fields = []
+        
+        if 'pipeline_stage' in request.data:
+            old_stage_display = conv.get_pipeline_stage_display()
+            conv.pipeline_stage = request.data['pipeline_stage']
+            new_stage_display = conv.get_pipeline_stage_display()
+            Message.objects.create(
+                conversation=conv,
+                sender=User.objects.filter(is_superuser=True).first() or request.user,
+                content=f"[SYSTEME] Étape du prospect modifiée : {old_stage_display} ➔ {new_stage_display}."
+            )
+            updated_fields.append('pipeline_stage')
+            
+        if 'notes' in request.data:
+            conv.notes = request.data['notes']
+            updated_fields.append('notes')
+            
+        if 'tags' in request.data:
+            conv.tags = request.data['tags']
+            updated_fields.append('tags')
+            
+        if 'client_project' in request.data:
+            conv.client_project = request.data['client_project']
+            updated_fields.append('client_project')
+            
+        if 'client_property_type' in request.data:
+            conv.client_property_type = request.data['client_property_type']
+            updated_fields.append('client_property_type')
+            
+        if 'client_zone' in request.data:
+            conv.client_zone = request.data['client_zone']
+            updated_fields.append('client_zone')
+            
+        if updated_fields:
+            conv.save()
+            
+        return JsonResponse({'status': 'success', 'updated_fields': updated_fields})
+    except Exception as e:
+        logger.error(f"Error in mobile_update_conversation: {str(e)}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+@api_view(['GET'])
+def mobile_properties(request):
+    try:
+        properties = get_live_properties()
+        return JsonResponse({'status': 'success', 'properties': properties})
+    except Exception as e:
+        logger.error(f"Error in mobile_properties: {str(e)}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+@api_view(['GET'])
+def mobile_partners(request):
+    try:
+        zone_filter = request.query_params.get('zone', '').strip()
+        type_filter = request.query_params.get('property_type', '').strip()
+        query = request.query_params.get('query', '').strip()
+        
+        partners = Partner.objects.all()
+        
+        if zone_filter:
+            partners = partners.filter(zone__icontains=zone_filter)
+        if type_filter:
+            partners = partners.filter(property_type__icontains=type_filter)
+        if query:
+            partners = partners.filter(
+                Q(name__icontains=query) | Q(ref__icontains=query) | Q(zone__icontains=query)
+            )
+            
+        partners_data = [{
+            'id': str(p.id),
+            'name': p.name,
+            'ref': p.ref or '',
+            'contact_1': p.contact_1,
+            'contact_2': p.contact_2 or '',
+            'zone': p.zone,
+            'property_type': p.property_type,
+            'meteo': p.meteo,
+            'meteo_display': p.get_meteo_display()
+        } for p in partners]
+        
+        return JsonResponse({'status': 'success', 'partners': partners_data})
+    except Exception as e:
+        logger.error(f"Error in mobile_partners: {str(e)}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+@api_view(['POST'])
+def mobile_create_partner_match(request):
+    try:
+        conversation_id = request.data.get('conversation_id')
+        partner_id = request.data.get('partner_id')
+        visitor_name = request.data.get('visitor_name', '').strip()
+        visitor_phone = request.data.get('visitor_phone', '').strip()
+        price = request.data.get('price')
+        zone = request.data.get('zone', '').strip()
+        
+        if not conversation_id or not partner_id or not visitor_name or not visitor_phone or price is None or not zone:
+            return JsonResponse({'error': 'Tous les champs sont obligatoires.'}, status=400)
+            
+        conv = get_object_or_404(Conversation, id=conversation_id)
+        if request.user.role != User.RoleEnum.MANAGER and conv.assigned_to != request.user:
+            return JsonResponse({'error': 'Accès interdit'}, status=403)
+            
+        partner = get_object_or_404(Partner, id=partner_id)
+        
+        match = PartnerMatch.objects.create(
+            conversation=conv,
+            partner=partner,
+            visitor_name=visitor_name,
+            visitor_phone=visitor_phone,
+            price=float(price),
+            zone=zone,
+            status=PartnerMatch.StatusEnum.PENDING
+        )
+        
+        Message.objects.create(
+            conversation=conv,
+            sender=User.objects.filter(is_superuser=True).first() or request.user,
+            content=f"[PARTENAIRE] Visite proposée au partenaire {partner.name} pour {visitor_name} ({zone}, {price} FCFA)."
+        )
+        
+        text_message = f"Bonjour {partner.name}, je te propose une visite pour {visitor_name} ({visitor_phone}) pour le bien à {zone} au prix de {price} FCFA."
+        encoded_message = quote(text_message)
+        wa_link = f"https://wa.me/{partner.contact_1}?text={encoded_message}"
+        
+        return JsonResponse({
+            'status': 'success',
+            'match_id': str(match.id),
+            'wa_link': wa_link
+        })
+    except Exception as e:
+        logger.error(f"Error in mobile_create_partner_match: {str(e)}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+

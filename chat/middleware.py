@@ -34,3 +34,29 @@ class RoleAccessMiddleware:
                 return redirect('select_portal')
                 
         return self.get_response(request)
+
+
+class CORSMiddleware:
+    """
+    Middleware to allow Cross-Origin Resource Sharing (CORS) for API endpoints.
+    Allows local Flutter web development to communicate with the production server.
+    """
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        # Handle preflight OPTIONS requests for API
+        if request.method == 'OPTIONS' and request.path.startswith('/api/'):
+            response = JsonResponse({'status': 'ok'})
+            response['Access-Control-Allow-Origin'] = '*'
+            response['Access-Control-Allow-Headers'] = 'Authorization, Content-Type'
+            response['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
+            return response
+            
+        response = self.get_response(request)
+        if request.path.startswith('/api/'):
+            response['Access-Control-Allow-Origin'] = '*'
+            response['Access-Control-Allow-Headers'] = 'Authorization, Content-Type'
+            response['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
+        return response
+

@@ -40,6 +40,10 @@ urlpatterns = [
     path('api/mobile/login/', views.mobile_login, name='mobile_login'),
     path('api/mobile/conversations/', views.mobile_conversations, name='mobile_conversations'),
     path('api/mobile/conversations/<uuid:conversation_id>/messages/', views.mobile_messages, name='mobile_messages'),
+    path('api/mobile/conversations/update/', views.mobile_update_conversation, name='mobile_update_conversation'),
+    path('api/mobile/properties/', views.mobile_properties, name='mobile_properties'),
+    path('api/mobile/partners/', views.mobile_partners, name='mobile_partners'),
+    path('api/mobile/partners/match/', views.mobile_create_partner_match, name='mobile_create_partner_match'),
     
     # Partner APIs
     path('api/partners/search/', views.search_partners, name='search_partners'),
