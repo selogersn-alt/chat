@@ -843,13 +843,42 @@ def trigger_meta_whatsapp_api(to_phone, message_text=None, attachment_url=None, 
         payload["type"] = "interactive"
         payload["interactive"] = interactive_payload
     elif attachment_url:
-        # Assuming image for now, can be extended for document/video based on extension
-        payload["type"] = "image"
-        payload["image"] = {
-            "link": attachment_url
-        }
-        if message_text:
-            payload["image"]["caption"] = message_text
+        # Detect the type from extension
+        ext = attachment_url.split('?')[0].split('.')[-1].lower() if '.' in attachment_url else ''
+        
+        image_exts = {'jpg', 'jpeg', 'png', 'webp', 'gif'}
+        video_exts = {'mp4', '3gp', 'mov'}
+        audio_exts = {'mp3', 'ogg', 'm4a', 'wav', 'aac'}
+        
+        if ext in image_exts:
+            payload["type"] = "image"
+            payload["image"] = {
+                "link": attachment_url
+            }
+            if message_text:
+                payload["image"]["caption"] = message_text
+        elif ext in video_exts:
+            payload["type"] = "video"
+            payload["video"] = {
+                "link": attachment_url
+            }
+            if message_text:
+                payload["video"]["caption"] = message_text
+        elif ext in audio_exts:
+            payload["type"] = "audio"
+            payload["audio"] = {
+                "link": attachment_url
+            }
+        else:
+            # Default to document
+            filename = attachment_url.split('/')[-1].split('?')[0] or "document.pdf"
+            payload["type"] = "document"
+            payload["document"] = {
+                "link": attachment_url,
+                "filename": filename
+            }
+            if message_text:
+                payload["document"]["caption"] = message_text
     else:
         payload["type"] = "text"
         payload["text"] = {
