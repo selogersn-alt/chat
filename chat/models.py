@@ -45,6 +45,7 @@ class Conversation(models.Model):
     pipeline_stage = models.CharField(max_length=20, choices=PipelineStageEnum.choices, default=PipelineStageEnum.NEW)
     sla_limit_minutes = models.IntegerField(default=15)
     sla_started_at = models.DateTimeField(null=True, blank=True)
+    sla_enabled = models.BooleanField(default=True)
     
     survey_sent = models.BooleanField(default=False)
     satisfaction_rating = models.IntegerField(null=True, blank=True)

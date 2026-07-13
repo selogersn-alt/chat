@@ -396,8 +396,10 @@ def whatsapp_webhook(request):
                                         {"id": "TYPE_APPARTEMENT", "title": "Appartement"},
                                         {"id": "TYPE_VILLA", "title": "Villa"},
                                         {"id": "TYPE_STUDIO", "title": "Studio"},
+                                        {"id": "TYPE_CHAMBRE", "title": "Chambre"},
                                         {"id": "TYPE_TERRAIN", "title": "Terrain"},
-                                        {"id": "TYPE_BUREAU", "title": "Bureau"}
+                                        {"id": "TYPE_BUREAU", "title": "Bureau"},
+                                        {"id": "TYPE_AUTRE", "title": "Autre"}
                                     ]
                                 }
                             ]
@@ -448,7 +450,10 @@ def whatsapp_webhook(request):
                     conversation.save()
                     
                     # Final step: Confirmation
-                    final_msg = "Parfait ! 🚀 Vos critères ont été enregistrés.\nUn conseiller prend le relais dans un instant pour vous proposer nos meilleures offres."
+                    if content == 'Autre' or conversation.client_property_type == 'Autre':
+                        final_msg = "Parfait ! 🚀 Précisez-nous votre zone et type de bien par message écrit s'il vous plaît.\nUn conseiller prend le relais dans un instant pour vous proposer nos meilleures offres."
+                    else:
+                        final_msg = "Parfait ! 🚀 Vos critères ont été enregistrés.\nUn conseiller prend le relais dans un instant pour vous proposer nos meilleures offres."
                     success, final_msg_id = trigger_meta_whatsapp_api(sender_phone, final_msg)
                     system_agent = User.objects.filter(is_superuser=True).first()
                     Message.objects.create(
@@ -511,6 +516,7 @@ def whatsapp_webhook(request):
             # NOTE: On ne remet PAS sla_limit_minutes à 15 — on respecte la config de l'agent
             conversation.last_message_at = timezone.now()
             conversation.sla_started_at = timezone.now()
+            conversation.sla_enabled = True
             conversation.save()
             
             return JsonResponse({'status': 'message_received'}, status=200)
@@ -529,13 +535,25 @@ def sync_messages(request):
     agent = request.user
     active_conv_id = request.GET.get('conversation_id')
     
+    # Handle search query
+    query = request.GET.get('q', '').strip()
+    
     # Get all conversations the agent has access to
     if agent.is_superuser or agent.role == User.RoleEnum.MANAGER:
-        conversations = Conversation.objects.all().order_by('-last_message_at', '-created_at')
+        conversations = Conversation.objects.all()
     else:
         conversations = Conversation.objects.filter(
             Q(participants=agent) | Q(status=Conversation.StatusEnum.PENDING)
-        ).distinct().order_by('-last_message_at', '-created_at')
+        )
+        
+    if query:
+        conversations = conversations.filter(
+            Q(participants__first_name__icontains=query) |
+            Q(participants__phone_number__icontains=query) |
+            Q(messages__content__icontains=query)
+        ).distinct()
+        
+    conversations = conversations.order_by('-last_message_at', '-created_at')
     
     conv_data = []
     for conv in conversations:
@@ -579,6 +597,7 @@ def sync_messages(request):
             'is_last_msg_from_client': is_last_msg_from_client,
             'sla_limit_minutes': conv.sla_limit_minutes,
             'sla_started_at': conv.sla_started_at.isoformat() if conv.sla_started_at else None,
+            'sla_enabled': conv.sla_enabled,
             'unread_count': unread_count,
         })
         
@@ -737,6 +756,7 @@ def send_message(request):
         
         conversation.last_message_at = timezone.now()
         conversation.sla_started_at = None
+        conversation.sla_enabled = False # Agent replied, disable SLA warning until client replies
         conversation.save()
         
         # If it is a WhatsApp conversation, invoke Meta Cloud API
@@ -1757,6 +1777,55 @@ def upload_media(request):
         return JsonResponse({'status': 'uploaded', 'url': absolute_url})
     except Exception as e:
         logger.error(f"Error uploading media: {str(e)}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+@login_required(login_url='login')
+@require_POST
+def update_conversation_sla_toggle(request):
+    try:
+        data = json.loads(request.body)
+        conversation_id = data.get('conversation_id')
+        sla_enabled = data.get('sla_enabled')
+        
+        conversation = get_object_or_404(Conversation, id=conversation_id)
+        if request.user.role != User.RoleEnum.MANAGER and conversation.assigned_to != request.user:
+            return JsonResponse({'error': 'Unauthorized'}, status=403)
+            
+        conversation.sla_enabled = sla_enabled
+        conversation.save()
+        
+        return JsonResponse({'status': 'updated'})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@login_required(login_url='login')
+@require_POST
+def create_reminder(request):
+    try:
+        data = json.loads(request.body)
+        conv_id = data.get('conversation_id')
+        title = data.get('title')
+        remind_at_str = data.get('remind_at')
+        
+        if not conv_id or not title or not remind_at_str:
+            return JsonResponse({'error': 'Missing required fields'}, status=400)
+            
+        conv = get_object_or_404(Conversation, id=conv_id)
+        remind_at = parse_datetime(remind_at_str)
+        
+        if not remind_at:
+            return JsonResponse({'error': 'Invalid date format'}, status=400)
+            
+        reminder = Reminder.objects.create(
+            conversation=conv,
+            agent=request.user,
+            title=title,
+            remind_at=remind_at
+        )
+        
+        return JsonResponse({'status': 'created', 'reminder_id': str(reminder.id)})
+    except Exception as e:
+        logger.error(f"Error creating reminder: {str(e)}")
         return JsonResponse({'error': str(e)}, status=500)
 
 @login_required(login_url='login')
