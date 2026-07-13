@@ -1020,7 +1020,6 @@
                     if (currentConversationId && data.active_conversation) {
                         let newMessagesHash = JSON.stringify(data.messages || []);
                         if (newMessagesHash !== currentMessagesJson) {
-                            currentMessagesJson = newMessagesHash;
                             renderActiveChat(data.active_conversation, data.messages);
                         } else {
                             // Even if messages didn't change, we might need to update SLA timers or UI badges
