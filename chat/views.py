@@ -15,7 +15,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
-from django.db.models import Q
+from django.db.models import Q, Count, Max, Prefetch
 from django.core.cache import cache
 from django.core.files.storage import FileSystemStorage
 from django.conf import settings
