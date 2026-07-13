@@ -1,4 +1,5 @@
 from django.urls import path
+from django.views.generic import TemplateView
 from . import views
 
 urlpatterns = [
@@ -7,6 +8,9 @@ urlpatterns = [
     path('logout/', views.custom_logout_view, name='logout'),
     path('select-portal/', views.select_portal_view, name='select_portal'),
     path('manager/', views.manager_dashboard_view, name='manager_dashboard'),
+    
+    # PWA Service Worker
+    path('sw.js', TemplateView.as_view(template_name='chat/sw.js', content_type='application/javascript'), name='sw.js'),
     
     path('api/webhook/', views.whatsapp_webhook, name='whatsapp_webhook'),
     path('api/media/<str:media_id>/', views.whatsapp_media_proxy, name='whatsapp_media_proxy'),

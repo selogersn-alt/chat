@@ -11,10 +11,32 @@ services:
       - media_volume:/app/media
     env_file:
       - .env
+    depends_on:
+      db:
+        condition: service_healthy
     environment:
-      # Redirect DB to persistent volume path
+      # Redirect DB to persistent volume path (fallback for SQLite)
       - DATABASE_DIR=/app/db_volume
+      # PostgreSQL configuration
+      - DATABASE_URL=postgres://logersn_user:logersn_password@db:5432/logersn_db
+
+  db:
+    image: postgres:15-alpine
+    container_name: logersn_db
+    restart: always
+    environment:
+      - POSTGRES_DB=logersn_db
+      - POSTGRES_USER=logersn_user
+      - POSTGRES_PASSWORD=logersn_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U logersn_user -d logersn_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 volumes:
   sqlite_data:
+  postgres_data:
   media_volume:
