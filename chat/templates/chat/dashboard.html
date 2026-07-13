@@ -1022,6 +1022,12 @@
                         }
                     }
                     
+                    
+                    if (data.server_now) {
+                        const serverTime = new Date(data.server_now).getTime();
+                        serverLocalTimeDiff = serverTime - Date.now();
+                    }
+                    
                     if (currentConversationId && data.active_conversation) {
                         let newMessagesHash = JSON.stringify(data.messages || []);
                         if (newMessagesHash !== currentMessagesJson) {
@@ -1074,7 +1080,7 @@
                 let isSlaRed = false;
                 if (c.status === 'ACTIVE' && c.is_last_msg_from_client && c.sla_started_at && c.sla_enabled) {
                     const startedTime = new Date(c.sla_started_at);
-                    const elapsedMs = new Date() - startedTime;
+                    const elapsedMs = new Date(Date.now() + serverLocalTimeDiff) - startedTime;
                     const limitMs = parseInt(c.sla_limit_minutes || '15') * 60 * 1000;
                     isSlaRed = (elapsedMs >= 0.9 * limitMs);
                 }
@@ -1101,7 +1107,7 @@
                 if (currentFilter === 'SLA_RED') {
                     if (c.status === 'ACTIVE' && c.is_last_msg_from_client && c.sla_started_at && c.sla_enabled) {
                         const startedTime = new Date(c.sla_started_at);
-                        const now = new Date();
+                        const now = new Date(Date.now() + serverLocalTimeDiff);
                         const elapsedMs = now - startedTime;
                         const limitMinutes = parseInt(c.sla_limit_minutes || '15');
                         const limitMs = limitMinutes * 60 * 1000;
@@ -1316,6 +1322,7 @@
         let currentMessagesJson = "";
         let activeSessionTimerInterval = null;
         let clientLastMessageAt = null;
+        let serverLocalTimeDiff = 0;
 
         function renderActiveChat(info, messages, softUpdate = false) {
             document.getElementById('chatHeaderName').textContent = info.client_name;
@@ -2316,7 +2323,7 @@
             }
             
             const lastTime = new Date(clientLastMessageAt);
-            const now = new Date();
+            const now = new Date(Date.now() + serverLocalTimeDiff);
             const elapsedMs = now - lastTime;
             const remainingMs = (24 * 60 * 60 * 1000) - elapsedMs; // 24 hours in ms
             
@@ -2353,7 +2360,7 @@
                 if (!slaStartedStr || !convId) return;
                 
                 const startedTime = new Date(slaStartedStr);
-                const now = new Date();
+                const now = new Date(Date.now() + serverLocalTimeDiff);
                 const elapsedMs = now - startedTime;
                 const limitMinutes = parseInt(b.getAttribute('data-sla-limit') || '15');
                 const limitMs = limitMinutes * 60 * 1000;

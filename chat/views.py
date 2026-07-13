@@ -737,7 +737,8 @@ def sync_messages(request):
         'properties': properties,
         'templates': templates,
         'active_reminders': active_reminders_data,
-        'agent_reminders': agent_reminders_data
+        'agent_reminders': agent_reminders_data,
+        'server_now': timezone.now().isoformat()
     })
 
 @login_required(login_url='login')
