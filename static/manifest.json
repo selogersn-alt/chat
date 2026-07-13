@@ -1,22 +1,38 @@
 {
   "name": "Loger Sénégal CRM",
   "short_name": "Loger SN",
-  "description": "CRM WhatsApp pour les agents immobiliers Loger Sénégal",
-  "start_url": "/chat/dashboard/",
+  "description": "CRM WhatsApp multi-agent pour les agents immobiliers Loger Sénégal",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
+  "display_override": ["standalone", "minimal-ui", "browser"],
+  "background_color": "#0f4f2c",
   "theme_color": "#0F4F2C",
   "orientation": "portrait-primary",
+  "lang": "fr",
+  "categories": ["productivity", "business"],
   "icons": [
     {
       "src": "/static/logo.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
       "src": "/static/logo.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
-  ]
+  ],
+  "shortcuts": [
+    {
+      "name": "Conversations Actives",
+      "short_name": "Actives",
+      "description": "Voir les conversations actives",
+      "url": "/",
+      "icons": [{ "src": "/static/logo.png", "sizes": "96x96" }]
+    }
+  ],
+  "prefer_related_applications": false
 }
