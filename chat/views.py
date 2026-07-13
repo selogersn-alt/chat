@@ -678,7 +678,7 @@ def sync_messages(request):
                     'sender_name': msg.sender.first_name or msg.sender.username,
                     'sender_role': msg.sender.role,
                     'sender_is_self': msg.sender == agent,
-                    'content': msg.content,
+                    'content': msg.content or "",
                     'attachment_url': msg.attachment_url,
                     'status': msg.status,
                     'created_at': msg.created_at.strftime("%H:%M")
