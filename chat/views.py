@@ -15,6 +15,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
+from django.db import models
 from django.db.models import Q, Count, Max, Prefetch
 from django.core.cache import cache
 from django.core.files.storage import FileSystemStorage
@@ -560,7 +561,8 @@ def sync_messages(request):
         ),
         client_last_message_at_annotated=Max(
             'messages__created_at',
-            filter=Q(messages__sender__role=User.RoleEnum.CLIENT)
+            filter=Q(messages__sender__role=User.RoleEnum.CLIENT),
+            output_field=models.DateTimeField()
         )
     ).prefetch_related(
         'participants',
@@ -578,7 +580,12 @@ def sync_messages(request):
         last_msg_content = last_msg.content if last_msg else "Aucun message"
         last_msg_time = last_msg.created_at.strftime("%H:%M") if last_msg else ""
         
-        last_client_msg_at = conv.client_last_message_at_annotated.isoformat() if conv.client_last_message_at_annotated else None
+        if isinstance(conv.client_last_message_at_annotated, str):
+            from django.utils.dateparse import parse_datetime
+            parsed_dt = parse_datetime(conv.client_last_message_at_annotated)
+            last_client_msg_at = parsed_dt.isoformat() if parsed_dt else None
+        else:
+            last_client_msg_at = conv.client_last_message_at_annotated.isoformat() if conv.client_last_message_at_annotated else None
         
         assigned_to_name = conv.assigned_to.get_full_name() or conv.assigned_to.username if conv.assigned_to else None
         
@@ -1220,7 +1227,7 @@ def manager_stats(request):
         # "En attente" = Non-assignées + (Assignées avec SLA en cours d'attente)
         pending_convs = convs_qs.filter(
             Q(status=Conversation.StatusEnum.PENDING) | 
-            Q(status=Conversation.StatusEnum.ACTIVE, sla_enabled=True)
+            Q(status=Conversation.StatusEnum.ACTIVE, sla_started_at__isnull=False)
         ).count()
         
         # 1. Partner Match & Visit Stats
