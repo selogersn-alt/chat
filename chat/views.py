@@ -553,22 +553,32 @@ def sync_messages(request):
             Q(messages__content__icontains=query)
         ).distinct()
         
-    conversations = conversations.order_by('-last_message_at', '-created_at')
+    conversations = conversations.annotate(
+        client_unread_count=Count(
+            'messages',
+            filter=Q(messages__sender__role=User.RoleEnum.CLIENT, messages__is_read=False)
+        ),
+        client_last_message_at_annotated=Max(
+            'messages__created_at',
+            filter=Q(messages__sender__role=User.RoleEnum.CLIENT)
+        )
+    ).prefetch_related(
+        'participants',
+        Prefetch('messages', queryset=Message.objects.order_by('-created_at'), to_attr='cached_messages')
+    ).order_by('-last_message_at', '-created_at')
     
     conv_data = []
     for conv in conversations:
         # Find client in participants
-        client = conv.participants.filter(role=User.RoleEnum.CLIENT).first()
+        client = next((p for p in conv.participants.all() if p.role == User.RoleEnum.CLIENT), None)
         client_name = client.first_name if client else "Client Inconnu"
         client_phone = client.phone_number if client else "N/A"
         
-        last_msg = conv.messages.all().order_by('-created_at').first()
+        last_msg = conv.cached_messages[0] if conv.cached_messages else None
         last_msg_content = last_msg.content if last_msg else "Aucun message"
         last_msg_time = last_msg.created_at.strftime("%H:%M") if last_msg else ""
         
-        # Last message sent by the CLIENT (for activity indicator)
-        last_client_msg = conv.messages.filter(sender__role=User.RoleEnum.CLIENT).order_by('-created_at').first()
-        last_client_msg_at = last_client_msg.created_at.isoformat() if last_client_msg else None
+        last_client_msg_at = conv.client_last_message_at_annotated.isoformat() if conv.client_last_message_at_annotated else None
         
         assigned_to_name = conv.assigned_to.get_full_name() or conv.assigned_to.username if conv.assigned_to else None
         
@@ -576,7 +586,7 @@ def sync_messages(request):
         is_last_msg_from_client = (last_msg.sender.role == User.RoleEnum.CLIENT) if last_msg else False
         
         # Count unread messages from client
-        unread_count = conv.messages.filter(sender__role=User.RoleEnum.CLIENT, is_read=False).count()
+        unread_count = conv.client_unread_count
         
         conv_data.append({
             'id': str(conv.id),
@@ -1206,8 +1216,12 @@ def manager_stats(request):
         
         total_convs = convs_qs.count()
         active_convs = convs_qs.filter(status=Conversation.StatusEnum.ACTIVE).count()
-        pending_convs = convs_qs.filter(status=Conversation.StatusEnum.PENDING).count()
         closed_convs = convs_qs.filter(status=Conversation.StatusEnum.CLOSED).count()
+        # "En attente" = Non-assignées + (Assignées avec SLA en cours d'attente)
+        pending_convs = convs_qs.filter(
+            Q(status=Conversation.StatusEnum.PENDING) | 
+            Q(status=Conversation.StatusEnum.ACTIVE, sla_enabled=True)
+        ).count()
         
         # 1. Partner Match & Visit Stats
         total_matches = matches_qs.count()

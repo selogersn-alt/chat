@@ -97,12 +97,18 @@
 
         /* ── Section cards in right panel ── */
         .crm-card {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 12px;
-            padding: 14px;
-            margin-bottom: 14px;
-            backdrop-filter: blur(4px);
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            box-shadow: 0 4px 24px -4px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease-in-out;
+        }
+        .crm-card:hover {
+            background: rgba(255, 255, 255, 0.12);
         }
         .crm-card-label {
             font-size: 9px;
@@ -159,15 +165,13 @@
             50% { opacity: 0.7; }
         }
 
-        /* ── Conversation tile hover ── */
+        /* ── Conversation Tiles ── */
         .conv-tile {
-            transition: all 0.18s ease;
-            border-left: 3px solid transparent;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background-color: transparent;
         }
         .conv-tile:hover {
-            background: linear-gradient(90deg, #f0fdf4, #f8fafc);
-            border-left-color: #1a7f4e;
-            transform: translateX(2px);
+            background-color: rgba(241, 245, 249, 0.6);
         }
         .conv-tile.active {
             background: linear-gradient(90deg, #dcfce7, #f0fdf4);
@@ -884,6 +888,11 @@
         let loadedProperties = [];
         let loadedTemplates = [];
         
+        // Hashing for UI stability
+        let lastConversationsHash = "";
+        let lastPropertiesHash = "";
+        let lastTemplatesHash = "";
+        
         let previousMessageSnippets = {}; // Track last message snippets to trigger notifications
         let triggeredSlaAlerts = new Set(); // Track conversations that triggered SLA alert in current client-message cycle
 
@@ -922,13 +931,28 @@
                 .then(res => res.json())
                 .then(data => {
                     syncFailures = 0; // Reset failures on success
-                    loadedConversations = data.conversations || [];
-                    loadedProperties = data.properties || [];
-                    loadedTemplates = data.templates || [];
+                    // Caching UI updates to prevent flickering
+                    const newConvHash = JSON.stringify(data.conversations || []);
+                    if (newConvHash !== lastConversationsHash) {
+                        loadedConversations = data.conversations || [];
+                        lastConversationsHash = newConvHash;
+                        renderConversationList();
+                    }
                     
-                    renderConversationList();
-                    renderCatalog();
-                    renderTemplates();
+                    const newPropHash = JSON.stringify(data.properties || []);
+                    if (newPropHash !== lastPropertiesHash) {
+                        loadedProperties = data.properties || [];
+                        lastPropertiesHash = newPropHash;
+                        renderCatalog();
+                    }
+                    
+                    const newTempHash = JSON.stringify(data.templates || []);
+                    if (newTempHash !== lastTemplatesHash) {
+                        loadedTemplates = data.templates || [];
+                        lastTemplatesHash = newTempHash;
+                        renderTemplates();
+                    }
+                    
                     renderAiSuggestions(data.suggested_properties);
                     
                     // Trigger browser Desktop Notifications for new incoming client messages
@@ -994,7 +1018,15 @@
                     }
                     
                     if (currentConversationId && data.active_conversation) {
-                        renderActiveChat(data.active_conversation, data.messages);
+                        let newMessagesHash = JSON.stringify(data.messages || []);
+                        if (newMessagesHash !== currentMessagesJson) {
+                            currentMessagesJson = newMessagesHash;
+                            renderActiveChat(data.active_conversation, data.messages);
+                        } else {
+                            // Even if messages didn't change, we might need to update SLA timers or UI badges
+                            // The Active Chat info could have changed (e.g. SLA toggled or tags added)
+                            renderActiveChat(data.active_conversation, data.messages, true); // true = soft update
+                        }
                         renderRemindersList(data.active_reminders);
                     }
                     checkAgentReminders(data.agent_reminders);
@@ -1277,7 +1309,7 @@
         let activeSessionTimerInterval = null;
         let clientLastMessageAt = null;
 
-        function renderActiveChat(info, messages) {
+        function renderActiveChat(info, messages, softUpdate = false) {
             document.getElementById('chatHeaderName').textContent = info.client_name;
             document.getElementById('chatHeaderPhone').textContent = info.client_phone;
             document.getElementById('chatHeaderAvatar').textContent = info.client_name.charAt(0);
@@ -1289,7 +1321,7 @@
             if (info.client_property_type) {
                 const pt = info.client_property_type.toUpperCase();
                 const select = document.getElementById('partnerTypeInput');
-                if (["APPARTEMENT", "VILLA", "TERRAIN", "STUDIO", "BUREAU"].includes(pt)) {
+                if (["APPARTEMENT", "VILLA", "TERRAIN", "STUDIO", "BUREAU", "CHAMBRE"].includes(pt)) {
                     select.value = pt;
                 }
             }
@@ -1383,6 +1415,9 @@
             if (currentRightTab === 'VISITS') {
                 loadVisits();
             }
+            
+            // If softUpdate is true, we ONLY updated the header/UI above, we skip regenerating messages HTML.
+            if (softUpdate) return;
             
             const container = document.getElementById('messagesContainer');
             
@@ -2356,8 +2391,11 @@
         }
         
         // SLA Toggle function
-        function toggleSLA(isEnabled) {
+        function toggleSLA() {
             if (!currentConversationId) return;
+            const toggle = document.getElementById('slaToggle');
+            if (!toggle) return;
+            const isEnabled = toggle.checked;
             
             document.getElementById('slaToggleLabel').textContent = isEnabled ? 'SLA ON' : 'SLA OFF';
             document.getElementById('slaToggleLabel').className = isEnabled ? 'text-[10px] font-bold text-emerald-600' : 'text-[10px] font-bold text-gray-500';
