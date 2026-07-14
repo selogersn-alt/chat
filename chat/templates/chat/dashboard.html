@@ -1804,7 +1804,7 @@
             const card = document.getElementById('associatedPropertyCard');
             
             // Look for matching property in loadedProperties from the topic title
-            const match = loadedProperties.find(p => topic.includes(p.title));
+            const match = loadedProperties.find(p => (topic || '').includes(p.title));
             
             // Guess Zone
             let guessedZone = "";

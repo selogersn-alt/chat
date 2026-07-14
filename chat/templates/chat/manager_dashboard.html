@@ -985,11 +985,11 @@
             
             const filtered = matches.filter(m => {
                 return (
-                    m.zone.toLowerCase().includes(query) ||
-                    m.client_name.toLowerCase().includes(query) ||
-                    m.partner_name.toLowerCase().includes(query) ||
-                    m.visitor_name.toLowerCase().includes(query) ||
-                    m.client_phone.includes(query)
+                    (m.zone || '').toLowerCase().includes(query) ||
+                    (m.client_name || '').toLowerCase().includes(query) ||
+                    (m.partner_name || '').toLowerCase().includes(query) ||
+                    (m.visitor_name || '').toLowerCase().includes(query) ||
+                    (m.client_phone || '').includes(query)
                 );
             });
 
