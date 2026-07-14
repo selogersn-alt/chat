@@ -1037,6 +1037,13 @@
         const csrftoken = getCookie('csrftoken') || '{{ csrf_token }}';
     </script>
 
+    <script>
+        window.onerror = function(msg, url, line, col, error) {
+            alert("JS Error: " + msg + "\nURL: " + url + "\nLine: " + line + "\nCol: " + col);
+            return false;
+        };
+    </script>
+
     <!-- CORE CHAT SCRIPT -->
     <script>
         let currentConversationId = null;
