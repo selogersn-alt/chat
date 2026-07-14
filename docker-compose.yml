@@ -26,8 +26,6 @@ services:
     image: redis:7-alpine
     container_name: logersn_redis
     restart: always
-    ports:
-      - "6379:6379"
 
   db:
     image: postgres:15-alpine
