@@ -3469,6 +3469,30 @@ ${r.title}`);
         // Patch the rendered HTML to include msg-bubble-wrap class
         const _origRenderBubble = window.renderActiveChat;
 
+        // ── Unregister old root service worker if present ──────────
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                registrations.forEach(function(registration) {
+                    // Check if scope is exactly root '/'
+                    var rootScope = window.location.origin + '/';
+                    if (registration.scope === rootScope) {
+                        registration.unregister().then(function(success) {
+                            if (success) {
+                                console.log('Successfully unregistered legacy root SW:', registration.scope);
+                                // Clear caches and reload to pull directly from network
+                                if (window.caches) {
+                                    caches.keys().then(function(keys) {
+                                        keys.forEach(function(key) { caches.delete(key); });
+                                    });
+                                }
+                                setTimeout(function() { window.location.reload(true); }, 200);
+                            }
+                        });
+                    }
+                });
+            });
+        }
+
         // ── Register PWA Service Worker ───────────────────────────
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
