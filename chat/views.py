@@ -348,13 +348,6 @@ def whatsapp_webhook(request):
                             {
                                 "type": "reply",
                                 "reply": {
-                                    "id": "PROJET_LOUER",
-                                    "title": "Louer"
-                                }
-                            },
-                            {
-                                "type": "reply",
-                                "reply": {
                                     "id": "PROJET_ACHETER",
                                     "title": "Acheter"
                                 }
@@ -362,8 +355,8 @@ def whatsapp_webhook(request):
                             {
                                 "type": "reply",
                                 "reply": {
-                                    "id": "PROJET_CONFIER",
-                                    "title": "Confier un bien"
+                                    "id": "PROJET_LOUER",
+                                    "title": "Louer"
                                 }
                             }
                         ]
@@ -392,83 +385,147 @@ def whatsapp_webhook(request):
 
             # --- FLUX INTERACTIF CONTINUATION ---
             if interactive_id:
-                if interactive_id.startswith('PROJET_'):
+                # Etape 1: Projet
+                if interactive_id in ['PROJET_ACHETER', 'PROJET_LOUER']:
                     conversation.client_project = content
                     conversation.save()
                     
-                    # Next Step: Type de bien (Liste)
+                    if interactive_id == 'PROJET_ACHETER':
+                        interactive_payload = {
+                            "type": "list",
+                            "header": {"type": "text", "text": "Acheter un bien"},
+                            "body": {"text": "Quel type de bien souhaitez-vous acheter ?"},
+                            "footer": {"text": "Loger Sénégal"},
+                            "action": {
+                                "button": "Choisir le type",
+                                "sections": [{
+                                    "title": "Types de biens",
+                                    "rows": [
+                                        {"id": "ACHAT_APPARTEMENT", "title": "Appartement"},
+                                        {"id": "ACHAT_STUDIO", "title": "Studio"},
+                                        {"id": "ACHAT_VILLA", "title": "Villa"},
+                                        {"id": "ACHAT_TERRAIN", "title": "Terrain"}
+                                    ]
+                                }]
+                            }
+                        }
+                        trigger_meta_whatsapp_api(sender_phone, interactive_payload=interactive_payload)
+                        
+                    elif interactive_id == 'PROJET_LOUER':
+                        interactive_payload = {
+                            "type": "button",
+                            "body": {"text": "Quel type de location recherchez-vous ?"},
+                            "action": {
+                                "buttons": [
+                                    {"type": "reply", "reply": {"id": "LOUER_LONGUE", "title": "Longue durée"}},
+                                    {"type": "reply", "reply": {"id": "LOUER_MEUBLE", "title": "Logement meublé"}}
+                                ]
+                            }
+                        }
+                        trigger_meta_whatsapp_api(sender_phone, interactive_payload=interactive_payload)
+
+                # Etape 2 (Louer) : Choix Longue durée ou Meublé
+                elif interactive_id == 'LOUER_MEUBLE':
+                    final_msg = "Excellent choix ! 🛋️\nUn de nos conseillers spécialisés en logements meublés va prendre le relais dans un instant pour vous proposer nos meilleures offres."
+                    success, final_msg_id = trigger_meta_whatsapp_api(sender_phone, final_msg)
+                    system_agent = User.objects.filter(is_superuser=True).first()
+                    Message.objects.create(
+                        conversation=conversation,
+                        sender=system_agent if system_agent else client_user,
+                        content=final_msg,
+                        status=Message.StatusEnum.SENT if success else Message.StatusEnum.SENT,
+                        msg_id=final_msg_id if final_msg_id else ""
+                    )
+
+                elif interactive_id == 'LOUER_LONGUE':
                     interactive_payload = {
                         "type": "list",
-                        "header": {"type": "text", "text": "Type de bien"},
+                        "header": {"type": "text", "text": "Location Longue Durée"},
                         "body": {"text": "Quel type de bien recherchez-vous ?"},
                         "footer": {"text": "Loger Sénégal"},
                         "action": {
                             "button": "Choisir le type",
-                            "sections": [
-                                {
-                                    "title": "Types de biens",
-                                    "rows": [
-                                        {"id": "TYPE_APPARTEMENT", "title": "Appartement"},
-                                        {"id": "TYPE_VILLA", "title": "Villa"},
-                                        {"id": "TYPE_STUDIO", "title": "Studio"},
-                                        {"id": "TYPE_CHAMBRE", "title": "Chambre"},
-                                        {"id": "TYPE_TERRAIN", "title": "Terrain"},
-                                        {"id": "TYPE_BUREAU", "title": "Bureau"},
-                                        {"id": "TYPE_AUTRE", "title": "Autre"}
-                                    ]
-                                }
+                            "sections": [{
+                                "title": "Types de biens",
+                                "rows": [
+                                    {"id": "LTYPE_CHAMBRE", "title": "Chambre"},
+                                    {"id": "LTYPE_STUDIO", "title": "Studio"},
+                                    {"id": "LTYPE_APPARTEMENT", "title": "Appartement"},
+                                    {"id": "LTYPE_VILLA", "title": "Villa"}
+                                ]
+                            }]
+                        }
+                    }
+                    trigger_meta_whatsapp_api(sender_phone, interactive_payload=interactive_payload)
+
+                # Etape 3 (Location Longue Durée) : Sous-types
+                elif interactive_id == 'LTYPE_CHAMBRE':
+                    interactive_payload = {
+                        "type": "button",
+                        "body": {"text": "Quel type de chambre recherchez-vous ?"},
+                        "action": {
+                            "buttons": [
+                                {"type": "reply", "reply": {"id": "CAT_CHAMBRE_SDB", "title": "Avec salle de bain"}},
+                                {"type": "reply", "reply": {"id": "CAT_CHAMBRE_SIMPLE", "title": "Simple"}}
                             ]
                         }
                     }
                     trigger_meta_whatsapp_api(sender_phone, interactive_payload=interactive_payload)
-                    
-                elif interactive_id.startswith('TYPE_'):
-                    conversation.client_property_type = content
-                    conversation.save()
-                    
-                    # Next Step: Zone (Liste)
+
+                elif interactive_id == 'LTYPE_STUDIO':
+                    interactive_payload = {
+                        "type": "button",
+                        "body": {"text": "Quel type de studio recherchez-vous ?"},
+                        "action": {
+                            "buttons": [
+                                {"type": "reply", "reply": {"id": "CAT_STUDIO_MINI", "title": "Mini studio"}},
+                                {"type": "reply", "reply": {"id": "CAT_STUDIO_ENTRE", "title": "Studio entre salon"}},
+                                {"type": "reply", "reply": {"id": "CAT_STUDIO_SEPARE", "title": "Studio séparé"}}
+                            ]
+                        }
+                    }
+                    trigger_meta_whatsapp_api(sender_phone, interactive_payload=interactive_payload)
+
+                elif interactive_id == 'LTYPE_APPARTEMENT':
+                    interactive_payload = {
+                        "type": "button",
+                        "body": {"text": "Combien de pièces pour votre appartement ?"},
+                        "action": {
+                            "buttons": [
+                                {"type": "reply", "reply": {"id": "CAT_APPART_2CH", "title": "2 ch. + salon"}},
+                                {"type": "reply", "reply": {"id": "CAT_APPART_3CH", "title": "3 ch. + salon"}},
+                                {"type": "reply", "reply": {"id": "CAT_APPART_4CH", "title": "4 ch. + salon"}}
+                            ]
+                        }
+                    }
+                    trigger_meta_whatsapp_api(sender_phone, interactive_payload=interactive_payload)
+
+                # Etape 4 : Choix du budget (Déclenché par Villa ou Sous-types de location)
+                elif interactive_id.startswith('CAT_') or interactive_id == 'LTYPE_VILLA':
                     interactive_payload = {
                         "type": "list",
-                        "header": {"type": "text", "text": "Zone"},
-                        "body": {"text": "Dans quelle zone ou quartier ?"},
+                        "header": {"type": "text", "text": "Budget"},
+                        "body": {"text": "Quel est votre budget mensuel (en FCFA) ?"},
                         "footer": {"text": "Loger Sénégal"},
                         "action": {
-                            "button": "Choisir la zone",
-                            "sections": [
-                                {
-                                    "title": "Dakar & Alentours",
-                                    "rows": [
-                                        {"id": "ZONE_ALMADIES", "title": "Almadies / Ngor"},
-                                        {"id": "ZONE_OUAKAM", "title": "Ouakam / Mamelles"},
-                                        {"id": "ZONE_PLATEAU", "title": "Dakar Plateau"},
-                                        {"id": "ZONE_MERMOZ", "title": "Mermoz / Sacré-Cœur"},
-                                        {"id": "ZONE_YOFF", "title": "Yoff / Foire"},
-                                        {"id": "ZONE_KEURMASSAR", "title": "Keur Massar"},
-                                        {"id": "ZONE_DIAMNIADIO", "title": "Diamniadio"}
-                                    ]
-                                },
-                                {
-                                    "title": "Hors Dakar",
-                                    "rows": [
-                                        {"id": "ZONE_SALY", "title": "Saly / Somone"},
-                                        {"id": "ZONE_THIES", "title": "Thiès"},
-                                        {"id": "ZONE_AUTRE", "title": "Autre"}
-                                    ]
-                                }
-                            ]
+                            "button": "Choisir le budget",
+                            "sections": [{
+                                "title": "Fourchettes de budget",
+                                "rows": [
+                                    {"id": "BUDGET_50_100", "title": "50k - 100k"},
+                                    {"id": "BUDGET_100_200", "title": "100k - 200k"},
+                                    {"id": "BUDGET_200_300", "title": "200k - 300k"},
+                                    {"id": "BUDGET_300_400", "title": "300k - 400k"},
+                                    {"id": "BUDGET_500_PLUS", "title": "Supérieur à 500k"}
+                                ]
+                            }]
                         }
                     }
                     trigger_meta_whatsapp_api(sender_phone, interactive_payload=interactive_payload)
-                    
-                elif interactive_id.startswith('ZONE_'):
-                    conversation.client_zone = content
-                    conversation.save()
-                    
-                    # Final step: Confirmation
-                    if content == 'Autre' or conversation.client_property_type == 'Autre':
-                        final_msg = "Parfait ! 🚀 Précisez-nous votre zone et type de bien par message écrit s'il vous plaît.\nUn conseiller prend le relais dans un instant pour vous proposer nos meilleures offres."
-                    else:
-                        final_msg = "Parfait ! 🚀 Vos critères ont été enregistrés.\nUn conseiller prend le relais dans un instant pour vous proposer nos meilleures offres."
+
+                # Fin de parcours (Budget location sélectionné OU Type achat sélectionné)
+                elif interactive_id.startswith('BUDGET_') or interactive_id.startswith('ACHAT_'):
+                    final_msg = "Parfait ! 🚀 Vos critères ont été enregistrés.\nUn de nos conseillers va prendre le relais dans un instant pour vous accompagner de manière personnalisée et conviviale."
                     success, final_msg_id = trigger_meta_whatsapp_api(sender_phone, final_msg)
                     system_agent = User.objects.filter(is_superuser=True).first()
                     Message.objects.create(
