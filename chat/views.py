@@ -1130,13 +1130,30 @@ def export_leads_csv(request):
     status_filter = request.GET.get('status', 'ACTIVE')
     tag_filter = request.GET.get('tag', '')
     agent_filter = request.GET.get('agent', 'MY')
+    start_date_str = request.GET.get('start_date')
+    end_date_str = request.GET.get('end_date')
     
     if request.user.is_superuser or request.user.role == User.RoleEnum.MANAGER:
         conversations = Conversation.objects.all()
     else:
         conversations = Conversation.objects.filter(participants=request.user)
     
-    if status_filter:
+    if start_date_str:
+        try:
+            # Using basic date parsing to avoid timezone-naive issues
+            start_date = timezone.datetime.strptime(start_date_str, '%Y-%m-%d').date()
+            conversations = conversations.filter(created_at__date__gte=start_date)
+        except (ValueError, TypeError):
+            pass
+            
+    if end_date_str:
+        try:
+            end_date = timezone.datetime.strptime(end_date_str, '%Y-%m-%d').date()
+            conversations = conversations.filter(created_at__date__lte=end_date)
+        except (ValueError, TypeError):
+            pass
+    
+    if status_filter and status_filter != 'ALL':
         conversations = conversations.filter(status=status_filter)
         
     if agent_filter == 'MY':
@@ -1158,6 +1175,7 @@ def export_leads_csv(request):
     
     writer = csv.writer(response, delimiter=';')
     writer.writerow([
+        'Date de Contact',
         'Nom du Prospect', 
         'Téléphone', 
         'Status', 
@@ -1181,14 +1199,18 @@ def export_leads_csv(request):
         last_msg = conv.messages.all().order_by('-created_at').first()
         last_msg_content = last_msg.content if last_msg else ""
         
+        # Determine client project (Rent/Sale) properly
+        projet = conv.client_project or ""
+        
         writer.writerow([
+            timezone.localtime(conv.created_at).strftime("%Y-%m-%d %H:%M") if conv.created_at else "",
             client_name,
             client_phone,
             conv.get_status_display(),
             'WhatsApp' if conv.is_whatsapp else 'Web Chat',
             conv.assigned_to.get_full_name() or conv.assigned_to.username if conv.assigned_to else 'Non assigné',
             conv.get_pipeline_stage_display(),
-            conv.client_project or "",
+            projet,
             conv.client_property_type or "",
             conv.client_zone or "",
             conv.satisfaction_rating or "",
