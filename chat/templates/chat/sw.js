@@ -2,7 +2,7 @@ const CACHE_VERSION = 'v4';
 const STATIC_CACHE  = `logersn-static-${CACHE_VERSION}`;
 const HTML_CACHE    = `logersn-html-${CACHE_VERSION}`;
 
-const STATIC_ASSETS = ['/chat/dashboard/', '/static/manifest.json', '/static/logo.png'];
+const STATIC_ASSETS = ['/', '/static/manifest.json', '/static/logo.png'];
 
 self.addEventListener('install', event => {
   event.waitUntil(

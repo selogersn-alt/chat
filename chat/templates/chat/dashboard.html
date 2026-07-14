@@ -2164,9 +2164,7 @@ https://logersenegal.com/survey/`;
                 const lowerText = formattedText.toLowerCase();
                 if ((lowerText.includes("bonjour") || lowerText.includes("je suis ravi") || lowerText.includes("ravi de vous aider")) 
                     && !formattedText.includes(agentName)) {
-                    formattedText += "
-
-- " + agentName;
+                    formattedText += "\n\n- " + agentName;
                 }
             }
             
@@ -3477,37 +3475,10 @@ ${r.title}`);
         // Patch the rendered HTML to include msg-bubble-wrap class
         const _origRenderBubble = window.renderActiveChat;
 
-        // ── Unregister old root service worker if present ──────────
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                registrations.forEach(function(registration) {
-                    // Check if scope is exactly root '/'
-                    var rootScope = window.location.origin + '/';
-                    if (registration.scope === rootScope) {
-                        registration.unregister().then(function(success) {
-                            if (success) {
-                                console.log('Successfully unregistered legacy root SW:', registration.scope);
-                                if (!sessionStorage.getItem('sw_root_cleared')) {
-                                    sessionStorage.setItem('sw_root_cleared', '1');
-                                    // Clear caches and reload to pull directly from network
-                                    if (window.caches) {
-                                        caches.keys().then(function(keys) {
-                                            keys.forEach(function(key) { caches.delete(key); });
-                                        });
-                                    }
-                                    setTimeout(function() { window.location.reload(); }, 150);
-                                }
-                            }
-                        });
-                    }
-                });
-            });
-        }
-
         // ── Register PWA Service Worker ───────────────────────────
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
-                navigator.serviceWorker.register('/chat/dashboard/sw.js', { scope: '/chat/dashboard/' })
+                navigator.serviceWorker.register('/sw.js', { scope: '/' })
                     .then(function(reg) { console.log('PWA Service Worker registered with scope:', reg.scope); })
                     .catch(function(err) { console.error('PWA Service Worker registration failed:', err); });
             });
