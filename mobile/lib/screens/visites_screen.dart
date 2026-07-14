@@ -58,7 +58,7 @@ class _VisitesScreenState extends State<VisitesScreen> {
               itemCount: _visits.length,
               itemBuilder: (context, index) {
                 final v = _visits[index];
-                final isPending = v['status'] == 'PENDING';
+                final isPlanned = v['status'] == 'PLANNED';
 
                 return Card(
                   color: Colors.white,
@@ -86,13 +86,13 @@ class _VisitesScreenState extends State<VisitesScreen> {
                         const SizedBox(height: 8),
                         Text('Client : ${v['client_name']}'),
                         Text('Date : ${v['visit_date']}'),
-                        if (isPending) ...[
+                        if (isPlanned) ...[
                           const SizedBox(height: 12),
                           Row(
                             children: [
                               Expanded(
                                 child: OutlinedButton(
-                                  onPressed: () => _updateVisitStatus(v['id'].toString(), 'CANCELLED'),
+                                  onPressed: () => _updateVisitStatus(v['id'].toString(), 'CANCELED'),
                                   style: OutlinedButton.styleFrom(
                                     foregroundColor: Colors.red,
                                     side: const BorderSide(color: Colors.red),
@@ -103,7 +103,7 @@ class _VisitesScreenState extends State<VisitesScreen> {
                               const SizedBox(width: 12),
                               Expanded(
                                 child: ElevatedButton(
-                                  onPressed: () => _updateVisitStatus(v['id'].toString(), 'DONE'),
+                                  onPressed: () => _updateVisitStatus(v['id'].toString(), 'COMPLETED'),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: const Color(0xFF0F4F2C),
                                     foregroundColor: Colors.white,
@@ -127,13 +127,13 @@ class _VisitesScreenState extends State<VisitesScreen> {
     Color color = Colors.grey;
     String label = status;
 
-    if (status == 'PENDING') {
+    if (status == 'PLANNED') {
       color = Colors.orange;
-      label = 'En Attente';
-    } else if (status == 'DONE') {
+      label = 'Planifiée';
+    } else if (status == 'COMPLETED') {
       color = Colors.green;
-      label = 'Faite';
-    } else if (status == 'CANCELLED') {
+      label = 'Effectuée';
+    } else if (status == 'CANCELED') {
       color = Colors.red;
       label = 'Annulée';
     }

@@ -1007,14 +1007,18 @@
                         <div class="flex flex-col gap-2">
                             <input type="text" id="visitPropertyTitle" placeholder="Bien immobilier à visiter..." class="w-full bg-white border border-gray-200 rounded-xl px-2.5 py-1.5 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-forest-500">
                             <input type="datetime-local" id="visitDate" class="w-full bg-white border border-gray-200 rounded-xl px-2.5 py-1.5 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-forest-500">
+                            <textarea id="visitNotes" placeholder="Notes optionnelles (ex: clés chez le gardien)..." rows="2" class="w-full bg-white border border-gray-200 rounded-xl px-2.5 py-1.5 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-forest-500 resize-none"></textarea>
                             <button onclick="scheduleVisit()" class="w-full py-1.5 bg-forest-600 hover:bg-forest-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm">Planifier la visite</button>
                         </div>
                     </div>
                     
                     <div class="crm-card">
-                        <div class="crm-card-label" style="color: #10b981;">📋 Visites Programmées</div>
+                        <div class="crm-card-label flex items-center justify-between" style="color: #10b981;">
+                            <span>📋 Visites Programmées</span>
+                            <button onclick="loadVisits()" class="text-[9px] text-gray-400 hover:text-forest-600 transition-colors">🔄 Actualiser</button>
+                        </div>
                         <div id="visitsListContainer" class="flex flex-col gap-2 max-h-[350px] overflow-y-auto custom-scrollbar">
-                            <div class="text-xs text-gray-400 text-center py-4">Sélectionnez une discussion</div>
+                            <div class="text-xs text-gray-400 text-center py-6">Sélectionnez une discussion.</div>
                         </div>
                     </div>
                 </div>
@@ -1535,6 +1539,11 @@
                 document.getElementById('colCenter').classList.add('flex');
             }
             
+            // Auto-refresh visits if the Visits tab is active
+            if (currentRightTab === 'VISITS') {
+                loadVisits();
+            }
+            
             // Sync immediately
             syncData();
         }
@@ -1554,6 +1563,13 @@
             // Pre-fill Partner match visitor fields
             document.getElementById('partnerVisitorName').value = info.client_name || "";
             document.getElementById('partnerVisitorPhone').value = info.client_phone || "";
+            
+            // Pre-fill visit property title from the currently displayed property (if any)
+            const propTitleEl = document.getElementById('assocPropTitle');
+            const visitTitleInput = document.getElementById('visitPropertyTitle');
+            if (propTitleEl && visitTitleInput && !visitTitleInput.value && propTitleEl.textContent && propTitleEl.textContent !== 'Titre Bien') {
+                visitTitleInput.value = propTitleEl.textContent.trim();
+            }
             
             if (info.client_property_type) {
                 const pt = info.client_property_type.toUpperCase();
@@ -1955,12 +1971,16 @@
 
         // --- VISITS LOGIC ---
         function scheduleVisit() {
-            if (!currentConversationId) return;
-            const propTitle = document.getElementById('visitPropertyTitle').value;
+            if (!currentConversationId) {
+                showToast('Sélectionnez d\'abord une discussion.', 'warning');
+                return;
+            }
+            const propTitle = document.getElementById('visitPropertyTitle').value.trim();
             const vDate = document.getElementById('visitDate').value;
+            const notes = document.getElementById('visitNotes') ? document.getElementById('visitNotes').value.trim() : '';
             
             if (!propTitle || !vDate) {
-                alert("Veuillez remplir le bien et la date.");
+                showToast('Veuillez remplir le bien et la date.', 'warning');
                 return;
             }
             
@@ -1974,6 +1994,7 @@
                     conversation_id: currentConversationId,
                     visit_date: vDate,
                     property_title: propTitle,
+                    notes: notes,
                     client_name: document.getElementById('chatHeaderName').innerText,
                     client_phone: document.getElementById('chatHeaderPhone').innerText
                 })
@@ -1983,9 +2004,11 @@
                 if(data.status === 'success') {
                     document.getElementById('visitPropertyTitle').value = '';
                     document.getElementById('visitDate').value = '';
+                    if(document.getElementById('visitNotes')) document.getElementById('visitNotes').value = '';
                     loadVisits();
+                    showToast('Visite planifiée avec succès !', 'success');
                     
-                    // Optionnel : Ajouter un message dans le chat pour prévenir le client
+                    // Draft a confirmation message for the client
                     const dateObj = new Date(vDate);
                     const formattedDate = dateObj.toLocaleDateString('fr-FR') + ' à ' + dateObj.toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'});
                     const draftMsg = `*VISITE PLANIFIÉE* 📅
@@ -1999,52 +2022,63 @@ Date: ${formattedDate}.`;
         }
         
         function loadVisits() {
-            if (!currentConversationId) return;
+            const container = document.getElementById('visitsListContainer');
+            if (!currentConversationId) {
+                container.innerHTML = '<div class="text-xs text-gray-400 text-center py-6">📋 S&eacute;lectionnez une discussion pour voir ses visites.</div>';
+                return;
+            }
+            
+            container.innerHTML = '<div class="text-xs text-gray-400 text-center py-4">Chargement...</div>';
             
             fetch('/api/visits/list/')
                 .then(res => res.json())
                 .then(data => {
-                    const container = document.getElementById('visitsListContainer');
                     if (data.status === 'success') {
-                        // Filter visits for current conversation
+                        // Filter visits for current conversation only
                         const convVisits = data.visits.filter(v => v.conv_id === currentConversationId);
                         
                         if (convVisits.length === 0) {
-                            container.innerHTML = '<div class="text-xs text-gray-400 text-center py-4">Aucune visite programmée</div>';
+                            container.innerHTML = '<div class="text-xs text-gray-400 text-center py-6">Aucune visite pour cette discussion.</div>';
                             return;
                         }
+                        
+                        const statusLabel = { 'PLANNED': 'Planifiée', 'COMPLETED': 'Effectuée', 'CANCELED': 'Annulée' };
+                        const statusColor = { 'PLANNED': 'bg-yellow-100 text-yellow-800 border-yellow-200', 'COMPLETED': 'bg-green-100 text-green-800 border-green-200', 'CANCELED': 'bg-red-100 text-red-800 border-red-200' };
                         
                         let html = '';
                         convVisits.forEach(v => {
                             const d = new Date(v.visit_date);
-                            const ds = d.toLocaleDateString('fr-FR') + ' ' + d.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
-                            
-                            let statusColor = 'bg-yellow-100 text-yellow-800 border-yellow-200';
-                            if(v.status === 'COMPLETED') statusColor = 'bg-green-100 text-green-800 border-green-200';
-                            if(v.status === 'CANCELED') statusColor = 'bg-red-100 text-red-800 border-red-200';
+                            const ds = d.toLocaleDateString('fr-FR') + ' à ' + d.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+                            const label = statusLabel[v.status] || v.status;
+                            const badge = statusColor[v.status] || 'bg-gray-100 text-gray-600 border-gray-200';
+                            const noteHtml = v.notes ? `<div class="text-[10px] text-indigo-500 mt-1 italic">💬 ${v.notes}</div>` : '';
                             
                             html += `
-                                <div class="p-3 bg-white border border-gray-200 rounded-xl flex justify-between items-start">
-                                    <div>
-                                        <div class="text-xs font-bold text-gray-800">${v.property_title}</div>
-                                        <div class="text-[10px] text-gray-500 mt-0.5">${ds}</div>
+                                <div class="p-3 bg-white border border-gray-200 rounded-xl">
+                                    <div class="flex justify-between items-start gap-2">
+                                        <div class="flex-1 min-w-0">
+                                            <div class="text-xs font-bold text-gray-800 truncate">${v.property_title}</div>
+                                            <div class="text-[10px] text-gray-500 mt-0.5">📅 ${ds}</div>
+                                            ${noteHtml}
+                                        </div>
+                                        <span class="text-[9px] font-bold px-1.5 py-0.5 rounded border flex-shrink-0 ${badge}">${label}</span>
                                     </div>
-                                    <div class="flex flex-col items-end gap-1">
-                                        <span class="text-[9px] font-bold px-1.5 py-0.5 rounded border ${statusColor}">
-                                            ${v.status}
-                                        </span>
-                                        ${v.status === 'PLANNED' ? `
-                                            <div class="flex gap-1 mt-1">
-                                                <button onclick="updateVisitStatus('${v.id}', 'COMPLETED')" class="text-[9px] bg-green-500 text-white px-2 py-0.5 rounded">Fait</button>
-                                                <button onclick="updateVisitStatus('${v.id}', 'CANCELED')" class="text-[9px] bg-red-500 text-white px-2 py-0.5 rounded">Annuler</button>
-                                            </div>
-                                        ` : ''}
-                                    </div>
+                                    ${v.status === 'PLANNED' ? `
+                                        <div class="flex gap-1.5 mt-2 pt-2 border-t border-gray-100">
+                                            <button onclick="updateVisitStatus('${v.id}', 'COMPLETED')" class="flex-1 text-[10px] font-bold bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded-lg transition-colors">✅ Effectuée</button>
+                                            <button onclick="updateVisitStatus('${v.id}', 'CANCELED')" class="flex-1 text-[10px] font-bold bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded-lg transition-colors">❌ Annuler</button>
+                                        </div>
+                                    ` : ''}
                                 </div>
                             `;
                         });
                         container.innerHTML = html;
+                    } else {
+                        container.innerHTML = '<div class="text-xs text-red-400 text-center py-4">Erreur de chargement.</div>';
                     }
+                })
+                .catch(() => {
+                    container.innerHTML = '<div class="text-xs text-red-400 text-center py-4">Erreur de connexion.</div>';
                 });
         }
         

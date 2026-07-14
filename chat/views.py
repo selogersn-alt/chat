@@ -2079,6 +2079,7 @@ def create_visit(request):
         property_title = data.get('property_title')
         client_name = data.get('client_name', '')
         client_phone = data.get('client_phone', '')
+        notes = data.get('notes', '')
         
         if not conv_id or not visit_date_str or not property_title:
             return JsonResponse({'error': 'Missing required fields'}, status=400)
@@ -2096,6 +2097,7 @@ def create_visit(request):
             visit_date=visit_date,
             client_name=client_name,
             client_phone=client_phone,
+            notes=notes,
             status=Visit.StatusEnum.PLANNED
         )
         
@@ -2132,22 +2134,25 @@ def update_visit(request):
 @login_required(login_url='login')
 def list_visits(request):
     try:
-        if request.user.role == User.RoleEnum.MANAGER:
+        if request.user.role == User.RoleEnum.MANAGER or request.user.is_superuser:
             visits = Visit.objects.all().select_related('agent', 'conversation')
         else:
             visits = Visit.objects.filter(agent=request.user).select_related('agent', 'conversation')
             
         visits_data = []
-        for v in visits.order_by('-visit_date')[:50]:
+        for v in visits.order_by('visit_date'):  # Ascending: upcoming visits first
             visits_data.append({
                 'id': str(v.id),
                 'property_title': v.property_title,
                 'visit_date': v.visit_date.isoformat(),
                 'status': v.status,
+                'status_display': v.get_status_display(),
                 'client_name': v.client_name,
                 'client_phone': v.client_phone,
+                'notes': v.notes,
                 'agent_name': v.agent.get_full_name() or v.agent.username,
-                'conv_id': str(v.conversation.id)
+                'conv_id': str(v.conversation.id),
+                'created_at': v.created_at.strftime('%d/%m/%Y %H:%M'),
             })
             
         return JsonResponse({'status': 'success', 'visits': visits_data})

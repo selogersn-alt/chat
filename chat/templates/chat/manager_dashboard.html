@@ -293,7 +293,7 @@
                         </select>
                         <select id="globalVisitsStatusFilter" onchange="renderFilteredGlobalVisits()" class="bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-semibold text-gray-700 focus:outline-none focus:ring-1 focus:ring-forest-500">
                             <option value="ALL">Tous les statuts</option>
-                            <option value="PENDING">Planifiées</option>
+                            <option value="PLANNED">Planifiées</option>
                             <option value="COMPLETED">Effectuées</option>
                             <option value="CANCELED">Annulées</option>
                         </select>
@@ -307,17 +307,18 @@
                     <table class="w-full text-left border-collapse">
                         <thead>
                             <tr class="bg-gray-50 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                                <th class="p-4 border-b border-gray-100 font-semibold w-32">Date & Heure</th>
-                                <th class="p-4 border-b border-gray-100 font-semibold w-48">Agent Assigné</th>
+                                <th class="p-4 border-b border-gray-100 font-semibold w-36">Date de visite</th>
+                                <th class="p-4 border-b border-gray-100 font-semibold w-44">Agent</th>
                                 <th class="p-4 border-b border-gray-100 font-semibold">Client</th>
                                 <th class="p-4 border-b border-gray-100 font-semibold">Bien Immobilier</th>
-                                <th class="p-4 border-b border-gray-100 font-semibold w-32 text-center">Statut</th>
-                                <th class="p-4 border-b border-gray-100 font-semibold w-32 text-center">Action</th>
+                                <th class="p-4 border-b border-gray-100 font-semibold">Notes</th>
+                                <th class="p-4 border-b border-gray-100 font-semibold w-28 text-center">Statut</th>
+                                <th class="p-4 border-b border-gray-100 font-semibold w-36 text-center">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="globalVisitsTableBody" class="text-sm text-gray-700 divide-y divide-gray-50">
                             <tr>
-                                <td colspan="5" class="p-8 text-center text-gray-400 text-sm">Chargement des visites...</td>
+                                <td colspan="7" class="p-8 text-center text-gray-400 text-sm">Chargement des visites...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -739,54 +740,64 @@
             if (statusFilter !== 'ALL') filtered = filtered.filter(v => v.status === statusFilter);
             
             if (filtered.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-400 text-sm">Aucune visite trouvée.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-gray-400 text-sm">Aucune visite trouvée.</td></tr>';
                 return;
             }
             
             let html = '';
             filtered.forEach(v => {
                 const d = new Date(v.visit_date);
-                const ds = d.toLocaleDateString('fr-FR') + ' ' + d.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+                const ds = d.toLocaleDateString('fr-FR') + ' à ' + d.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
                 
                 let badgeClass = 'bg-yellow-100 text-yellow-800';
                 if(v.status === 'COMPLETED') badgeClass = 'bg-green-100 text-green-800';
                 if(v.status === 'CANCELED') badgeClass = 'bg-red-100 text-red-800';
                 
                 let statusDisplay = v.status;
-                if(v.status === 'PENDING') statusDisplay = 'Planifiée';
+                if(v.status === 'PLANNED') statusDisplay = 'Planifiée';
                 if(v.status === 'COMPLETED') statusDisplay = 'Effectuée';
                 if(v.status === 'CANCELED') statusDisplay = 'Annulée';
                 
+                const notesHtml = v.notes 
+                    ? `<span class="text-xs text-indigo-600 italic" title="${v.notes}">${v.notes.length > 40 ? v.notes.substring(0, 40) + '…' : v.notes}</span>`
+                    : '<span class="text-[10px] text-gray-300">—</span>';
+                
                 html += `
                     <tr class="hover:bg-gray-50/50 transition-colors">
-                        <td class="p-4 font-medium text-gray-800">${ds}</td>
+                        <td class="p-4">
+                            <div class="font-medium text-gray-800 text-xs">${ds}</div>
+                            <div class="text-[10px] text-gray-400 mt-0.5">Prog. le ${v.created_at || ''}</div>
+                        </td>
                         <td class="p-4">
                             <div class="flex items-center gap-2">
-                                <div class="w-6 h-6 rounded-full bg-forest-100 text-forest-700 flex items-center justify-center text-[10px] font-bold">
+                                <div class="w-6 h-6 rounded-full bg-forest-100 text-forest-700 flex items-center justify-center text-[10px] font-bold flex-shrink-0">
                                     ${v.agent_name.charAt(0).toUpperCase()}
                                 </div>
-                                <span class="font-medium">${v.agent_name}</span>
+                                <span class="font-medium text-sm">${v.agent_name}</span>
                             </div>
                         </td>
                         <td class="p-4">
                             <div class="font-semibold text-gray-800">${v.client_name || '-'}</div>
                             <div class="text-[10px] text-gray-500">${v.client_phone || '-'}</div>
                         </td>
-                        <td class="p-4 text-gray-600">${v.property_title}</td>
+                        <td class="p-4 text-gray-700 text-sm">${v.property_title}</td>
+                        <td class="p-4 max-w-[160px]">${notesHtml}</td>
                         <td class="p-4 text-center">
                             <span class="inline-block px-2 py-1 rounded-lg text-[10px] font-bold ${badgeClass}">${statusDisplay}</span>
                         </td>
-                        <td class="p-4 flex flex-col gap-2 min-w-[140px]">
-                            <select onchange="updateGlobalVisitStatus('${v.id}', this.value)" class="bg-gray-50 border border-gray-200 rounded-lg px-2 py-1 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-forest-500 w-full">
-                                <option value="PENDING" ${v.status === 'PENDING' ? 'selected' : ''}>Planifiée</option>
-                                <option value="COMPLETED" ${v.status === 'COMPLETED' ? 'selected' : ''}>Effectuée</option>
-                                <option value="CANCELED" ${v.status === 'CANCELED' ? 'selected' : ''}>Annulée</option>
-                            </select>
-                            ${v.conv_id ? `
-                            <a href="/chat/${v.conv_id}/" target="_blank" class="text-center px-2 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-lg text-[10px] transition-colors border border-gray-200 block w-full">
-                                💬 Ouvrir Chat
-                            </a>
-                            ` : ''}
+                        <td class="p-4">
+                            <div class="flex flex-col gap-1.5">
+                                <select onchange="updateGlobalVisitStatus('${v.id}', this.value)" class="bg-gray-50 border border-gray-200 rounded-lg px-2 py-1 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-forest-500 w-full">
+                                    <option value="PLANNED" ${v.status === 'PLANNED' ? 'selected' : ''}>Planifiée</option>
+                                    <option value="COMPLETED" ${v.status === 'COMPLETED' ? 'selected' : ''}>Effectuée</option>
+                                    <option value="CANCELED" ${v.status === 'CANCELED' ? 'selected' : ''}>Annulée</option>
+                                </select>
+                                ${v.conv_id ? `
+                                <a href="/chat/${v.conv_id}/" target="_blank" class="text-center px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-lg text-[10px] transition-colors border border-gray-200 block w-full">
+                                    💬 Ouvrir Chat
+                                </a>
+                                ` : ''}
+                            </div>
                         </td>
                     </tr>
                 `;
