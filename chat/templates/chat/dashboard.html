@@ -1051,6 +1051,21 @@
 
     <!-- CORE CHAT SCRIPT -->
     <script>
+        // ── Toast Notification System ──────────────────────────────────────────
+        function showToast(message, type = 'info') {
+            const existing = document.getElementById('toastNotification');
+            if (existing) existing.remove();
+            const colors = { success: 'bg-emerald-600', error: 'bg-red-600', info: 'bg-blue-600', warning: 'bg-amber-500' };
+            const icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' };
+            const toast = document.createElement('div');
+            toast.id = 'toastNotification';
+            toast.className = `fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-3 px-5 py-3 rounded-2xl shadow-2xl text-white text-sm font-semibold ${colors[type] || colors.info} transition-all duration-300 opacity-0`;
+            toast.innerHTML = `<span>${icons[type] || icons.info}</span><span>${message}</span>`;
+            document.body.appendChild(toast);
+            requestAnimationFrame(() => { toast.style.opacity = '1'; });
+            setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 3500);
+        }
+
         let currentConversationId = null;
         let currentFilter = 'ACTIVE'; // ACTIVE, PENDING, CLOSED
         let currentAgentFilter = 'MY'; // MY, ALL
@@ -1088,6 +1103,12 @@
             console.log("Connecting to WebSocket:", wsUrl);
             const chatSocket = new WebSocket(wsUrl);
 
+            chatSocket.onopen = function(e) {
+                console.log("WebSocket connected!");
+                const dot = document.getElementById('wsStatusDot');
+                if (dot) { dot.classList.remove('bg-red-500', 'bg-yellow-500'); dot.classList.add('bg-emerald-500'); }
+            };
+
             chatSocket.onmessage = function(e) {
                 const data = JSON.parse(e.data);
                 console.log("WebSocket event received:", data);
@@ -1097,11 +1118,15 @@
 
             chatSocket.onclose = function(e) {
                 console.warn('Chat WebSocket closed. Reconnecting in 5 seconds...');
+                const dot = document.getElementById('wsStatusDot');
+                if (dot) { dot.classList.remove('bg-emerald-500', 'bg-yellow-500'); dot.classList.add('bg-red-500'); }
                 setTimeout(connectWebSocket, 5000);
             };
             
             chatSocket.onerror = function(err) {
                 console.error('WebSocket encountered an error:', err);
+                const dot = document.getElementById('wsStatusDot');
+                if (dot) { dot.classList.remove('bg-emerald-500', 'bg-red-500'); dot.classList.add('bg-yellow-500'); }
                 chatSocket.close();
             }
         }
@@ -2170,10 +2195,22 @@ https://logersenegal.com/survey/`;
             document.getElementById('partnerMatchModal').classList.add('hidden');
         }
 
-        // Dropdown toggle
+        // Dropdown toggle — uses display style to avoid Tailwind flex conflict
         function toggleTemplatesDropdown() {
             const dropdown = document.getElementById('templatesDropdown');
-            dropdown.classList.toggle('hidden');
+            const isVisible = dropdown.style.display === 'flex';
+            // Close all dropdowns first
+            document.getElementById('quickPartnersDropdown').style.display = 'none';
+            dropdown.style.display = isVisible ? 'none' : 'flex';
+        }
+
+        function toggleQuickPartnersDropdown() {
+            const dropdown = document.getElementById('quickPartnersDropdown');
+            const isVisible = dropdown.style.display === 'flex';
+            // Close all dropdowns first
+            document.getElementById('templatesDropdown').style.display = 'none';
+            dropdown.style.display = isVisible ? 'none' : 'flex';
+            if (!isVisible) filterQuickPartners('');
         }
 
         // Insert Template / Property link into text input
@@ -2214,7 +2251,7 @@ https://logersenegal.com/survey/`;
             adjustTextareaHeight(input);
             
             // Hide dropdown
-            document.getElementById('templatesDropdown').classList.add('hidden');
+            document.getElementById('templatesDropdown').style.display = 'none';
         }
 
         // Send a template directly when session is expired
