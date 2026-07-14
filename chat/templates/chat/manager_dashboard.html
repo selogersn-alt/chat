@@ -282,15 +282,26 @@
 
             <!-- GLOBAL VISITS TABLE (NEW) -->
             <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mt-8">
-                <div class="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                <div class="p-6 border-b border-gray-100 flex flex-col md:flex-row gap-4 items-start md:items-center justify-between bg-gray-50/50">
                     <div>
                         <h2 class="text-lg font-bold text-gray-800">📅 Calendrier Global des Visites</h2>
-                        <p class="text-xs text-gray-500 mt-1">Suivi de toutes les visites planifiées par les agents.</p>
+                        <p class="text-xs text-gray-500 mt-1">Suivi et gestion de toutes les visites planifiées par les agents via le CRM.</p>
                     </div>
-                    <button onclick="loadGlobalVisits()" class="px-3 py-1.5 bg-white border border-gray-200 text-gray-600 hover:text-forest-600 hover:border-forest-200 rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
-                        Rafraîchir
-                    </button>
+                    <div class="flex items-center gap-3">
+                        <select id="globalVisitsAgentFilter" onchange="renderFilteredGlobalVisits()" class="bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-semibold text-gray-700 focus:outline-none focus:ring-1 focus:ring-forest-500 min-w-[150px]">
+                            <option value="ALL">Tous les agents</option>
+                        </select>
+                        <select id="globalVisitsStatusFilter" onchange="renderFilteredGlobalVisits()" class="bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-semibold text-gray-700 focus:outline-none focus:ring-1 focus:ring-forest-500">
+                            <option value="ALL">Tous les statuts</option>
+                            <option value="PENDING">Planifiées</option>
+                            <option value="COMPLETED">Effectuées</option>
+                            <option value="CANCELED">Annulées</option>
+                        </select>
+                        <button onclick="loadGlobalVisits()" class="px-3 py-1.5 bg-white border border-gray-200 text-gray-600 hover:text-forest-600 hover:border-forest-200 rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
+                            Rafraîchir
+                        </button>
+                    </div>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse">
@@ -301,6 +312,7 @@
                                 <th class="p-4 border-b border-gray-100 font-semibold">Client</th>
                                 <th class="p-4 border-b border-gray-100 font-semibold">Bien Immobilier</th>
                                 <th class="p-4 border-b border-gray-100 font-semibold w-32 text-center">Statut</th>
+                                <th class="p-4 border-b border-gray-100 font-semibold w-32 text-center">Action</th>
                             </tr>
                         </thead>
                         <tbody id="globalVisitsTableBody" class="text-sm text-gray-700 divide-y divide-gray-50">
@@ -689,51 +701,119 @@
             setInterval(loadGlobalVisits, 30000);
         });
         
+        let allGlobalVisits = [];
+
         function loadGlobalVisits() {
             fetch('/api/visits/list/')
                 .then(res => res.json())
                 .then(data => {
                     if (data.status === 'success') {
-                        const tbody = document.getElementById('globalVisitsTableBody');
-                        if (data.visits.length === 0) {
-                            tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-gray-400 text-sm">Aucune visite programmée.</td></tr>';
-                            return;
-                        }
+                        allGlobalVisits = data.visits || [];
                         
-                        let html = '';
-                        data.visits.forEach(v => {
-                            const d = new Date(v.visit_date);
-                            const ds = d.toLocaleDateString('fr-FR') + ' ' + d.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
-                            
-                            let statusColor = 'bg-yellow-100 text-yellow-800';
-                            if(v.status === 'COMPLETED') statusColor = 'bg-green-100 text-green-800';
-                            if(v.status === 'CANCELED') statusColor = 'bg-red-100 text-red-800';
-                            
-                            html += `
-                                <tr class="hover:bg-gray-50/50 transition-colors">
-                                    <td class="p-4 font-medium text-gray-800">${ds}</td>
-                                    <td class="p-4">
-                                        <div class="flex items-center gap-2">
-                                            <div class="w-6 h-6 rounded-full bg-forest-100 text-forest-700 flex items-center justify-center text-[10px] font-bold">
-                                                ${v.agent_name.charAt(0).toUpperCase()}
-                                            </div>
-                                            <span class="font-medium">${v.agent_name}</span>
-                                        </div>
-                                    </td>
-                                    <td class="p-4">
-                                        <div class="font-semibold text-gray-800">${v.client_name || '-'}</div>
-                                        <div class="text-[10px] text-gray-500">${v.client_phone || '-'}</div>
-                                    </td>
-                                    <td class="p-4 text-gray-600">${v.property_title}</td>
-                                    <td class="p-4 text-center">
-                                        <span class="inline-block px-2 py-1 rounded-lg text-[10px] font-bold ${statusColor}">${v.status}</span>
-                                    </td>
-                                </tr>
-                            `;
+                        // Populate Agent Filter
+                        const agentSelect = document.getElementById('globalVisitsAgentFilter');
+                        const currentVal = agentSelect.value;
+                        
+                        const uniqueAgents = [...new Set(allGlobalVisits.map(v => v.agent_name))].sort();
+                        agentSelect.innerHTML = '<option value="ALL">Tous les agents</option>';
+                        uniqueAgents.forEach(agent => {
+                            const opt = document.createElement('option');
+                            opt.value = agent;
+                            opt.textContent = agent;
+                            agentSelect.appendChild(opt);
                         });
-                        tbody.innerHTML = html;
+                        agentSelect.value = uniqueAgents.includes(currentVal) ? currentVal : 'ALL';
+                        
+                        renderFilteredGlobalVisits();
                     }
                 });
+        }
+        
+        function renderFilteredGlobalVisits() {
+            const tbody = document.getElementById('globalVisitsTableBody');
+            const agentFilter = document.getElementById('globalVisitsAgentFilter').value;
+            const statusFilter = document.getElementById('globalVisitsStatusFilter').value;
+            
+            let filtered = allGlobalVisits;
+            if (agentFilter !== 'ALL') filtered = filtered.filter(v => v.agent_name === agentFilter);
+            if (statusFilter !== 'ALL') filtered = filtered.filter(v => v.status === statusFilter);
+            
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-400 text-sm">Aucune visite trouvée.</td></tr>';
+                return;
+            }
+            
+            let html = '';
+            filtered.forEach(v => {
+                const d = new Date(v.visit_date);
+                const ds = d.toLocaleDateString('fr-FR') + ' ' + d.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+                
+                let badgeClass = 'bg-yellow-100 text-yellow-800';
+                if(v.status === 'COMPLETED') badgeClass = 'bg-green-100 text-green-800';
+                if(v.status === 'CANCELED') badgeClass = 'bg-red-100 text-red-800';
+                
+                let statusDisplay = v.status;
+                if(v.status === 'PENDING') statusDisplay = 'Planifiée';
+                if(v.status === 'COMPLETED') statusDisplay = 'Effectuée';
+                if(v.status === 'CANCELED') statusDisplay = 'Annulée';
+                
+                html += `
+                    <tr class="hover:bg-gray-50/50 transition-colors">
+                        <td class="p-4 font-medium text-gray-800">${ds}</td>
+                        <td class="p-4">
+                            <div class="flex items-center gap-2">
+                                <div class="w-6 h-6 rounded-full bg-forest-100 text-forest-700 flex items-center justify-center text-[10px] font-bold">
+                                    ${v.agent_name.charAt(0).toUpperCase()}
+                                </div>
+                                <span class="font-medium">${v.agent_name}</span>
+                            </div>
+                        </td>
+                        <td class="p-4">
+                            <div class="font-semibold text-gray-800">${v.client_name || '-'}</div>
+                            <div class="text-[10px] text-gray-500">${v.client_phone || '-'}</div>
+                        </td>
+                        <td class="p-4 text-gray-600">${v.property_title}</td>
+                        <td class="p-4 text-center">
+                            <span class="inline-block px-2 py-1 rounded-lg text-[10px] font-bold ${badgeClass}">${statusDisplay}</span>
+                        </td>
+                        <td class="p-4 flex flex-col gap-2 min-w-[140px]">
+                            <select onchange="updateGlobalVisitStatus('${v.id}', this.value)" class="bg-gray-50 border border-gray-200 rounded-lg px-2 py-1 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-forest-500 w-full">
+                                <option value="PENDING" ${v.status === 'PENDING' ? 'selected' : ''}>Planifiée</option>
+                                <option value="COMPLETED" ${v.status === 'COMPLETED' ? 'selected' : ''}>Effectuée</option>
+                                <option value="CANCELED" ${v.status === 'CANCELED' ? 'selected' : ''}>Annulée</option>
+                            </select>
+                            ${v.conv_id ? `
+                            <a href="/chat/${v.conv_id}/" target="_blank" class="text-center px-2 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-lg text-[10px] transition-colors border border-gray-200 block w-full">
+                                💬 Ouvrir Chat
+                            </a>
+                            ` : ''}
+                        </td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
+
+        function updateGlobalVisitStatus(visitId, status) {
+            fetch('/api/visits/update/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify({ visit_id: visitId, status: status })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Update local state
+                    const v = allGlobalVisits.find(v => v.id === visitId);
+                    if (v) v.status = status;
+                    renderFilteredGlobalVisits();
+                } else {
+                    alert('Erreur: ' + data.error);
+                }
+            });
         }
 
         function switchTab(tabId) {
