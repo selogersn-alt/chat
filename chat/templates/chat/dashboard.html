@@ -1337,9 +1337,9 @@
                         matchesStatus = false;
                     }
                 }
-                const matchesSearch = c.client_name.toLowerCase().includes(searchVal) || 
-                                      c.client_phone.includes(searchVal) || 
-                                      c.topic.toLowerCase().includes(searchVal) ||
+                const matchesSearch = (c.client_name || '').toLowerCase().includes(searchVal) || 
+                                      (c.client_phone || '').includes(searchVal) || 
+                                      (c.topic || '').toLowerCase().includes(searchVal) ||
                                       (c.tags && c.tags.some(t => t.toLowerCase().includes(searchVal)));
                 
                 let matchesAgent = true;
