@@ -780,19 +780,19 @@
                     </div>
 
                     <!-- Input Form -->
-                    <form onsubmit="handleSendSubmit(event)" class="flex flex-col gap-2 pb-[env(safe-area-inset-bottom,10px)]">
+                    <form onsubmit="handleSendSubmit(event)" class="flex flex-col gap-2 pb-[env(safe-area-inset-bottom,10px)] w-full">
                         <!-- URL Attachment Input (collapsible) -->
                         <div id="attachmentUrlWrapper">
                             <input type="url" id="attachmentUrlInput" placeholder="URL Image/Document (ex: https://...)" class="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-forest-500 shadow-sm transition-all">
                         </div>
-                        <div class="flex items-end gap-2 bg-white border border-gray-200 p-1.5 rounded-[24px] shadow-sm focus-within:ring-2 focus-within:ring-forest-500 focus-within:border-forest-500 transition-all">
+                        <div class="flex items-end gap-1 md:gap-2 bg-white border border-gray-200 p-1 md:p-1.5 rounded-[24px] shadow-sm focus-within:ring-2 focus-within:ring-forest-500 focus-within:border-forest-500 transition-all w-full max-w-full overflow-hidden">
                             <textarea id="messageInput" placeholder="Saisissez votre message..." rows="1" 
-                                class="flex-1 px-4 py-3 bg-transparent border-none focus:outline-none focus:ring-0 resize-none text-sm md:text-base max-h-32 min-h-[48px] custom-scrollbar self-center"
+                                class="flex-1 min-w-0 px-3 md:px-4 py-3 bg-transparent border-none focus:outline-none focus:ring-0 resize-none text-sm md:text-base max-h-32 min-h-[48px] custom-scrollbar self-center"
                                 onkeydown="handleTextareaKeydown(event)" oninput="this.style.height = 'auto'; this.style.height = (this.scrollHeight) + 'px'; if(typeof handleInputSlash === 'function') handleInputSlash(event);"></textarea>
                             
                             <button type="submit" id="btnSendMessage" 
-                                class="h-[48px] w-[48px] rounded-full bg-forest-600 hover:bg-forest-700 text-white flex items-center justify-center shadow-md shadow-forest-600/30 hover:shadow-forest-600/50 transition-all flex-shrink-0 active:scale-95">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6 rotate-45 -translate-x-0.5">
+                                class="h-[40px] w-[40px] md:h-[48px] md:w-[48px] rounded-full bg-forest-600 hover:bg-forest-700 text-white flex items-center justify-center shadow-md shadow-forest-600/30 hover:shadow-forest-600/50 transition-all flex-shrink-0 active:scale-95 mb-0.5 md:mb-0 mr-0.5 md:mr-0">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-5 h-5 md:w-6 md:h-6 rotate-45 -translate-x-0.5">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
                                 </svg>
                             </button>
@@ -2247,9 +2247,13 @@ https://logersenegal.com/survey/`;
                 return;
             }
             
+            // Only send on Enter (without shift) if we are on a desktop screen
+            // On mobile, Enter should add a newline by default.
             if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                handleSendSubmit(e);
+                if (window.innerWidth > 768) {
+                    e.preventDefault();
+                    handleSendSubmit(e);
+                }
             }
         }
 

@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v4';
+const CACHE_VERSION = 'v5';
 const STATIC_CACHE  = `logersn-static-${CACHE_VERSION}`;
 const HTML_CACHE    = `logersn-html-${CACHE_VERSION}`;
 

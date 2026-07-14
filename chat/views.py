@@ -484,7 +484,8 @@ def whatsapp_webhook(request):
             # 3.5 Intercept Satisfaction Rating
             rating_intercepted = False
             if conversation.survey_sent and conversation.satisfaction_rating is None and message_type == 'text':
-                rating_match = re.match(r'^\s*([1-5])\s*$', content)
+                # Robust extraction: looks for a digit between 1 and 5 that is not part of a larger number
+                rating_match = re.search(r'(?<!\d)([1-5])(?!\d)', content)
                 if rating_match:
                     conversation.satisfaction_rating = int(rating_match.group(1))
                     conversation.save()
