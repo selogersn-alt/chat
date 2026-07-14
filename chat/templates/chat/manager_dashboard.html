@@ -167,7 +167,7 @@
 
             <!-- STATS CARDS -->
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+                <div onclick="openConversationsListModal('CLIENTS')" class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between cursor-pointer hover:shadow-md transition-shadow">
                     <div>
                         <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Clients Assistés</p>
                         <h3 class="text-3xl font-extrabold text-gray-800 mt-1" id="stat-total-clients">-</h3>
@@ -179,7 +179,7 @@
                     </div>
                 </div>
 
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+                <div onclick="openConversationsListModal('ACTIVE')" class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between cursor-pointer hover:shadow-md transition-shadow">
                     <div>
                         <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Discussions Actives</p>
                         <h3 class="text-3xl font-extrabold text-forest-600 mt-1" id="stat-active-convs">-</h3>
@@ -191,7 +191,7 @@
                     </div>
                 </div>
 
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+                <div onclick="openConversationsListModal('PENDING')" class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between cursor-pointer hover:shadow-md transition-shadow">
                     <div>
                         <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">En Attente</p>
                         <h3 class="text-3xl font-extrabold text-amber-500 mt-1" id="stat-pending-convs">-</h3>
@@ -203,7 +203,7 @@
                     </div>
                 </div>
 
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+                <div onclick="openConversationsListModal('CLOSED')" class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between cursor-pointer hover:shadow-md transition-shadow">
                     <div>
                         <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Discussions Clôturées</p>
                         <h3 class="text-3xl font-extrabold text-gray-500 mt-1" id="stat-closed-convs">-</h3>
@@ -588,6 +588,35 @@
 
     </div>
 
+    <!-- MODAL: CONVERSATIONS LIST -->
+    <div id="conversations-list-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4 z-50 transition-all">
+        <div class="bg-white w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden transform scale-95 transition-all flex flex-col max-h-[90vh]">
+            <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                <div>
+                    <h3 class="font-bold text-gray-800 text-lg" id="convListModalTitle">Liste des Discussions</h3>
+                    <p class="text-xs text-gray-500 mt-1" id="convListModalSubtitle">Détails</p>
+                </div>
+                <button onclick="closeConversationsListModal()" class="text-gray-400 hover:text-gray-600 text-2xl font-bold transition-colors">&times;</button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-1">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50 border-b border-gray-150 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                            <th class="p-3">Client</th>
+                            <th class="p-3">Agent</th>
+                            <th class="p-3">Dernier Msg</th>
+                            <th class="p-3">Statut</th>
+                            <th class="p-3">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="conv-list-modal-body" class="divide-y divide-gray-100 text-sm text-gray-700">
+                        <!-- Filled by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
     <!-- MODAL: CREATE AGENT -->
     <div id="create-agent-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4 z-50 transition-all">
         <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden transform scale-95 transition-all">
@@ -650,6 +679,7 @@
         let chartStatusInstance = null;
         let chartAgentsInstance = null;
         let agentsList = [];
+        let allConversationsList = [];
 
         document.addEventListener('DOMContentLoaded', () => {
             loadDashboardData();
@@ -756,6 +786,7 @@
             fetch('/api/sync/')
                 .then(res => res.json())
                 .then(data => {
+                    allConversationsList = data.conversations || [];
                     renderDelegateTable(data.conversations || []);
                 });
 
@@ -1011,6 +1042,85 @@
         }
 
         // MODAL TOGGLES
+        
+        function openConversationsListModal(filterStatus) {
+            const modal = document.getElementById('conversations-list-modal');
+            const titleEl = document.getElementById('convListModalTitle');
+            const subtitleEl = document.getElementById('convListModalSubtitle');
+            const tbody = document.getElementById('conv-list-modal-body');
+            
+            // Set titles based on filter
+            let filteredConvs = allConversationsList;
+            if (filterStatus === 'ACTIVE') {
+                titleEl.textContent = 'Discussions Actives';
+                filteredConvs = allConversationsList.filter(c => c.status === 'ACTIVE');
+            } else if (filterStatus === 'PENDING') {
+                titleEl.textContent = 'Discussions En Attente';
+                filteredConvs = allConversationsList.filter(c => c.status === 'PENDING');
+            } else if (filterStatus === 'CLOSED') {
+                titleEl.textContent = 'Discussions Clôturées';
+                filteredConvs = allConversationsList.filter(c => c.status === 'CLOSED');
+            } else if (filterStatus === 'CLIENTS') {
+                titleEl.textContent = 'Clients Assistés (Toutes les discussions)';
+                filteredConvs = allConversationsList;
+            }
+            
+            subtitleEl.textContent = `${filteredConvs.length} discussion(s) trouvée(s)`;
+            
+            // Render table
+            tbody.innerHTML = '';
+            if (filteredConvs.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-gray-400">Aucune discussion trouvée.</td></tr>`;
+            } else {
+                filteredConvs.forEach(c => {
+                    let badgeColor = 'bg-gray-100 text-gray-700';
+                    if (c.status === 'ACTIVE') badgeColor = 'bg-teal-100 text-teal-800';
+                    if (c.status === 'PENDING') badgeColor = 'bg-amber-100 text-amber-800';
+                    
+                    const lastMsg = c.last_message ? c.last_message.substring(0, 50) + (c.last_message.length > 50 ? '...' : '') : 'Aucun message';
+                    
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-gray-50 transition-colors border-b border-gray-100">
+                            <td class="p-3">
+                                <div class="font-bold text-gray-800">${c.client_name || '-'}</div>
+                                <div class="text-[10px] font-mono text-gray-500">${c.client_phone || '-'}</div>
+                            </td>
+                            <td class="p-3 font-medium text-gray-700">${c.assigned_to || 'Non assigné'}</td>
+                            <td class="p-3 text-xs text-gray-600 italic max-w-[200px] truncate" title="${lastMsg}">
+                                ${lastMsg}
+                            </td>
+                            <td class="p-3">
+                                <span class="px-2 py-1 rounded-md text-[10px] font-bold ${badgeColor}">${c.status}</span>
+                            </td>
+                            <td class="p-3">
+                                <a href="/chat/${c.id}/" target="_blank" class="px-3 py-1.5 bg-forest-50 hover:bg-forest-100 text-forest-700 rounded-lg text-xs font-bold transition-all whitespace-nowrap border border-forest-100">
+                                    💬 Ouvrir
+                                </a>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+            
+            // Show modal
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => {
+                modal.firstElementChild.classList.remove('scale-95');
+                modal.firstElementChild.classList.add('scale-100');
+            }, 10);
+        }
+
+        function closeConversationsListModal() {
+            const modal = document.getElementById('conversations-list-modal');
+            modal.firstElementChild.classList.remove('scale-100');
+            modal.firstElementChild.classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 200);
+        }
+
         function openCreateAgentModal() {
             const modal = document.getElementById('create-agent-modal');
             modal.classList.remove('hidden');
