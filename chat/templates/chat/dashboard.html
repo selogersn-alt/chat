@@ -1296,6 +1296,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.444 3 12c0 2.104.859 4.023 2.273 5.48.432.447.74 1.04.586 1.641a4.483 4.483 0 01-.923 1.785 4.5 4.5 0 002.394-.658 4.45 4.45 0 001.373.195c.579 0 1.13-.109 1.637-.306z" />
                         </svg>
                         <span class="text-xs font-semibold">Aucune discussion trouvée</span>
+                    </div>
                 `;
                 return;
             }
@@ -3479,13 +3480,16 @@ ${r.title}`);
                         registration.unregister().then(function(success) {
                             if (success) {
                                 console.log('Successfully unregistered legacy root SW:', registration.scope);
-                                // Clear caches and reload to pull directly from network
-                                if (window.caches) {
-                                    caches.keys().then(function(keys) {
-                                        keys.forEach(function(key) { caches.delete(key); });
-                                    });
+                                if (!sessionStorage.getItem('sw_root_cleared')) {
+                                    sessionStorage.setItem('sw_root_cleared', '1');
+                                    // Clear caches and reload to pull directly from network
+                                    if (window.caches) {
+                                        caches.keys().then(function(keys) {
+                                            keys.forEach(function(key) { caches.delete(key); });
+                                        });
+                                    }
+                                    setTimeout(function() { window.location.reload(); }, 150);
                                 }
-                                setTimeout(function() { window.location.reload(true); }, 200);
                             }
                         });
                     }
