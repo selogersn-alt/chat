@@ -414,24 +414,36 @@
             </div>
         </div>
 
-        <!-- TAB CONTENT: MATCHES -->
+        <!-- TAB CONTENT: MATCHES & VISITS -->
         <div id="tab-matches" class="tab-pane hidden flex flex-col gap-4">
             <div class="flex justify-between items-center">
-                <h4 class="font-bold text-gray-800 text-lg">Suivi des Visites Clients</h4>
-                <p class="text-xs text-gray-500">Suivez et pilotez le statut des visites transmises aux partenaires immobiliers.</p>
+                <div>
+                    <h4 class="font-bold text-gray-800 text-lg">Suivi des Visites Clients</h4>
+                    <p class="text-xs text-gray-500">Suivez et pilotez le statut des visites (Directes ou transmises aux partenaires).</p>
+                </div>
+                
+                <!-- TOGGLE VISITS / MATCHES -->
+                <div class="flex bg-gray-100 p-1 rounded-xl">
+                    <button onclick="toggleVisitView('matches')" id="btn-view-matches" class="px-4 py-2 text-xs font-bold rounded-lg bg-white shadow-sm text-forest-700 transition-all">
+                        🤝 Visites Partenaires
+                    </button>
+                    <button onclick="toggleVisitView('visits')" id="btn-view-visits" class="px-4 py-2 text-xs font-semibold rounded-lg text-gray-500 hover:text-gray-800 transition-all">
+                        🕵️ Visites Directes (Agents)
+                    </button>
+                </div>
             </div>
 
             <!-- SEARCH / SECTOR FILTER ROW -->
             <div class="flex items-center gap-3 bg-white px-5 py-3.5 rounded-2xl border border-gray-100 shadow-sm">
-                <input type="text" id="matchSearchInput" oninput="filterMatchesTable(this.value)" placeholder="Filtrer par secteur (ex: Ouakam), client, courtier..." class="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-forest-500 w-80">
+                <input type="text" id="matchSearchInput" oninput="filterMatchesTable(this.value)" placeholder="Filtrer par secteur (ex: Ouakam), client, courtier, agent..." class="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-forest-500 w-80">
                 <span id="activeSectorBadge" class="hidden bg-forest-50 border border-forest-200 text-forest-700 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-2">
                     <span id="activeSectorText"></span>
                     <button onclick="clearSectorFilter()" class="hover:text-red-500 font-extrabold text-sm">&times;</button>
                 </span>
             </div>
 
-            <!-- Visits Tracking Table -->
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <!-- PARTNER MATCHES TABLE -->
+            <div id="container-matches" class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                 <table class="w-full text-left border-collapse">
                     <thead>
                         <tr class="bg-gray-50 border-b border-gray-150 text-xs font-bold text-gray-500 uppercase">
@@ -441,12 +453,33 @@
                             <th class="p-4">Partenaire</th>
                             <th class="p-4">Bien / Zone</th>
                             <th class="p-4">Budget (FCFA)</th>
-                            <th class="p-4">Statut de la Visite</th>
+                            <th class="p-4">Statut</th>
                             <th class="p-4">Action</th>
                         </tr>
                     </thead>
                     <tbody id="matches-table-body" class="divide-y divide-gray-100 text-sm text-gray-700">
                         <!-- Matches will be injected here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- DIRECT VISITS TABLE -->
+            <div id="container-visits" class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hidden">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50 border-b border-gray-150 text-xs font-bold text-gray-500 uppercase">
+                            <th class="p-4">Date Création</th>
+                            <th class="p-4">Date Prévue</th>
+                            <th class="p-4">Client / Prospect</th>
+                            <th class="p-4">Agent en charge</th>
+                            <th class="p-4">Bien / Titre</th>
+                            <th class="p-4">Notes</th>
+                            <th class="p-4">Statut</th>
+                            <th class="p-4">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="visits-table-body" class="divide-y divide-gray-100 text-sm text-gray-700">
+                        <!-- Visits will be injected here -->
                     </tbody>
                 </table>
             </div>
@@ -734,8 +767,36 @@
                     renderActivityFeed(data.matches || []);
                 });
 
+            // Load Direct Visits
+            fetch(`/api/manager/visits/?range=${range}`)
+                .then(res => res.json())
+                .then(data => {
+                    renderVisitsTable(data.visits || []);
+                });
+
             // Load Templates
             loadTemplates();
+        }
+
+        // VISITS TOGGLE
+        let currentVisitView = 'matches';
+        function toggleVisitView(view) {
+            currentVisitView = view;
+            
+            document.getElementById('container-matches').classList.add('hidden');
+            document.getElementById('container-visits').classList.add('hidden');
+            document.getElementById(`container-${view}`).classList.remove('hidden');
+            
+            const btnMatches = document.getElementById('btn-view-matches');
+            const btnVisits = document.getElementById('btn-view-visits');
+            
+            if (view === 'matches') {
+                btnMatches.className = 'px-4 py-2 text-xs font-bold rounded-lg bg-white shadow-sm text-forest-700 transition-all';
+                btnVisits.className = 'px-4 py-2 text-xs font-semibold rounded-lg text-gray-500 hover:text-gray-800 transition-all';
+            } else {
+                btnVisits.className = 'px-4 py-2 text-xs font-bold rounded-lg bg-white shadow-sm text-forest-700 transition-all';
+                btnMatches.className = 'px-4 py-2 text-xs font-semibold rounded-lg text-gray-500 hover:text-gray-800 transition-all';
+            }
         }
 
         // CHARTS LOGIC
@@ -1053,13 +1114,18 @@
                                 ${m.status_display}
                             </span>
                         </td>
-                        <td class="p-4">
-                            <select onchange="updateMatchStatus('${m.id}', this.value)" class="bg-gray-50 border border-gray-200 rounded-lg px-2 py-1 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-forest-500">
+                        <td class="p-4 flex flex-col gap-2">
+                            <select onchange="updateMatchStatus('${m.id}', this.value)" class="bg-gray-50 border border-gray-200 rounded-lg px-2 py-1 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-forest-500 w-full">
                                 <option value="PENDING" ${m.status === 'PENDING' ? 'selected' : ''}>En attente</option>
                                 <option value="VISITED" ${m.status === 'VISITED' ? 'selected' : ''}>Visité</option>
                                 <option value="WON" ${m.status === 'WON' ? 'selected' : ''}>Gagné (Commission)</option>
                                 <option value="LOST" ${m.status === 'LOST' ? 'selected' : ''}>Perdu</option>
                             </select>
+                            ${m.conversation_id ? `
+                            <a href="/chat/${m.conversation_id}/" target="_blank" class="text-center px-2 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-lg text-[10px] transition-colors border border-gray-200 block w-full">
+                                💬 Ouvrir Chat
+                            </a>
+                            ` : ''}
                         </td>
                     </tr>
                 `;
@@ -1068,6 +1134,99 @@
 
         function filterMatchesTable(query) {
             renderMatchesTable(allMatchesList);
+            renderVisitsTable(allVisitsList); // Also filter visits
+        }
+
+        // VISITS TABLE LOGIC
+        let allVisitsList = [];
+
+        function renderVisitsTable(visits) {
+            allVisitsList = visits;
+            const query = document.getElementById('matchSearchInput') ? document.getElementById('matchSearchInput').value.toLowerCase().trim() : '';
+            
+            const tbody = document.getElementById('visits-table-body');
+            tbody.innerHTML = '';
+            
+            const filtered = visits.filter(v => {
+                return (
+                    (v.property_title || '').toLowerCase().includes(query) ||
+                    (v.client_name || '').toLowerCase().includes(query) ||
+                    (v.agent_name || '').toLowerCase().includes(query) ||
+                    (v.client_phone || '').includes(query)
+                );
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="p-6 text-center text-gray-400 text-xs">
+                            Aucune visite directe correspondante pour le moment.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            filtered.forEach(v => {
+                let badgeClass = 'bg-yellow-50 text-yellow-700 border border-yellow-250';
+                if (v.status === 'COMPLETED') badgeClass = 'bg-emerald-50 text-emerald-700 border border-emerald-250';
+                if (v.status === 'CANCELED') badgeClass = 'bg-rose-50 text-rose-700 border border-rose-250';
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-gray-50/50 transition-colors border-b border-gray-100">
+                        <td class="p-4 text-xs text-gray-500">${v.created_at}</td>
+                        <td class="p-4 text-xs font-bold text-gray-700">${v.visit_date || '-'}</td>
+                        <td class="p-4 font-semibold text-gray-800">
+                            <div>${v.client_name || '-'}</div>
+                            <div class="text-[10px] text-gray-400 font-mono">${v.client_phone || '-'}</div>
+                        </td>
+                        <td class="p-4 font-medium text-gray-800">${v.agent_name}</td>
+                        <td class="p-4 text-gray-650">${v.property_title}</td>
+                        <td class="p-4 text-gray-500 text-xs italic max-w-[200px] truncate" title="${v.notes}">${v.notes || '-'}</td>
+                        <td class="p-4">
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold ${badgeClass}">
+                                ${v.status_display}
+                            </span>
+                        </td>
+                        <td class="p-4 flex flex-col gap-2">
+                            <select onchange="updateVisitStatus('${v.id}', this.value)" class="bg-gray-50 border border-gray-200 rounded-lg px-2 py-1 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-forest-500 w-full">
+                                <option value="PLANNED" ${v.status === 'PLANNED' ? 'selected' : ''}>Planifiée</option>
+                                <option value="COMPLETED" ${v.status === 'COMPLETED' ? 'selected' : ''}>Effectuée</option>
+                                <option value="CANCELED" ${v.status === 'CANCELED' ? 'selected' : ''}>Annulée</option>
+                            </select>
+                            ${v.conversation_id ? `
+                            <a href="/chat/${v.conversation_id}/" target="_blank" class="text-center px-2 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-lg text-[10px] transition-colors border border-gray-200 block w-full">
+                                💬 Ouvrir Chat
+                            </a>
+                            ` : ''}
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function updateVisitStatus(visitId, status) {
+            fetch('/api/manager/visits/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify({ visit_id: visitId, status: status })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'updated') {
+                    showToast('Statut de visite mis à jour avec succès !');
+                    loadDashboardData();
+                } else {
+                    showToast('Erreur: ' + data.error, 'error');
+                }
+            })
+            .catch(err => {
+                console.error("Error updating visit status:", err);
+                showToast("Erreur lors de la mise à jour.", "error");
+            });
         }
 
         function filterBySector(zone) {

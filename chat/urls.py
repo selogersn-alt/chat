@@ -40,6 +40,7 @@ urlpatterns = [
     path('api/manager/delegate/', views.manager_delegate, name='manager_delegate'),
     path('api/manager/templates/', views.manager_templates_api, name='manager_templates_api'),
     path('api/manager/matches/', views.manager_matches, name='manager_matches'),
+    path('api/manager/visits/', views.manager_visits, name='manager_visits'),
     
     # Mobile App APIs
     path('api/mobile/login/', views.mobile_login, name='mobile_login'),

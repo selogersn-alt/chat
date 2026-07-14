@@ -1726,6 +1726,7 @@ def manager_matches(request):
                 'zone': m.zone,
                 'status': m.status,
                 'status_display': m.get_status_display(),
+                'conversation_id': str(m.conversation.id) if m.conversation else '',
                 'created_at': m.created_at.strftime('%d/%m/%Y %H:%M')
             })
         return JsonResponse({'matches': matches_data})
@@ -1758,6 +1759,90 @@ def manager_matches(request):
             return JsonResponse({'status': 'updated'})
         except Exception as e:
             logger.error(f"Error updating match status: {str(e)}", exc_info=True)
+            return JsonResponse({'error': str(e)}, status=500)
+            
+    return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+@login_required(login_url='login')
+def manager_visits(request):
+    """
+    GET: List all agent visits (for manager).
+    POST: Update status of a visit.
+    """
+    if request.user.role != User.RoleEnum.MANAGER and not request.user.is_superuser:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+        
+    if request.method == 'GET':
+        range_val = request.GET.get('range', 'all')
+        visits = Visit.objects.all()
+        
+        from django.utils import timezone
+        from datetime import timedelta
+        now = timezone.now()
+        start_date = None
+        end_date = None
+        
+        if range_val == 'today':
+            start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        elif range_val == 'yesterday':
+            start_date = (now - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+            end_date = start_date + timedelta(days=1)
+        elif range_val == '7days':
+            start_date = now - timedelta(days=7)
+        elif range_val == '30days':
+            start_date = now - timedelta(days=30)
+            
+        if start_date:
+            visits = visits.filter(created_at__gte=start_date)
+        if end_date:
+            visits = visits.filter(created_at__lt=end_date)
+            
+        visits = visits.order_by('-created_at')
+        visits_data = []
+        for v in visits:
+            visits_data.append({
+                'id': str(v.id),
+                'client_name': v.client_name,
+                'client_phone': v.client_phone,
+                'agent_name': v.agent.get_full_name() or v.agent.username if v.agent else 'Inconnu',
+                'property_title': v.property_title,
+                'visit_date': v.visit_date.strftime('%d/%m/%Y %H:%M') if v.visit_date else '',
+                'status': v.status,
+                'status_display': v.get_status_display(),
+                'notes': v.notes,
+                'conversation_id': str(v.conversation.id) if v.conversation else '',
+                'created_at': v.created_at.strftime('%d/%m/%Y %H:%M')
+            })
+        return JsonResponse({'visits': visits_data})
+        
+    elif request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            visit_id = data.get('visit_id')
+            new_status = data.get('status')
+            
+            if not visit_id or not new_status:
+                return JsonResponse({'error': 'Missing visit_id or status'}, status=400)
+                
+            visit = get_object_or_404(Visit, id=visit_id)
+            if new_status not in Visit.StatusEnum.values:
+                return JsonResponse({'error': 'Invalid status'}, status=400)
+                
+            old_status_display = visit.get_status_display()
+            visit.status = new_status
+            visit.save()
+            new_status_display = visit.get_status_display()
+            
+            # Log system message in conversation
+            Message.objects.create(
+                conversation=visit.conversation,
+                sender=request.user,
+                content=f"[SYSTEME] Suivi Visite Agent : Le statut de la visite est passé de '{old_status_display}' à '{new_status_display}'."
+            )
+            
+            return JsonResponse({'status': 'updated'})
+        except Exception as e:
+            logger.error(f"Error updating visit status: {str(e)}", exc_info=True)
             return JsonResponse({'error': str(e)}, status=500)
             
     return JsonResponse({'error': 'Method not allowed'}, status=405)
