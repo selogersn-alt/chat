@@ -695,8 +695,8 @@
                         <span class="text-[10px] bg-red-100 text-red-700 font-bold px-2 py-0.5 rounded-full">Utilisez un modèle</span>
                     </div>
 
-                    <!-- Quick Actions Row - scrollable on mobile -->
-                    <div id="chatToolbar" class="flex items-center gap-1.5 overflow-x-auto custom-scrollbar pb-2 pt-1 -mx-2 px-2 md:mx-0 md:px-0">
+                    <!-- Quick Actions Row - flex-wrap instead of overflow-x to allow dropdowns -->
+                    <div id="chatToolbar" class="flex flex-wrap items-center gap-1.5 pb-2 pt-1 -mx-2 px-2 md:mx-0 md:px-0">
                         <!-- Left: Quick Templates Dropdown -->
                         <div class="relative flex-shrink-0">
                             <button onclick="toggleTemplatesDropdown()" class="flex items-center justify-center w-8 h-8 md:w-auto md:h-auto md:px-2.5 md:py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-gray-900 md:text-[11px] font-bold rounded-lg transition-all shadow-sm">
