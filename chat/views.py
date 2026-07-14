@@ -627,7 +627,7 @@ def sync_messages(request):
         conversations = Conversation.objects.all()
     else:
         conversations = Conversation.objects.filter(
-            Q(participants=agent) | Q(status=Conversation.StatusEnum.PENDING)
+            Q(assigned_to=agent) | Q(participants=agent) | Q(status=Conversation.StatusEnum.PENDING)
         )
         
     if query:
@@ -2084,13 +2084,17 @@ def mobile_login(request):
 def mobile_conversations(request):
     try:
         # Returns conversations assigned to the current agent, or all if manager
+        status_filter = request.query_params.get('status')
+        
         if request.user.role == User.RoleEnum.MANAGER:
             convs = Conversation.objects.all()
         else:
-            convs = Conversation.objects.filter(assigned_to=request.user)
+            # Agents should see their own conversations PLUS any unassigned pending conversations
+            convs = Conversation.objects.filter(
+                Q(assigned_to=request.user) | 
+                Q(status=Conversation.StatusEnum.PENDING, assigned_to__isnull=True)
+            )
             
-        # We can filter by status if passed (ACTIVE, PENDING, CLOSED)
-        status_filter = request.query_params.get('status')
         if status_filter:
             convs = convs.filter(status=status_filter)
             
