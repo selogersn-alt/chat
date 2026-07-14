@@ -4,6 +4,8 @@ import csv
 import json
 import logging
 import requests
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
@@ -237,6 +239,18 @@ def whatsapp_webhook(request):
                 if new_status:
                     Message.objects.filter(msg_id=msg_id).update(status=new_status)
                     logger.info(f"WhatsApp Message Status updated: {msg_id} -> {status_str}")
+                    
+                    # Broadcast status update to all connected agents
+                    channel_layer = get_channel_layer()
+                    async_to_sync(channel_layer.group_send)(
+                        'agents_group',
+                        {
+                            'type': 'chat_update',
+                            'event_type': 'status_update',
+                            'msg_id': msg_id,
+                            'status': status_str
+                        }
+                    )
                     
                 return JsonResponse({'status': 'status_updated'}, status=200)
             
@@ -520,6 +534,17 @@ def whatsapp_webhook(request):
             conversation.sla_started_at = timezone.now()
             conversation.sla_enabled = True
             conversation.save()
+            
+            # Broadcast new message to all connected agents
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                'agents_group',
+                {
+                    'type': 'chat_update',
+                    'event_type': 'new_message',
+                    'conversation_id': str(conversation.id)
+                }
+            )
             
             return JsonResponse({'status': 'message_received'}, status=200)
             

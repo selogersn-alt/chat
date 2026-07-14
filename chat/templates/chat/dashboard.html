@@ -1078,9 +1078,35 @@
             }
         }
 
-        // Run sync loop immediately, and poll every 5 seconds
+        // Run initial sync
         syncData();
-        setInterval(syncData, 5000);
+        
+        // Connect WebSocket for real-time updates
+        function connectWebSocket() {
+            const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
+            const wsUrl = wsScheme + '://' + window.location.host + '/ws/chat/updates/';
+            console.log("Connecting to WebSocket:", wsUrl);
+            const chatSocket = new WebSocket(wsUrl);
+
+            chatSocket.onmessage = function(e) {
+                const data = JSON.parse(e.data);
+                console.log("WebSocket event received:", data);
+                // Instantly trigger a sync when a new message or status update arrives
+                syncData();
+            };
+
+            chatSocket.onclose = function(e) {
+                console.warn('Chat WebSocket closed. Reconnecting in 5 seconds...');
+                setTimeout(connectWebSocket, 5000);
+            };
+            
+            chatSocket.onerror = function(err) {
+                console.error('WebSocket encountered an error:', err);
+                chatSocket.close();
+            }
+        }
+        
+        connectWebSocket();
         // Update the session countdown every second for real-time HH:MM:SS
         setInterval(updateSessionCountdown, 1000);
         setInterval(updateSLATimers, 1000);

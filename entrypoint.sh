@@ -45,5 +45,5 @@ if Partner.objects.count() < 56:
         print('Error seeding partners:', e)
 "
 
-echo "Starting Gunicorn server..."
-exec gunicorn chatproject.wsgi:application --bind 0.0.0.0:8000 --workers 3 --threads 2
+echo "Starting Daphne server (ASGI)..."
+exec daphne -b 0.0.0.0 -p 8000 chatproject.asgi:application
