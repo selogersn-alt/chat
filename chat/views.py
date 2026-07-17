@@ -1418,14 +1418,16 @@ def manager_stats(request):
             avg_rating = sum(c.satisfaction_rating for c in rated_convs) / total_rated
             
         recent_surveys = []
-        for c in rated_convs.order_by('-updated_at')[:10]:
+        for c in rated_convs.order_by('-last_message_at')[:10]:
+            client = c.participants.filter(role=User.RoleEnum.CLIENT).first()
+            client_name = client.get_full_name() if client else f"Client #{str(c.id)[:4]}"
             recent_surveys.append({
                 'id': str(c.id),
-                'client_name': c.client_name or f"Client #{str(c.id)[:4]}",
+                'client_name': client_name,
                 'rating': c.satisfaction_rating,
                 'comment': getattr(c, 'satisfaction_comment', ''),
                 'agent_name': c.assigned_to.get_full_name() if c.assigned_to else "Non assigné",
-                'date': c.updated_at.strftime('%d/%m/%Y %H:%M')
+                'date': c.last_message_at.strftime('%d/%m/%Y %H:%M') if c.last_message_at else c.created_at.strftime('%d/%m/%Y %H:%M')
             })
             
         return JsonResponse({
@@ -2489,12 +2491,14 @@ def agent_profile(request):
         
     # Recent feedback
     recent_feedback = []
-    for conv in rated_convs.order_by('-updated_at')[:10]:
+    for conv in rated_convs.order_by('-last_message_at')[:10]:
+        client = conv.participants.filter(role=User.RoleEnum.CLIENT).first()
+        client_name = client.get_full_name() if client else f"Client #{str(conv.id)[:4]}"
         recent_feedback.append({
-            'client_name': conv.client_name or f"Client #{str(conv.id)[:4]}",
+            'client_name': client_name,
             'rating': conv.satisfaction_rating,
             'comment': getattr(conv, 'satisfaction_comment', ''),
-            'date': conv.updated_at.strftime('%d/%m/%Y')
+            'date': conv.last_message_at.strftime('%d/%m/%Y') if conv.last_message_at else conv.created_at.strftime('%d/%m/%Y')
         })
         
     context = {
