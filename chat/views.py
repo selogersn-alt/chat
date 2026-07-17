@@ -2455,6 +2455,14 @@ def survey_page(request, conv_id):
     Renders the satisfaction survey page for a client and saves their response.
     """
     conv = get_object_or_404(Conversation, id=conv_id)
+    agent_name = conv.assigned_to.get_full_name() if conv.assigned_to else 'notre conseiller'
+    
+    if conv.satisfaction_rating is not None:
+        return render(request, 'chat/survey.html', {
+            'success': True,
+            'already_submitted': True,
+            'agent_name': agent_name
+        })
     
     if request.method == 'POST':
         rating = request.POST.get('rating')
@@ -2463,9 +2471,13 @@ def survey_page(request, conv_id):
             conv.satisfaction_rating = int(rating)
             conv.satisfaction_comment = comment
             conv.save()
-            return render(request, 'chat/survey.html', {'success': True})
+            return render(request, 'chat/survey.html', {
+                'success': True,
+                'already_submitted': False,
+                'agent_name': agent_name
+            })
             
-    return render(request, 'chat/survey.html', {'success': False, 'conv': conv})
+    return render(request, 'chat/survey.html', {'success': False, 'conv': conv, 'agent_name': agent_name})
 
 
 @login_required(login_url='login')
