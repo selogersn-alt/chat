@@ -3,7 +3,8 @@ from django.views.generic import TemplateView
 from . import views
 
 urlpatterns = [
-    path('', views.dashboard_view, name='dashboard'),
+    path('', views.global_landing_view, name='landing'),
+    path('dashboard/', views.dashboard_view, name='dashboard'),
     path('login/', views.custom_login_view, name='login'),
     path('logout/', views.custom_logout_view, name='logout'),
     path('select-portal/', views.select_portal_view, name='select_portal'),

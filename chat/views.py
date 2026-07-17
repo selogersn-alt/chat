@@ -82,33 +82,16 @@ def get_live_properties():
     # Fallback to local DB if API is unreachable
     return list(Property.objects.all().values('id', 'title', 'price', 'description', 'image_url', 'url'))
 
+def global_landing_view(request):
+    """Global landing page (Terminal Hub) shown before login."""
+    return render(request, 'chat/landing.html')
+
 def custom_login_view(request):
     """Simple login view for agents and managers."""
     if request.user.is_authenticated:
         return redirect('select_portal')
         
-    if request.GET.get('auto_login') == 'true':
-        user = authenticate(username='agent_demo', password='agent123')
-        if user is not None:
-            login(request, user)
-            return redirect('dashboard')
-        else:
-            fallback_agent = User.objects.filter(role=User.RoleEnum.AGENT).first()
-            if fallback_agent:
-                login(request, fallback_agent)
-                return redirect('dashboard')
-                
-    elif request.GET.get('auto_login') == 'manager':
-        user = authenticate(username='manager_demo', password='manager123')
-        if user is not None:
-            login(request, user)
-            return redirect('manager_dashboard')
-        else:
-            fallback_manager = User.objects.filter(role=User.RoleEnum.MANAGER).first()
-            if fallback_manager:
-                login(request, fallback_manager)
-                return redirect('manager_dashboard')
-                
+
     if request.method == 'POST':
         form = AuthenticationForm(request, data=request.POST)
         if form.is_valid():
