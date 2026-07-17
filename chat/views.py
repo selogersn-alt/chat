@@ -22,7 +22,7 @@ from django.db.models import Q, Count, Max, Prefetch
 from django.core.cache import cache
 from django.core.files.storage import FileSystemStorage
 from django.conf import settings
-from .models import User, Conversation, Message, Property, QuickTemplate, Reminder, Partner, PartnerMatch, Visit
+from .models import User, Conversation, Message, Property, QuickTemplate, Reminder, Partner, PartnerMatch, Visit, District, PropertyType
 
 logger = logging.getLogger(__name__)
 
@@ -180,7 +180,9 @@ def dashboard_view(request):
         )
 
     return render(request, 'chat/dashboard.html', {
-        'user': request.user
+        'user': request.user,
+        'districts': District.objects.all(),
+        'property_types': PropertyType.objects.all(),
     })
 
 @csrf_exempt
@@ -1283,7 +1285,11 @@ def manager_dashboard_view(request):
     """Manager Dashboard Panel."""
     if request.user.role != User.RoleEnum.MANAGER and not request.user.is_superuser:
         return redirect('dashboard')
-    return render(request, 'chat/manager_dashboard.html', {'user': request.user})
+    return render(request, 'chat/manager_dashboard.html', {
+        'user': request.user,
+        'districts': District.objects.all(),
+        'property_types': PropertyType.objects.all(),
+    })
 
 @login_required(login_url='login')
 def close_conversation(request):
@@ -2100,6 +2106,9 @@ def create_visit(request):
             notes=notes,
             status=Visit.StatusEnum.PLANNED
         )
+        
+        conv.pipeline_stage = Conversation.PipelineStageEnum.VISIT
+        conv.save()
         
         return JsonResponse({'status': 'success', 'visit_id': str(visit.id)})
     except Exception as e:

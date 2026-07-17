@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import User, Conversation, Message, Property, QuickTemplate, Reminder, Partner, PartnerMatch
+from .models import User, Conversation, Message, Property, QuickTemplate, Reminder, Partner, PartnerMatch, District, PropertyType
 
 # Restriction d'accès à l'administration (/admin/) uniquement aux super-utilisateurs (super-admins)
 admin.site.has_permission = lambda request: request.user.is_active and request.user.is_superuser
@@ -47,3 +47,13 @@ class PartnerMatchAdmin(admin.ModelAdmin):
     list_display = ('visitor_name', 'visitor_phone', 'partner', 'zone', 'price', 'status', 'created_at')
     list_filter = ('status', 'zone')
     search_fields = ('visitor_name', 'visitor_phone', 'partner__name')
+
+@admin.register(District)
+class DistrictAdmin(admin.ModelAdmin):
+    list_display = ('name',)
+    search_fields = ('name',)
+
+@admin.register(PropertyType)
+class PropertyTypeAdmin(admin.ModelAdmin):
+    list_display = ('name',)
+    search_fields = ('name',)

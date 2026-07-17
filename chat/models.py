@@ -190,3 +190,25 @@ class Visit(models.Model):
 
     def __str__(self):
         return f"Visite: {self.client_name} - {self.property_title} le {self.visit_date.strftime('%d/%m/%Y')}"
+
+class District(models.Model):
+    name = models.CharField(max_length=100, unique=True, verbose_name="Quartier/Zone")
+    
+    class Meta:
+        ordering = ['name']
+        verbose_name = "Quartier"
+        verbose_name_plural = "Quartiers"
+
+    def __str__(self):
+        return self.name
+
+class PropertyType(models.Model):
+    name = models.CharField(max_length=100, unique=True, verbose_name="Type de bien")
+    
+    class Meta:
+        ordering = ['name']
+        verbose_name = "Type de bien"
+        verbose_name_plural = "Types de bien"
+
+    def __str__(self):
+        return self.name

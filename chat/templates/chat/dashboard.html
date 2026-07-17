@@ -531,27 +531,19 @@
                     <div class="flex items-center justify-between gap-2">
                         <select id="filterTagSelect" onchange="handleFilterTagChange(this)" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5 text-[11px] font-semibold text-gray-600 focus:outline-none focus:ring-1 focus:ring-forest-500">
                             <option value="">Toutes les catégories</option>
-                            <option value="Chambres">Chambres</option>
-                            <option value="Chambre sdb">Chambre sdb</option>
-                            <option value="Studio">Studio</option>
-                            <option value="Studio entre salon">Studio entre salon</option>
-                            <option value="MINI STUDIO">MINI STUDIO</option>
-                            <option value="F3">F3</option>
-                            <option value="F4">F4</option>
-                            <option value="F5">F5</option>
-                            <option value="VILLA">VILLA</option>
                             <option value="ETRANGER">ETRANGER</option>
-                            <option value="MAGASIN">MAGASIN</option>
                             <option value="PARTENAIRE">PARTENAIRE</option>
-                            <option value="MEUBLEE">MEUBLEE</option>
                             <option value="CLIENTY MEUBLE">CLIENTY MEUBLE</option>
-                            <option value="FASS">FASS</option>
-                            <option value="OUAKAM">OUAKAM</option>
-                            <option value="NGOR">NGOR</option>
-                            <option value="OUEST FOIRE">OUEST FOIRE</option>
-                            <option value="MARISTE">MARISTE</option>
-                            <option value="GUEDIAWAYE">GUEDIAWAYE</option>
-                            <option value="BANLIEUE">BANLIEUE</option>
+                            <optgroup label="Types de bien">
+                                {% for pt in property_types %}
+                                <option value="{{ pt.name }}">{{ pt.name }}</option>
+                                {% endfor %}
+                            </optgroup>
+                            <optgroup label="Quartiers / Zones">
+                                {% for d in districts %}
+                                <option value="{{ d.name }}">{{ d.name }}</option>
+                                {% endfor %}
+                            </optgroup>
                         </select>
                     </div>
                 </div>
@@ -967,7 +959,12 @@
 
                         <div class="flex flex-col gap-1">
                             <label class="text-[9px] text-gray-400 font-semibold uppercase tracking-wider">Zone de Recherche</label>
-                            <input type="text" id="partnerZoneInput" oninput="searchPartners()" placeholder="Ex: Almadies, Ouakam..." class="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-forest-500">
+                            <select id="partnerZoneInput" onchange="searchPartners()" class="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-forest-500">
+                                <option value="">Toutes les zones</option>
+                                {% for d in districts %}
+                                <option value="{{ d.name }}">{{ d.name }}</option>
+                                {% endfor %}
+                            </select>
                         </div>
 
                         <div class="grid grid-cols-2 gap-2">
@@ -978,9 +975,10 @@
                             <div class="flex flex-col gap-1">
                                 <label class="text-[9px] text-gray-400 font-semibold uppercase tracking-wider">Type de bien</label>
                                 <select id="partnerTypeInput" onchange="searchPartners()" class="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-forest-500">
-                                    <option value="VIDE">VIDE</option>
-                                    <option value="MEUBLE">MEUBLE</option>
-                                    <option value="VENTE">VENTE</option>
+                                    <option value="">Tous les types</option>
+                                    {% for pt in property_types %}
+                                    <option value="{{ pt.name }}">{{ pt.name }}</option>
+                                    {% endfor %}
                                 </select>
                             </div>
                         </div>
@@ -1824,11 +1822,15 @@
             
             // Guess Zone
             let guessedZone = "";
-            const zones = ["ALMADIES", "NGOR", "OUAKAM", "PLATEAU", "FASS", "MEDINA", "MAMELLES", "ZONE DE CAPTAGE", "SACRE COEUR", "NORD FOIRE", "OUEST FOIRE", "MERMOZ", "SALY", "KEUR MASSAR", "LIBERTE", "YOFF", "HLM"];
+            const zonesData = [
+                {% for d in districts %}
+                { upper: "{{ d.name }}".toUpperCase(), exact: "{{ d.name }}" },
+                {% endfor %}
+            ];
             const textToSearch = (topic + " " + (match ? match.title + " " + match.description : "")).toUpperCase();
-            for (let z of zones) {
-                if (textToSearch.includes(z)) {
-                    guessedZone = z;
+            for (let z of zonesData) {
+                if (textToSearch.includes(z.upper)) {
+                    guessedZone = z.exact;
                     break;
                 }
             }
