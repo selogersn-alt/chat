@@ -49,6 +49,7 @@ class Conversation(models.Model):
     
     survey_sent = models.BooleanField(default=False)
     satisfaction_rating = models.IntegerField(null=True, blank=True)
+    satisfaction_comment = models.TextField(blank=True, null=True)
     
     # Interactive flow fields
     client_project = models.CharField(max_length=50, blank=True, null=True)

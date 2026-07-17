@@ -8,7 +8,8 @@ urlpatterns = [
     path('logout/', views.custom_logout_view, name='logout'),
     path('select-portal/', views.select_portal_view, name='select_portal'),
     path('manager/', views.manager_dashboard_view, name='manager_dashboard'),
-    
+    path('profile/', views.agent_profile, name='agent_profile'),
+    path('survey/<uuid:conv_id>/', views.survey_page, name='survey_page'),    
     # PWA Service Worker
     path('sw.js', TemplateView.as_view(template_name='chat/sw.js', content_type='application/javascript'), name='sw.js'),
     

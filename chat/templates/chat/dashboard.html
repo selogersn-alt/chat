@@ -455,6 +455,11 @@
                 </div>
             </div>
             
+            <a href="{% url 'agent_profile' %}" class="p-2 text-white/50 hover:text-white hover:bg-white/10 rounded-xl transition-all duration-200" title="Mon Profil">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                </svg>
+            </a>
             <a href="{% url 'logout' %}" class="p-2 text-white/50 hover:text-white hover:bg-white/10 rounded-xl transition-all duration-200" title="Se déconnecter">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M19 12H9m10 0l-3-3m3 3l-3 3" />
@@ -828,27 +833,19 @@
                                 <option value="" disabled selected>+ Étiquette...</option>
                                 <option value="VISITE EFFECTUÉE">VISITE EFFECTUÉE</option>
                                 <option value="PAIEMENT EFFECTUÉ">PAIEMENT EFFECTUÉ</option>
-                                <option value="Chambres">Chambres</option>
-                                <option value="Chambre sdb">Chambre sdb</option>
-                                <option value="Studio">Studio</option>
-                                <option value="Studio entre salon">Studio entre salon</option>
-                                <option value="MINI STUDIO">MINI STUDIO</option>
-                                <option value="F3">F3</option>
-                                <option value="F4">F4</option>
-                                <option value="F5">F5</option>
-                                <option value="VILLA">VILLA</option>
                                 <option value="ETRANGER">ETRANGER</option>
-                                <option value="MAGASIN">MAGASIN</option>
                                 <option value="PARTENAIRE">PARTENAIRE</option>
-                                <option value="MEUBLEE">MEUBLEE</option>
                                 <option value="CLIENTY MEUBLE">CLIENTY MEUBLE</option>
-                                <option value="FASS">FASS</option>
-                                <option value="OUAKAM">OUAKAM</option>
-                                <option value="NGOR">NGOR</option>
-                                <option value="OUEST FOIRE">OUEST FOIRE</option>
-                                <option value="MARISTE">MARISTE</option>
-                                <option value="GUEDIAWAYE">GUEDIAWAYE</option>
-                                <option value="BANLIEUE">BANLIEUE</option>
+                                <optgroup label="Types de bien">
+                                    {% for pt in property_types %}
+                                    <option value="{{ pt.name }}">{{ pt.name }}</option>
+                                    {% endfor %}
+                                </optgroup>
+                                <optgroup label="Quartiers / Zones">
+                                    {% for d in districts %}
+                                    <option value="{{ d.name }}">{{ d.name }}</option>
+                                    {% endfor %}
+                                </optgroup>
                             </select>
                             <button onclick="addProspectTag()" class="px-3 py-1 bg-forest-600 hover:bg-forest-700 text-white rounded-xl text-xs font-bold transition-all">OK</button>
                         </div>
@@ -2108,7 +2105,7 @@ Date: ${formattedDate}.`;
                         // Suggest sending a survey
                         const draftMsg = `*VISITE EFFECTUÉE* ✅
 Merci pour votre visite ! Avez-vous un moment pour noter notre prestation sur ce lien ?
-https://logersenegal.com/survey/`;
+${window.location.origin}/survey/${currentConversationId}/`;
                         insertText(draftMsg);
                     }
                 }
@@ -2163,7 +2160,7 @@ https://logersenegal.com/survey/`;
                             </div>
                             <div class="flex items-center justify-between text-[11px] border-t border-white/5 pt-2">
                                 <span class="text-gray-400">📞 ${p.contact_1}</span>
-                                <button onclick="matchWithPartner('${p.id}', '${p.name}', '${p.contact_1}')" class="px-2.5 py-1 bg-forest-600 hover:bg-forest-700 text-white rounded-lg font-bold text-[10px] transition-all">Mettre en relation</button>
+                                <button onclick="matchWithPartner('${p.id}', '${p.name}', '${p.contact_1}', '${p.zone}')" class="px-2.5 py-1 bg-forest-600 hover:bg-forest-700 text-white rounded-lg font-bold text-[10px] transition-all">Mettre en relation</button>
                             </div>
                         `;
                         container.appendChild(item);
@@ -2173,16 +2170,19 @@ https://logersenegal.com/survey/`;
         }
 
         // Call matching API
-        function matchWithPartner(partnerId, partnerName, partnerPhone) {
+        function matchWithPartner(partnerId, partnerName, partnerPhone, partnerZone) {
             if (!currentConversationId) return;
             
             const visitorName = document.getElementById('partnerVisitorName').value.trim();
             const visitorPhone = document.getElementById('partnerVisitorPhone').value.trim();
-            const price = document.getElementById('partnerPriceInput').value;
-            const zone = document.getElementById('partnerZoneInput').value.trim();
+            const priceStr = document.getElementById('partnerPriceInput').value;
+            let zone = document.getElementById('partnerZoneInput').value.trim();
             
-            if (!visitorName || !visitorPhone || !price || !zone) {
-                showToast("Veuillez remplir tous les champs (Visiteur, Prix, Zone) avant de valider.", "error");
+            if (!zone) zone = partnerZone;
+            const price = priceStr ? parseFloat(priceStr) : 0;
+            
+            if (!visitorName || !visitorPhone || !zone) {
+                showToast("Veuillez remplir le Visiteur et le Téléphone avant de valider.", "error");
                 return;
             }
             
@@ -2191,7 +2191,7 @@ https://logersenegal.com/survey/`;
                 partner_id: partnerId,
                 visitor_name: visitorName,
                 visitor_phone: visitorPhone,
-                price: parseFloat(price),
+                price: price,
                 zone: zone
             };
             
@@ -3215,22 +3215,7 @@ ${r.title}`);
             }
         }
 
-        // QUICK PARTNER RECOMMENDATION LOGIC
-        function toggleQuickPartnersDropdown() {
-            const dropdown = document.getElementById('quickPartnersDropdown');
-            const isHidden = dropdown.classList.contains('hidden');
-            
-            // Close other dropdowns
-            document.getElementById('templatesDropdown').classList.add('hidden');
-            
-            if (isHidden) {
-                dropdown.classList.remove('hidden');
-                document.getElementById('quickPartnerSearch').focus();
-                filterQuickPartners('');
-            } else {
-                dropdown.classList.add('hidden');
-            }
-        }
+
         
         function filterQuickPartners(query) {
             fetch(`/api/partners/search/?query=${encodeURIComponent(query)}`)

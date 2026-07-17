@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Enquête de satisfaction - Loger Sénégal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Outfit', 'sans-serif'] },
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            900: '#14532d',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Outfit', sans-serif; background-color: #f8fafc; }
+        .star-input { display: none; }
+        .star-label {
+            cursor: pointer;
+            font-size: 2.5rem;
+            color: #cbd5e1;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .star-label:hover, .star-label:hover ~ .star-label {
+            transform: scale(1.1);
+        }
+        /* Flex row-reverse trick to make hover affect previous stars visually */
+        .stars-container {
+            display: flex;
+            flex-direction: row-reverse;
+            justify-content: center;
+        }
+        .star-label:hover,
+        .star-label:hover ~ .star-label,
+        .star-input:checked ~ .star-label {
+            color: #f59e0b;
+        }
+        .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <div class="max-w-md w-full bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden animate-fade-in border border-gray-100">
+        
+        <div class="bg-brand-900 p-6 text-center relative overflow-hidden">
+            <div class="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-white via-transparent to-transparent"></div>
+            <h1 class="text-2xl font-extrabold text-white relative z-10">Loger Sénégal</h1>
+            <p class="text-brand-100 text-sm mt-1 font-medium relative z-10">Votre avis compte beaucoup pour nous</p>
+        </div>
+
+        {% if success %}
+        <div class="p-8 text-center">
+            <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-10 h-10 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+            </div>
+            <h2 class="text-2xl font-bold text-gray-800 mb-2">Merci !</h2>
+            <p class="text-gray-500 mb-6">Vos réponses ont bien été enregistrées. Elles nous aideront à améliorer la qualité de nos services.</p>
+            <a href="https://logersenegal.com" class="inline-block px-6 py-3 bg-brand-600 text-white font-bold rounded-xl hover:bg-brand-700 transition-colors">Retour au site</a>
+        </div>
+        {% else %}
+        <form method="POST" class="p-6 md:p-8">
+            {% csrf_token %}
+            
+            <div class="mb-8">
+                <label class="block text-center text-gray-800 font-bold text-lg mb-4">
+                    Comment évaluez-vous votre expérience avec notre conseiller ?
+                </label>
+                
+                <div class="stars-container">
+                    <input type="radio" id="star5" name="rating" value="5" class="star-input" required />
+                    <label for="star5" class="star-label" title="Excellent">★</label>
+                    
+                    <input type="radio" id="star4" name="rating" value="4" class="star-input" />
+                    <label for="star4" class="star-label" title="Très bien">★</label>
+                    
+                    <input type="radio" id="star3" name="rating" value="3" class="star-input" />
+                    <label for="star3" class="star-label" title="Bien">★</label>
+                    
+                    <input type="radio" id="star2" name="rating" value="2" class="star-input" />
+                    <label for="star2" class="star-label" title="Passable">★</label>
+                    
+                    <input type="radio" id="star1" name="rating" value="1" class="star-input" />
+                    <label for="star1" class="star-label" title="Décevant">★</label>
+                </div>
+                <div class="flex justify-between text-xs text-gray-400 font-medium px-4 mt-1">
+                    <span>Très déçu</span>
+                    <span>Très satisfait</span>
+                </div>
+            </div>
+
+            <div class="mb-8">
+                <label for="comment" class="block text-gray-700 font-bold mb-2">
+                    Avez-vous des remarques supplémentaires ? <span class="text-gray-400 font-normal">(Optionnel)</span>
+                </label>
+                <textarea id="comment" name="comment" rows="4" 
+                    class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all resize-none text-gray-700 placeholder-gray-400"
+                    placeholder="Qu'avez-vous apprécié ? Que pourrions-nous améliorer ?"></textarea>
+            </div>
+
+            <button type="submit" class="w-full py-4 bg-brand-600 hover:bg-brand-700 text-white font-bold text-lg rounded-xl shadow-lg shadow-brand-500/30 transition-all transform hover:-translate-y-0.5">
+                Envoyer mes réponses
+            </button>
+        </form>
+        {% endif %}
+    </div>
+
+</body>
+</html>

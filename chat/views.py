@@ -1417,6 +1417,17 @@ def manager_stats(request):
         if total_rated > 0:
             avg_rating = sum(c.satisfaction_rating for c in rated_convs) / total_rated
             
+        recent_surveys = []
+        for c in rated_convs.order_by('-updated_at')[:10]:
+            recent_surveys.append({
+                'id': str(c.id),
+                'client_name': c.client_name or f"Client #{str(c.id)[:4]}",
+                'rating': c.satisfaction_rating,
+                'comment': getattr(c, 'satisfaction_comment', ''),
+                'agent_name': c.assigned_to.get_full_name() if c.assigned_to else "Non assigné",
+                'date': c.updated_at.strftime('%d/%m/%Y %H:%M')
+            })
+            
         return JsonResponse({
             'total_clients': total_clients,
             'total_agents': total_agents,
@@ -1433,6 +1444,7 @@ def manager_stats(request):
             'sla_violations': sla_violations,
             'avg_satisfaction': round(avg_rating, 1),
             'total_rated': total_rated,
+            'recent_surveys': recent_surveys,
             'sectors': sectors_list,
             'agents_performance': agents_list
         })
@@ -1984,8 +1996,11 @@ def send_survey(request):
         if not client or not client.phone_number:
             return JsonResponse({'error': 'Client introuvable'}, status=400)
             
-        survey_text = "Merci d'avoir contacté Loger Sénégal ! Pour nous aider à nous améliorer, veuillez noter notre service de 1 à 5 en répondant simplement par un chiffre (1 = Très déçu, 5 = Très satisfait). ⭐"
-        
+        # Build the survey link using the current host
+        host = request.get_host()
+        protocol = 'https' if request.is_secure() else 'http'
+        survey_link = f"{protocol}://{host}/survey/{conversation.id}/"
+        survey_text = f"Merci d'avoir contacté Loger Sénégal ! Pour nous aider à nous améliorer, pourriez-vous prendre 30 secondes pour évaluer notre service ?\nCliquez ici : {survey_link} ⭐"
         success, msg_id = trigger_meta_whatsapp_api(client.phone_number, survey_text)
         
         if success:
@@ -2433,3 +2448,60 @@ def mobile_create_partner_match(request):
         return JsonResponse({'error': str(e)}, status=500)
 
 
+def survey_page(request, conv_id):
+    """
+    Renders the satisfaction survey page for a client and saves their response.
+    """
+    conv = get_object_or_404(Conversation, id=conv_id)
+    
+    if request.method == 'POST':
+        rating = request.POST.get('rating')
+        comment = request.POST.get('comment', '').strip()
+        if rating and rating.isdigit():
+            conv.satisfaction_rating = int(rating)
+            conv.satisfaction_comment = comment
+            conv.save()
+            return render(request, 'chat/survey.html', {'success': True})
+            
+    return render(request, 'chat/survey.html', {'success': False, 'conv': conv})
+
+
+@login_required(login_url='login')
+def agent_profile(request):
+    """
+    Renders the agent profile page with KPIs and recent feedback.
+    """
+    user = request.user
+    
+    # Calculate KPIs
+    assigned_convs = Conversation.objects.filter(assigned_to=user)
+    total_conversations = assigned_convs.count()
+    total_won = assigned_convs.filter(pipeline_stage=Conversation.PipelineStageEnum.WON).count()
+    total_visits = Visit.objects.filter(agent=user, status=Visit.StatusEnum.COMPLETED).count()
+    
+    # Average satisfaction rating
+    rated_convs = assigned_convs.filter(satisfaction_rating__isnull=False)
+    if rated_convs.exists():
+        avg_satisfaction = sum(c.satisfaction_rating for c in rated_convs) / rated_convs.count()
+        avg_satisfaction = round(avg_satisfaction, 1)
+    else:
+        avg_satisfaction = None
+        
+    # Recent feedback
+    recent_feedback = []
+    for conv in rated_convs.order_by('-updated_at')[:10]:
+        recent_feedback.append({
+            'client_name': conv.client_name or f"Client #{str(conv.id)[:4]}",
+            'rating': conv.satisfaction_rating,
+            'comment': getattr(conv, 'satisfaction_comment', ''),
+            'date': conv.updated_at.strftime('%d/%m/%Y')
+        })
+        
+    context = {
+        'total_conversations': total_conversations,
+        'total_won': total_won,
+        'total_visits': total_visits,
+        'avg_satisfaction': avg_satisfaction,
+        'recent_feedback': recent_feedback,
+    }
+    return render(request, 'chat/agent_profile.html', context)
