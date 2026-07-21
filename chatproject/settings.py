@@ -115,15 +115,10 @@ TEMPLATES = [
 WSGI_APPLICATION = 'chatproject.wsgi.application'
 ASGI_APPLICATION = 'chatproject.asgi.application'
 
-# Channel Layers
+# Channel Layers - InMemory (single-server, zero Redis dependency)
 CHANNEL_LAYERS = {
     'default': {
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        'CONFIG': {
-            "hosts": [(os.environ.get('REDIS_HOST', 'redis'), int(os.environ.get('REDIS_PORT', 6379)))],
-            "capacity": 1500,
-            "expiry": 10,
-        },
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
     },
 }
 

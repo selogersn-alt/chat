@@ -14,20 +14,11 @@ services:
     depends_on:
       db:
         condition: service_healthy
-      redis:
-        condition: service_started
     environment:
       # Redirect DB to persistent volume path (fallback for SQLite)
       - DATABASE_DIR=/app/db_volume
       # PostgreSQL configuration
       - DATABASE_URL=postgres://logersn_user:logersn_password@db:5432/logersn_db
-
-  redis:
-    image: redis:7-alpine
-    container_name: logersn_redis
-    restart: always
-    command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru --save "" --appendonly no
-    mem_limit: 160m
 
   db:
     image: postgres:15-alpine
