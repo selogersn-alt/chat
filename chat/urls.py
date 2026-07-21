@@ -21,6 +21,7 @@ urlpatterns = [
     path('api/send/', views.send_message, name='send_message'),
     path('api/claim/', views.claim_conversation, name='claim_conversation'),
     path('api/conversation/close/', views.close_conversation, name='close_conversation'),
+    path('api/blacklist/toggle/', views.toggle_blacklist, name='toggle_blacklist'),
     path('api/conversation/tags/', views.update_conversation_tags, name='update_conversation_tags'),
     path('api/conversation/notes/', views.update_conversation_notes, name='update_conversation_notes'),
     path('api/conversation/pipeline/', views.update_conversation_pipeline, name='update_conversation_pipeline'),
