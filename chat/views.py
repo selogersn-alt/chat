@@ -310,7 +310,7 @@ def whatsapp_webhook(request):
             conversation = Conversation.objects.filter(
                 participants=client_user,
                 is_whatsapp=True
-            ).filter(~Q(status=Conversation.StatusEnum.CLOSED)).first()
+            ).order_by('-created_at').first()
             
             if not conversation:
                 conversation = Conversation.objects.create(
@@ -348,28 +348,33 @@ def whatsapp_webhook(request):
                     }
                 }
                 
-                welcome_text = "Menu de bienvenue envoyé."
-                
-                # Send welcome interactive message
-                success, msg_id = trigger_meta_whatsapp_api(sender_phone, interactive_payload=interactive_payload)
-                
-                # Save it in DB
-                system_user = User.objects.filter(is_superuser=True).first()
-                if not system_user and agents.exists():
-                    system_user = agents.first()
+                if not client_user.is_blacklisted:
+                    welcome_text = "Menu de bienvenue envoyé."
                     
-                Message.objects.create(
-                    conversation=conversation,
-                    sender=system_user if system_user else client_user,
-                    content=welcome_text,
-                    status=Message.StatusEnum.SENT if success else Message.StatusEnum.SENT,
-                    msg_id=msg_id if msg_id else ""
-                )
-                conversation.last_message_at = timezone.now()
+                    # Send welcome interactive message
+                    success, msg_id = trigger_meta_whatsapp_api(sender_phone, interactive_payload=interactive_payload)
+                    
+                    # Save it in DB
+                    system_user = User.objects.filter(is_superuser=True).first()
+                    if not system_user and agents.exists():
+                        system_user = agents.first()
+                        
+                    Message.objects.create(
+                        conversation=conversation,
+                        sender=system_user if system_user else client_user,
+                        content=welcome_text,
+                        status=Message.StatusEnum.SENT if success else Message.StatusEnum.SENT,
+                        msg_id=msg_id if msg_id else ""
+                    )
+            elif conversation.status == Conversation.StatusEnum.CLOSED:
+                conversation.status = Conversation.StatusEnum.PENDING
                 conversation.save()
+            
+            conversation.last_message_at = timezone.now()
+            conversation.save()
 
             # --- FLUX INTERACTIF CONTINUATION ---
-            if interactive_id:
+            if interactive_id and not client_user.is_blacklisted:
                 # Etape 1: Projet
                 if interactive_id in ['PROJET_ACHETER', 'PROJET_LOUER']:
                     conversation.client_project = content
@@ -570,11 +575,11 @@ def whatsapp_webhook(request):
                 status=Message.StatusEnum.READ
             )
             
-            # 5. Update last message time and restart SLA countdown
-            # NOTE: On ne remet PAS sla_limit_minutes à 15 — on respecte la config de l'agent
+            # 5. Update last message time and restart SLA countdown (only if not blacklisted)
             conversation.last_message_at = timezone.now()
-            conversation.sla_started_at = timezone.now()
-            conversation.sla_enabled = True
+            if not client_user.is_blacklisted:
+                conversation.sla_started_at = timezone.now()
+                conversation.sla_enabled = True
             conversation.save()
             
             # Broadcast new message to all connected agents
@@ -643,6 +648,7 @@ def sync_messages(request):
         client = next((p for p in conv.participants.all() if p.role == User.RoleEnum.CLIENT), None)
         client_name = client.first_name if client else "Client Inconnu"
         client_phone = client.phone_number if client else "N/A"
+        is_blacklisted = client.is_blacklisted if client else False
         
         last_msg = conv.cached_messages[0] if conv.cached_messages else None
         last_msg_content = last_msg.content if last_msg else "Aucun message"
@@ -684,6 +690,7 @@ def sync_messages(request):
             'sla_started_at': conv.sla_started_at.isoformat() if conv.sla_started_at else None,
             'sla_enabled': conv.sla_enabled,
             'unread_count': unread_count,
+            'is_blacklisted': is_blacklisted,
         })
         
     messages_data = []
@@ -719,6 +726,7 @@ def sync_messages(request):
                 'topic': active_conv.topic,
                 'client_name': client.first_name if client else "Client",
                 'client_phone': client.phone_number if client else "N/A",
+                'is_blacklisted': client.is_blacklisted if client else False,
                 'is_whatsapp': active_conv.is_whatsapp,
                 'status': active_conv.status,
                 'assigned_to': active_conv.assigned_to.get_full_name() or active_conv.assigned_to.username if active_conv.assigned_to else None,
@@ -808,6 +816,37 @@ def sync_messages(request):
         'agent_reminders': agent_reminders_data,
         'server_now': timezone.now().isoformat()
     })
+
+@login_required(login_url='login')
+@require_POST
+def toggle_blacklist(request):
+    import json
+    try:
+        data = json.loads(request.body)
+        conversation_id = data.get('conversation_id')
+        if not conversation_id:
+            return JsonResponse({'status': 'error', 'message': 'Missing conversation_id'}, status=400)
+            
+        conversation = get_object_or_404(Conversation, id=conversation_id)
+        client = conversation.participants.filter(role=User.RoleEnum.CLIENT).first()
+        if not client:
+            return JsonResponse({'status': 'error', 'message': 'No client found in conversation'}, status=404)
+            
+        client.is_blacklisted = not client.is_blacklisted
+        client.save()
+        
+        # If blacklisted, disable SLA
+        if client.is_blacklisted:
+            conversation.sla_enabled = False
+            conversation.save()
+            
+        return JsonResponse({
+            'status': 'success', 
+            'is_blacklisted': client.is_blacklisted,
+            'message': f"Le client a été {'blacklisté' if client.is_blacklisted else 'retiré de la blacklist'}."
+        })
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
 @login_required(login_url='login')
 def send_message(request):

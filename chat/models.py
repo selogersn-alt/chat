@@ -11,6 +11,7 @@ class User(AbstractUser):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     phone_number = models.CharField(max_length=30, unique=True, null=True, blank=True, db_index=True)
     role = models.CharField(max_length=20, choices=RoleEnum.choices, default=RoleEnum.CLIENT)
+    is_blacklisted = models.BooleanField(default=False)
     
     # We allow blank email and override username field requirement if needed, 
     # but for safety in admin, we keep default abstract user requirements.
