@@ -123,9 +123,6 @@ CHANNEL_LAYERS = {
             "hosts": [(os.environ.get('REDIS_HOST', 'redis'), int(os.environ.get('REDIS_PORT', 6379)))],
             "capacity": 1500,
             "expiry": 10,
-            "socket_connect_timeout": 5,
-            "socket_timeout": 5,
-            "retry_on_timeout": True,
         },
     },
 }
