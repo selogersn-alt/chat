@@ -26,6 +26,8 @@ services:
     image: redis:7-alpine
     container_name: logersn_redis
     restart: always
+    command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru --save "" --appendonly no
+    mem_limit: 160m
 
   db:
     image: postgres:15-alpine
