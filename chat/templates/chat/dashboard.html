@@ -2754,6 +2754,9 @@ ${window.location.origin}/survey/${currentConversationId}/`;
 
         function toggleBlacklist() {
             if (!currentConversationId) return;
+            const btn = document.getElementById('toggleBlacklistBtn');
+            if (btn) { btn.disabled = true; btn.style.opacity = '0.5'; }
+
             fetch('/api/blacklist/toggle/', {
                 method: 'POST',
                 headers: {
@@ -2761,7 +2764,20 @@ ${window.location.origin}/survey/${currentConversationId}/`;
                     'X-CSRFToken': csrftoken
                 },
                 body: JSON.stringify({ conversation_id: currentConversationId })
-            }).then(r => r.json()).then(data => {
+            })
+            .then(r => r.text())  // Read as text first to avoid JSON parse error
+            .then(rawText => {
+                if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
+                let data;
+                try {
+                    data = JSON.parse(rawText);
+                } catch(e) {
+                    // Server returned HTML (error page) - extract useful info
+                    const statusMatch = rawText.match(/\d{3}/);
+                    showToast("Erreur serveur. Rechargez la page et réessayez.", 'error');
+                    console.error("Réponse non-JSON du serveur:", rawText.substring(0, 300));
+                    return;
+                }
                 if (data.status === 'success') {
                     showToast(data.message, 'success');
                     syncData(); // refresh UI to show changes
@@ -2769,6 +2785,7 @@ ${window.location.origin}/survey/${currentConversationId}/`;
                     showToast(data.message || "Erreur lors de la modification de la blacklist.", 'error');
                 }
             }).catch(err => {
+                if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
                 showToast("Erreur réseau: " + err, 'error');
             });
         }
