@@ -1189,11 +1189,13 @@
                 .then(data => {
                     syncFailures = 0; // Reset failures on success
                     // Caching UI updates to prevent flickering
-                    const newConvHash = JSON.stringify(data.conversations || []);
-                    if (newConvHash !== lastConversationsHash) {
-                        loadedConversations = data.conversations || [];
-                        lastConversationsHash = newConvHash;
-                        renderConversationList();
+                    if (!fastLoad) {
+                        const newConvHash = JSON.stringify(data.conversations || []);
+                        if (newConvHash !== lastConversationsHash) {
+                            loadedConversations = data.conversations || [];
+                            lastConversationsHash = newConvHash;
+                            renderConversationList();
+                        }
                     }
                     
                     const newPropHash = JSON.stringify(data.properties || []);
