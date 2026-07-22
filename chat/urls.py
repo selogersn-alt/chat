@@ -9,6 +9,7 @@ urlpatterns = [
     path('logout/', views.custom_logout_view, name='logout'),
     path('select-portal/', views.select_portal_view, name='select_portal'),
     path('manager/', views.manager_dashboard_view, name='manager_dashboard'),
+    path('manager/media/', views.media_manager_view, name='media_manager'),
     path('profile/', views.agent_profile, name='agent_profile'),
     path('survey/<uuid:conv_id>/', views.survey_page, name='survey_page'),    
     # PWA Service Worker
@@ -35,6 +36,7 @@ urlpatterns = [
     
     # Settings APIs
     path('api/manager/settings/update/', views.update_system_settings, name='update_system_settings'),
+    path('api/manager/media/delete/', views.delete_media_api, name='delete_media_api'),
     
     # Visits APIs
     path('api/visits/create/', views.create_visit, name='create_visit'),

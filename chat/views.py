@@ -26,6 +26,28 @@ from .models import User, Conversation, Message, Property, QuickTemplate, Remind
 
 logger = logging.getLogger(__name__)
 
+def format_time_short(dt):
+    if not dt: return ""
+    now = timezone.localtime(timezone.now())
+    msg_time = timezone.localtime(dt)
+    if msg_time.date() == now.date():
+        return msg_time.strftime("%H:%M")
+    elif msg_time.date() == (now - timezone.timedelta(days=1)).date():
+        return "Hier"
+    else:
+        return msg_time.strftime("%d/%m/%y")
+
+def format_time_long(dt):
+    if not dt: return ""
+    now = timezone.localtime(timezone.now())
+    msg_time = timezone.localtime(dt)
+    if msg_time.date() == now.date():
+        return "Aujourd'hui à " + msg_time.strftime("%H:%M")
+    elif msg_time.date() == (now - timezone.timedelta(days=1)).date():
+        return "Hier à " + msg_time.strftime("%H:%M")
+    else:
+        return msg_time.strftime("%d/%m/%Y %H:%M")
+
 def get_live_properties():
     """Fetch live properties from the main site API with 5 min caching to avoid API limits during 3s polling."""
     cached = cache.get('live_properties_v2')
@@ -167,6 +189,49 @@ def dashboard_view(request):
         'districts': District.objects.all(),
         'property_types': PropertyType.objects.all(),
     })
+
+def download_whatsapp_media_async(media_id, message_id):
+    """
+    Downloads media from WhatsApp asynchronously and saves it locally.
+    Updates the Message.attachment_url once downloaded.
+    """
+    from django.core.files.base import ContentFile
+    try:
+        wa_token = os.getenv('WA_ACCESS_TOKEN')
+        if not wa_token:
+            logger.error("No WA_ACCESS_TOKEN found for media download")
+            return
+            
+        headers = {'Authorization': f'Bearer {wa_token}'}
+        resp = requests.get(f'https://graph.facebook.com/v17.0/{media_id}/', headers=headers, timeout=10)
+        
+        if resp.status_code == 200:
+            media_info = resp.json()
+            media_url = media_info.get('url')
+            mime_type = media_info.get('mime_type', 'application/octet-stream')
+            
+            # Simple extension mapping
+            ext = mime_type.split('/')[-1] if '/' in mime_type else 'bin'
+            if ext == 'jpeg': ext = 'jpg'
+            elif ';' in ext: ext = ext.split(';')[0]
+            
+            if media_url:
+                media_resp = requests.get(media_url, headers=headers, timeout=20)
+                if media_resp.status_code == 200:
+                    msg = Message.objects.get(id=message_id)
+                    fs = FileSystemStorage(location=settings.MEDIA_ROOT)
+                    filename = fs.save(f"wa_media_{media_id}.{ext}", ContentFile(media_resp.content))
+                    # URL without the full domain to match standard relative media paths
+                    file_url = f"/media/{filename}"
+                    msg.attachment_url = file_url
+                    msg.save()
+                    logger.info(f"Successfully downloaded and saved media for message {message_id}")
+                else:
+                    logger.error(f"Failed to download media bits for {media_id}: HTTP {media_resp.status_code}")
+        else:
+            logger.error(f"Failed to fetch media url for {media_id}: HTTP {resp.status_code}")
+    except Exception as e:
+        logger.error(f"Exception during async media download: {str(e)}")
 
 @csrf_exempt
 def whatsapp_webhook(request):
@@ -566,7 +631,7 @@ def whatsapp_webhook(request):
                     )
 
             # 4. Save the actual message (with msg_id and READ status since it is incoming)
-            Message.objects.create(
+            msg = Message.objects.create(
                 conversation=conversation,
                 sender=client_user,
                 content=content,
@@ -574,6 +639,10 @@ def whatsapp_webhook(request):
                 msg_id=message_data.get('id'),
                 status=Message.StatusEnum.READ
             )
+            
+            if media_id:
+                import threading
+                threading.Thread(target=download_whatsapp_media_async, args=(media_id, msg.id)).start()
             
             # 5. Update last message time and restart SLA countdown (only if not blacklisted)
             conversation.last_message_at = timezone.now()
@@ -664,7 +733,7 @@ def sync_messages(request):
         
         last_msg = conv.cached_messages[0] if conv.cached_messages else None
         last_msg_content = last_msg.content if last_msg else "Aucun message"
-        last_msg_time = last_msg.created_at.strftime("%H:%M") if last_msg else ""
+        last_msg_time = format_time_short(last_msg.created_at) if last_msg else ""
         
         if isinstance(conv.client_last_message_at_annotated, str):
             from django.utils.dateparse import parse_datetime
@@ -771,7 +840,7 @@ def sync_messages(request):
                     'content': msg.content or "",
                     'attachment_url': msg.attachment_url,
                     'status': msg.status,
-                    'created_at': msg.created_at.strftime("%H:%M")
+                    'created_at': format_time_long(msg.created_at)
                 })
                 
             # Fetch real properties from API
@@ -924,7 +993,7 @@ def send_message(request):
                 'id': str(message.id),
                 'sender_name': request.user.first_name or request.user.username,
                 'content': message.content,
-                'created_at': message.created_at.strftime("%H:%M")
+                'created_at': format_time_long(message.created_at)
             }
         })
         
@@ -2677,3 +2746,57 @@ def whatsapp_media_proxy(request, media_id):
     except Exception as e:
         logger.error(f"Error in whatsapp_media_proxy: {str(e)}")
         return HttpResponse('Internal Server Error', status=500)
+
+@login_required(login_url='login')
+def media_manager_view(request):
+    """
+    Super Admin view to manage stored media files (images, videos, etc).
+    """
+    if not request.user.is_superuser:
+        return redirect('select_portal')
+        
+    # Get all messages with attachments, order by newest first
+    messages_with_media = Message.objects.exclude(attachment_url__isnull=True).exclude(attachment_url='').order_by('-created_at')
+    
+    # Render template
+    return render(request, 'chat/media_manager.html', {
+        'user': request.user,
+        'messages_with_media': messages_with_media,
+    })
+
+@login_required(login_url='login')
+@require_POST
+def delete_media_api(request):
+    """
+    Deletes the physical media file and removes the attachment_url from the message.
+    """
+    if not request.user.is_superuser:
+        return JsonResponse({'status': 'error', 'message': 'Accès non autorisé'}, status=403)
+        
+    try:
+        data = json.loads(request.body)
+        msg_id = data.get('msg_id')
+        if not msg_id:
+            return JsonResponse({'status': 'error', 'message': 'ID du message manquant'}, status=400)
+            
+        msg = get_object_or_404(Message, id=msg_id)
+        
+        # Only proceed if there is an attachment
+        if msg.attachment_url:
+            # Check if it's a local file in /media/
+            if msg.attachment_url.startswith('/media/') or msg.attachment_url.startswith(settings.MEDIA_URL):
+                file_path = os.path.join(settings.MEDIA_ROOT, msg.attachment_url.replace('/media/', '').replace(settings.MEDIA_URL, ''))
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+                    logger.info(f"Deleted physical file: {file_path}")
+            
+            # Remove attachment reference but keep the message text
+            msg.attachment_url = None
+            msg.save()
+            return JsonResponse({'status': 'success', 'message': 'Média supprimé avec succès'})
+        else:
+            return JsonResponse({'status': 'error', 'message': 'Aucun média attaché à ce message'}, status=404)
+            
+    except Exception as e:
+        logger.error(f"Error deleting media: {str(e)}")
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
