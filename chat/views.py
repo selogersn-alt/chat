@@ -309,6 +309,13 @@ def whatsapp_webhook(request):
                 return JsonResponse({'status': 'no_message_data'}, status=200)
                 
             message_data = messages_list[0]
+            
+            # Prévention des doublons : Meta WhatsApp renvoie parfois le webhook si le délai de traitement est long
+            wa_msg_id = message_data.get('id')
+            if wa_msg_id and Message.objects.filter(msg_id=wa_msg_id).exists():
+                logger.info(f"Duplicate WhatsApp message ignored: {wa_msg_id}")
+                return JsonResponse({'status': 'duplicate_ignored'}, status=200)
+                
             contact_data = value.get('contacts', [{}])[0]
             
             sender_phone = message_data.get('from')
