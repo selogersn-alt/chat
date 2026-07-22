@@ -686,18 +686,24 @@ def sync_messages(request):
     agent = request.user
     active_conv_id = request.GET.get('conversation_id')
     
+    # Add fast_load parameter
+    fast_load = request.GET.get('fast_load') == '1'
+    
     # Handle search query
     query = request.GET.get('q', '').strip()
     date_from = request.GET.get('date_from', '').strip()
     date_to = request.GET.get('date_to', '').strip()
     
-    # Get all conversations the agent has access to
-    if agent.is_superuser or agent.role == User.RoleEnum.MANAGER:
-        conversations = Conversation.objects.all()
+    if fast_load:
+        conversations = Conversation.objects.none()
     else:
-        conversations = Conversation.objects.filter(
-            Q(assigned_to=agent) | Q(participants=agent) | Q(status=Conversation.StatusEnum.PENDING)
-        )
+        # Get all conversations the agent has access to
+        if agent.is_superuser or agent.role == User.RoleEnum.MANAGER:
+            conversations = Conversation.objects.all()
+        else:
+            conversations = Conversation.objects.filter(
+                Q(assigned_to=agent) | Q(participants=agent) | Q(status=Conversation.StatusEnum.PENDING)
+            )
         
     if query:
         conversations = conversations.filter(
@@ -779,6 +785,7 @@ def sync_messages(request):
             'sla_started_at': conv.sla_started_at.isoformat() if conv.sla_started_at else None,
             'sla_enabled': conv.sla_enabled,
             'unread_count': unread_count,
+            'is_blacklisted': is_blacklisted,
             'is_blacklisted': is_blacklisted,
             'is_assistance_paid': client.is_assistance_paid if client else False,
         })

@@ -1156,11 +1156,14 @@
 
         let syncFailures = 0;
 
-        function syncData() {
+        function syncData(fastLoad = false) {
             let url = `/api/sync/`;
             let params = new URLSearchParams();
             if (currentConversationId) {
                 params.append('conversation_id', currentConversationId);
+            }
+            if (fastLoad) {
+                params.append('fast_load', '1');
             }
             const searchInput = document.getElementById('convSearch');
             if (searchInput && searchInput.value.trim() !== '') {
@@ -1570,8 +1573,8 @@
                 loadVisits();
             }
             
-            // Sync immediately
-            syncData();
+            // Sync immediately with fastLoad to load chat instantly
+            syncData(true);
         }
 
         // Render Column 2 Chat View
