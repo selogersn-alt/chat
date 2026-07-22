@@ -324,6 +324,7 @@ def whatsapp_webhook(request):
             
             content = ""
             attachment_url = None
+            media_id = None
             
             # Extract content based on message type
             if message_type == 'text':
