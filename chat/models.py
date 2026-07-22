@@ -12,6 +12,7 @@ class User(AbstractUser):
     phone_number = models.CharField(max_length=30, unique=True, null=True, blank=True, db_index=True)
     role = models.CharField(max_length=20, choices=RoleEnum.choices, default=RoleEnum.CLIENT)
     is_blacklisted = models.BooleanField(default=False)
+    is_assistance_paid = models.BooleanField(default=False)
     
     # We allow blank email and override username field requirement if needed, 
     # but for safety in admin, we keep default abstract user requirements.
@@ -214,3 +215,35 @@ class PropertyType(models.Model):
 
     def __str__(self):
         return self.name
+
+class SystemSetting(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    assistance_fee = models.DecimalField(max_digits=10, decimal_places=2, default=300.00, verbose_name="Frais d'Assistance")
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Paramètre Système"
+        verbose_name_plural = "Paramètres Système"
+
+    def __str__(self):
+        return f"Paramètres (Frais: {self.assistance_fee})"
+
+    @classmethod
+    def get_fee(cls):
+        setting = cls.objects.first()
+        if not setting:
+            setting = cls.objects.create()
+        return setting.assistance_fee
+
+class AssistancePayment(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    client = models.ForeignKey(User, on_delete=models.CASCADE, related_name='assistance_payments')
+    agent = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='validated_payments')
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Paiement {self.amount} CFA par {self.client} validé par {self.agent}"

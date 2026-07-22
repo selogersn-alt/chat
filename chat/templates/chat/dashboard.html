@@ -523,6 +523,11 @@
 
                 <!-- Collapsible Advanced Filters Section -->
                 <div id="advancedFiltersSection" class="hidden md:flex flex-col gap-2 mt-1">
+                    <!-- Date Filter -->
+                    <div class="flex gap-2">
+                        <input type="date" id="filterDateFrom" onchange="syncData()" class="w-1/2 bg-gray-50 border border-gray-200 rounded-xl px-2 py-1.5 text-[11px] font-semibold text-gray-600 focus:outline-none focus:ring-1 focus:ring-forest-500" title="Du">
+                        <input type="date" id="filterDateTo" onchange="syncData()" class="w-1/2 bg-gray-50 border border-gray-200 rounded-xl px-2 py-1.5 text-[11px] font-semibold text-gray-600 focus:outline-none focus:ring-1 focus:ring-forest-500" title="Au">
+                    </div>
                     <!-- Agent Filter Toggle -->
                     <div class="flex justify-between items-center bg-gray-50 border border-gray-100 p-1.5 rounded-xl text-[11px]">
                         <span class="text-gray-500 font-semibold pl-1.5">Assignation :</span>
@@ -616,6 +621,9 @@
                                     <svg class="w-2.5 h-2.5 fill-current" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.5-5.739-1.446L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.42 9.864-9.864.002-2.637-1.03-5.114-2.905-6.99C16.455 1.875 13.978.847 11.332.845c-5.438 0-9.862 4.42-9.866 9.863-.002 1.702.447 3.366 1.301 4.821L1.65 22.378l6.997-1.834z"/></svg>
                                     WhatsApp
                                 </span>
+                                <span id="assistancePaidBadge" class="hidden inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-bold bg-green-600 text-white rounded-full flex-shrink-0 shadow-sm">
+                                    PAYÉE
+                                </span>
                                 <span class="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-bold bg-teal-50 text-teal-700 rounded-full border border-teal-200 flex-shrink-0" id="sessionTimerBadge">
                                     ⏱️ Calcul...
                                 </span>
@@ -638,6 +646,12 @@
                     </div>
                     
                     <div class="flex items-center gap-1.5 md:gap-2 flex-shrink-0">
+                        <button id="validerPaiementBtn" onclick="validerPaiementAssistance()" class="hidden flex items-center gap-1.5 px-2 md:px-2.5 py-1.5 bg-green-50 hover:bg-green-100 text-green-700 rounded-xl md:text-[10px] font-bold transition-all border border-green-200/50" title="Valider Paiement (Assistance)">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4 text-green-600">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span class="hidden md:inline">Valider Paiement</span>
+                        </button>
                         <button id="sendSurveyBtn" onclick="sendSatisfactionSurvey()" class="flex items-center gap-1.5 px-2 md:px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-xl md:text-[10px] font-bold transition-all border border-amber-200/50" title="Envoyer une enquête de satisfaction">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 text-amber-500">
                                 <path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clip-rule="evenodd" />
@@ -1153,6 +1167,16 @@
                 params.append('q', searchInput.value.trim());
             }
             
+            const dateFrom = document.getElementById('filterDateFrom');
+            if (dateFrom && dateFrom.value) {
+                params.append('date_from', dateFrom.value);
+            }
+            
+            const dateTo = document.getElementById('filterDateTo');
+            if (dateTo && dateTo.value) {
+                params.append('date_to', dateTo.value);
+            }
+            
             if (params.toString()) {
                 url += '?' + params.toString();
             }
@@ -1393,6 +1417,7 @@
                                 <span class="${fontWeight} text-sm flex items-center gap-2">
                                     ${c.client_name}
                                     ${c.is_blacklisted ? '<span class="bg-red-600 text-white text-[9px] px-1.5 py-0.5 rounded-full font-bold">BLACKLISTÉ</span>' : ''}
+                                    ${c.is_assistance_paid ? '<span class="bg-green-600 text-white text-[9px] px-1.5 py-0.5 rounded-full font-bold shadow-sm" title="Assistance Payée">PAYÉE</span>' : ''}
                                     ${isUnread ? `<span class="bg-blue-600 text-white text-[9px] px-1.5 py-0.5 rounded-full">${c.unread_count}</span>` : ''}
                                 </span>
                             </div>
@@ -1592,6 +1617,17 @@
                 document.getElementById('whatsappBadge').classList.add('hidden');
             }
             
+            // Assistance Paid
+            const assistanceBadge = document.getElementById('assistancePaidBadge');
+            const validerPaiementBtn = document.getElementById('validerPaiementBtn');
+            if (info.is_assistance_paid) {
+                assistanceBadge.classList.remove('hidden');
+                validerPaiementBtn.classList.add('hidden');
+            } else {
+                assistanceBadge.classList.add('hidden');
+                validerPaiementBtn.classList.remove('hidden');
+            }
+            
             // Show or hide claim banner
             const claimBanner = document.getElementById('claimingBanner');
             if (!info.assigned_to) {
@@ -1747,21 +1783,23 @@
                     if (m.attachment_url && !m.content.includes('[Note Vocale WhatsApp]')) {
                         const urlLower = m.attachment_url.toLowerCase();
                         const contentLower = m.content.toLowerCase();
-                        const isImg = urlLower.includes('.jpg') || urlLower.includes('.jpeg') || urlLower.includes('.png') || urlLower.includes('.webp') || contentLower.includes('image');
-                        const isVid = urlLower.includes('.mp4') || urlLower.includes('.mov') || urlLower.includes('.avi') || urlLower.includes('.webm') || contentLower.includes('vidéo') || contentLower.includes('video');
+                        // Improve media detection: if it doesn't end with typical extensions but contains media keywords, or if from whatsapp webhook often it is an image
+                        const isImg = urlLower.match(/\.(jpg|jpeg|png|gif|webp)$/i) || contentLower.includes('image') || urlLower.includes('media') && !urlLower.includes('mp4') && !contentLower.includes('vid');
+                        const isVid = urlLower.match(/\.(mp4|mov|avi|webm)$/i) || contentLower.includes('vidéo') || contentLower.includes('video');
                         
                         let mediaPreview = '';
                         if (isImg) {
-                            mediaPreview = `<img src="${m.attachment_url}" class="rounded-xl max-h-60 object-cover mt-2 w-full border border-white/10 hover:opacity-95 transition-opacity cursor-zoom-in" alt="Media Attachment">`;
+                            // Using object-contain instead of object-cover to preserve aspect ratio
+                            mediaPreview = `<img src="${m.attachment_url}" onclick="window.open('${m.attachment_url}', '_blank')" class="rounded-xl max-h-64 object-contain mt-2 w-full border border-gray-200/50 bg-gray-50/50 hover:opacity-95 transition-opacity cursor-zoom-in" alt="Media Attachment">`;
                         } else if (isVid) {
-                            mediaPreview = `<video src="${m.attachment_url}" controls preload="metadata" class="rounded-xl max-h-60 w-full object-cover mt-2 border border-white/10"></video>`;
+                            mediaPreview = `<video src="${m.attachment_url}" controls preload="metadata" class="rounded-xl max-h-64 w-full object-contain mt-2 border border-gray-200/50 bg-gray-50/50"></video>`;
                         } else {
                             mediaPreview = `
-                                <a href="${m.attachment_url}" target="_blank" class="underline flex items-center gap-1 font-bold mt-2">
+                                <a href="${m.attachment_url}" target="_blank" class="underline flex items-center gap-1 font-bold mt-2 text-forest-600 hover:text-forest-700">
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m.75 12l3 3m0 0l3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
                                     </svg>
-                                    Voir la pièce jointe
+                                    Ouvrir la pièce jointe
                                 </a>
                             `;
                         }
@@ -3367,6 +3405,39 @@ ${r.title}`);
             .catch(error => {
                 console.error("Error:", error);
                 showToast("Erreur système.", "error");
+            });
+        }
+
+        // Valider Paiement Assistance
+        function validerPaiementAssistance() {
+            if (!currentConversationId) return;
+            
+            if (!confirm("Voulez-vous marquer ce client comme ayant payé l'assistance ? (Le montant sera ajouté aux statistiques).")) return;
+            
+            fetch('/api/client/mark-paid/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify({ conversation_id: currentConversationId })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    showToast("Paiement de l'assistance validé avec succès !", "success");
+                    // Update in loadedConversations
+                    const conv = loadedConversations.find(c => c.id === currentConversationId);
+                    if (conv) conv.is_assistance_paid = true;
+                    // Sync to update badges
+                    syncData();
+                } else {
+                    showToast(data.error || "Erreur lors de la validation du paiement.", "error");
+                }
+            })
+            .catch(err => {
+                console.error("Error marking paid:", err);
+                showToast("Erreur système lors de la validation du paiement.", "error");
             });
         }
     </script>

@@ -611,6 +611,8 @@ def sync_messages(request):
     
     # Handle search query
     query = request.GET.get('q', '').strip()
+    date_from = request.GET.get('date_from', '').strip()
+    date_to = request.GET.get('date_to', '').strip()
     
     # Get all conversations the agent has access to
     if agent.is_superuser or agent.role == User.RoleEnum.MANAGER:
@@ -627,6 +629,16 @@ def sync_messages(request):
             Q(messages__content__icontains=query)
         ).distinct()
         
+    if date_from:
+        conversations = conversations.filter(created_at__gte=date_from)
+    if date_to:
+        from datetime import datetime, timedelta
+        try:
+            date_to_obj = datetime.strptime(date_to, '%Y-%m-%d') + timedelta(days=1)
+            conversations = conversations.filter(created_at__lt=date_to_obj)
+        except ValueError:
+            pass
+            
     conversations = conversations.annotate(
         client_unread_count=Count(
             'messages',
@@ -691,6 +703,7 @@ def sync_messages(request):
             'sla_enabled': conv.sla_enabled,
             'unread_count': unread_count,
             'is_blacklisted': is_blacklisted,
+            'is_assistance_paid': client.is_assistance_paid if client else False,
         })
         
     messages_data = []
@@ -727,6 +740,7 @@ def sync_messages(request):
                 'client_name': client.first_name if client else "Client",
                 'client_phone': client.phone_number if client else "N/A",
                 'is_blacklisted': client.is_blacklisted if client else False,
+                'is_assistance_paid': client.is_assistance_paid if client else False,
                 'is_whatsapp': active_conv.is_whatsapp,
                 'status': active_conv.status,
                 'assigned_to': active_conv.assigned_to.get_full_name() or active_conv.assigned_to.username if active_conv.assigned_to else None,
@@ -1381,6 +1395,15 @@ def manager_stats(request):
             convs_qs = convs_qs.filter(created_at__lt=end_date)
             matches_qs = matches_qs.filter(created_at__lt=end_date)
 
+        from .models import AssistancePayment, SystemSetting
+        assistance_qs = AssistancePayment.objects.all()
+        if start_date:
+            assistance_qs = assistance_qs.filter(created_at__gte=start_date)
+        if end_date:
+            assistance_qs = assistance_qs.filter(created_at__lt=end_date)
+        
+        total_assistance_revenue = sum(p.amount for p in assistance_qs)
+
         total_clients = clients_qs.count()
         total_agents = User.objects.filter(role=User.RoleEnum.AGENT).count()
         
@@ -1470,7 +1493,9 @@ def manager_stats(request):
             'total_rated': total_rated,
             'recent_surveys': recent_surveys,
             'sectors': sectors_list,
-            'agents_performance': agents_list
+            'agents_performance': agents_list,
+            'total_assistance_revenue': total_assistance_revenue,
+            'assistance_fee': float(SystemSetting.get_fee())
         })
     except Exception as e:
         logger.error(f"Error getting manager stats: {str(e)}", exc_info=True)
@@ -2543,3 +2568,112 @@ def agent_profile(request):
         'recent_feedback': recent_feedback,
     }
     return render(request, 'chat/agent_profile.html', context)
+
+
+@login_required(login_url='login')
+@require_POST
+def mark_assistance_paid(request):
+    import json
+    from .models import SystemSetting, AssistancePayment
+    try:
+        data = json.loads(request.body)
+        conversation_id = data.get('conversation_id')
+        if not conversation_id:
+            return JsonResponse({'status': 'error', 'message': 'Missing conversation_id'}, status=400)
+            
+        conversation = get_object_or_404(Conversation, id=conversation_id)
+        client = conversation.participants.filter(role=User.RoleEnum.CLIENT).first()
+        if not client:
+            return JsonResponse({'status': 'error', 'message': 'No client found in conversation'}, status=404)
+            
+        if client.is_assistance_paid:
+            return JsonResponse({'status': 'error', 'message': 'Client already paid assistance'}, status=400)
+            
+        # Update client
+        client.is_assistance_paid = True
+        client.save()
+        
+        # Create payment record
+        fee = SystemSetting.get_fee()
+        AssistancePayment.objects.create(
+            client=client,
+            agent=request.user,
+            amount=fee
+        )
+            
+        return JsonResponse({
+            'status': 'success',
+            'is_assistance_paid': True,
+            'message': f"Paiement d'assistance de {fee} CFA validé pour {client.get_full_name() or client.username}."
+        })
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+@login_required(login_url='login')
+@require_POST
+def update_system_settings(request):
+    import json
+    from .models import SystemSetting
+    
+    # Restrict to Super Admin or Manager
+    if not (request.user.is_superuser or request.user.role == User.RoleEnum.MANAGER):
+        return JsonResponse({'status': 'error', 'message': 'Unauthorized'}, status=403)
+        
+    try:
+        data = json.loads(request.body)
+        new_fee = data.get('assistance_fee')
+        
+        if new_fee is None:
+            return JsonResponse({'status': 'error', 'message': 'Missing assistance_fee'}, status=400)
+            
+        setting = SystemSetting.objects.first()
+        if not setting:
+            setting = SystemSetting.objects.create()
+            
+        setting.assistance_fee = new_fee
+        setting.save()
+        
+        return JsonResponse({
+            'status': 'success',
+            'assistance_fee': setting.assistance_fee,
+            'message': f"Frais d'assistance mis à jour à {setting.assistance_fee} CFA."
+        })
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+@login_required(login_url='login')
+def whatsapp_media_proxy(request, media_id):
+    """
+    Proxy to fetch media from WhatsApp Cloud API and serve it to the frontend.
+    WhatsApp requires the Bearer token to download media.
+    """
+    wa_token = os.getenv('WA_ACCESS_TOKEN')
+    if not wa_token:
+        return HttpResponse('WhatsApp Access Token not configured', status=500)
+        
+    try:
+        # Step 1: Get media URL
+        headers = {'Authorization': f'Bearer {wa_token}'}
+        resp = requests.get(f'https://graph.facebook.com/v17.0/{media_id}/', headers=headers, timeout=10)
+        if resp.status_code != 200:
+            logger.error(f"Failed to get media URL for {media_id}: {resp.text}")
+            return HttpResponse('Media not found on WhatsApp', status=404)
+            
+        media_info = resp.json()
+        media_url = media_info.get('url')
+        mime_type = media_info.get('mime_type', 'application/octet-stream')
+        
+        if not media_url:
+            return HttpResponse('Invalid media response', status=500)
+            
+        # Step 2: Download actual media
+        media_resp = requests.get(media_url, headers=headers, timeout=20)
+        if media_resp.status_code == 200:
+            return HttpResponse(media_resp.content, content_type=mime_type)
+        else:
+            logger.error(f"Failed to download media {media_id} from {media_url}: {media_resp.text}")
+            return HttpResponse('Failed to download media', status=media_resp.status_code)
+            
+    except Exception as e:
+        logger.error(f"Error in whatsapp_media_proxy: {str(e)}")
+        return HttpResponse('Internal Server Error', status=500)

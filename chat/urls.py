@@ -31,6 +31,10 @@ urlpatterns = [
     path('api/reminders/complete/', views.complete_reminder, name='complete_reminder'),
     path('api/leads/export/', views.export_leads_csv, name='export_leads_csv'),
     path('api/conversation/send-survey/', views.send_survey, name='send_survey'),
+    path('api/client/mark-paid/', views.mark_assistance_paid, name='mark_assistance_paid'),
+    
+    # Settings APIs
+    path('api/manager/settings/update/', views.update_system_settings, name='update_system_settings'),
     
     # Visits APIs
     path('api/visits/create/', views.create_visit, name='create_visit'),
