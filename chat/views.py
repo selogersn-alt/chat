@@ -2307,7 +2307,12 @@ def list_visits(request):
         if request.user.role == User.RoleEnum.MANAGER or request.user.is_superuser:
             visits = Visit.objects.all().select_related('agent', 'conversation')
         else:
-            visits = Visit.objects.filter(agent=request.user).select_related('agent', 'conversation')
+            visits = Visit.objects.filter(
+                Q(agent=request.user) |
+                Q(conversation__assigned_to=request.user) |
+                Q(conversation__participants=request.user) |
+                Q(conversation__status=Conversation.StatusEnum.PENDING)
+            ).distinct().select_related('agent', 'conversation')
             
         visits_data = []
         for v in visits.order_by('-visit_date'):  # Descending: newest / upcoming first
