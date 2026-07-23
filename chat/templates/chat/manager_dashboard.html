@@ -923,8 +923,8 @@
                                     <option value="COMPLETED" ${v.status === 'COMPLETED' ? 'selected' : ''}>Effectuée</option>
                                     <option value="CANCELED" ${v.status === 'CANCELED' ? 'selected' : ''}>Annulée</option>
                                 </select>
-                                ${v.conversation_id ? `
-                                <a href="/chat/${v.conversation_id}/" target="_blank" class="text-center px-2 py-1 bg-violet-50 hover:bg-violet-100 text-violet-700 font-bold border border-violet-100 rounded-lg text-[10px] transition-colors block w-full">
+                                 ${v.conversation_id ? `
+                                <a href="/dashboard/?conv_id=${v.conversation_id}" target="_blank" class="text-center px-2 py-1 bg-violet-50 hover:bg-violet-100 text-violet-700 font-bold border border-violet-100 rounded-lg text-[10px] transition-colors block w-full">
                                     💬 Ouvrir Chat
                                 </a>
                                 ` : ''}
@@ -932,7 +932,7 @@
                         </td>
                     </tr>
                 `;
-
+ 
                 mobileHtml += `
                     <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col gap-3">
                         <div class="flex items-center justify-between border-b border-gray-100 pb-2">
@@ -954,7 +954,7 @@
                                 <option value="CANCELED" ${v.status === 'CANCELED' ? 'selected' : ''}>Annulée</option>
                             </select>
                             ${v.conversation_id ? `
-                            <a href="/chat/${v.conversation_id}/" target="_blank" class="px-4 py-2 bg-violet-50 hover:bg-violet-100 text-violet-700 font-bold border border-violet-100 rounded-xl text-xs text-center whitespace-nowrap">
+                            <a href="/dashboard/?conv_id=${v.conversation_id}" target="_blank" class="px-4 py-2 bg-violet-50 hover:bg-violet-100 text-violet-700 font-bold border border-violet-100 rounded-xl text-xs text-center whitespace-nowrap">
                                 💬 Chat
                             </a>
                             ` : ''}
@@ -1469,7 +1469,7 @@
                                 <span class="px-2 py-1 rounded-md text-[10px] font-bold ${badgeColor}">${c.status}</span>
                             </td>
                             <td class="p-3">
-                                <a href="/chat/${c.id}/" target="_blank" class="px-3 py-1.5 bg-violet-50 hover:bg-violet-100 text-violet-700 rounded-lg text-xs font-bold transition-all whitespace-nowrap border border-violet-100">
+                                <a href="/dashboard/?conv_id=${c.id}" target="_blank" class="px-3 py-1.5 bg-violet-50 hover:bg-violet-100 text-violet-700 rounded-lg text-xs font-bold transition-all whitespace-nowrap border border-violet-100">
                                     💬 Ouvrir
                                 </a>
                             </td>
@@ -1646,7 +1646,7 @@
                                 <option value="LOST" ${m.status === 'LOST' ? 'selected' : ''}>Perdu</option>
                             </select>
                             ${m.conversation_id ? `
-                            <a href="/chat/${m.conversation_id}/" target="_blank" class="text-center px-2 py-1.5 bg-violet-50 hover:bg-violet-100 text-violet-700 font-bold border border-violet-100 rounded-lg text-[10px] transition-colors block w-full">
+                            <a href="/dashboard/?conv_id=${m.conversation_id}" target="_blank" class="text-center px-2 py-1.5 bg-violet-50 hover:bg-violet-100 text-violet-700 font-bold border border-violet-100 rounded-lg text-[10px] transition-colors block w-full">
                                 💬 Ouvrir Chat
                             </a>
                             ` : ''}
@@ -1676,7 +1676,7 @@
                                 <option value="LOST" ${m.status === 'LOST' ? 'selected' : ''}>Perdu</option>
                             </select>
                             ${m.conversation_id ? `
-                            <a href="/chat/${m.conversation_id}/" target="_blank" class="px-4 py-2 bg-violet-50 hover:bg-violet-100 text-violet-700 font-bold border border-violet-100 rounded-xl text-xs text-center whitespace-nowrap">
+                            <a href="/dashboard/?conv_id=${m.conversation_id}" target="_blank" class="px-4 py-2 bg-violet-50 hover:bg-violet-100 text-violet-700 font-bold border border-violet-100 rounded-xl text-xs text-center whitespace-nowrap">
                                 💬 Chat
                             </a>
                             ` : ''}
@@ -1758,7 +1758,7 @@
                                 <option value="CANCELED" ${v.status === 'CANCELED' ? 'selected' : ''}>Annulée</option>
                             </select>
                             ${v.conversation_id ? `
-                            <a href="/chat/${v.conversation_id}/" target="_blank" class="text-center px-2 py-1.5 bg-violet-50 hover:bg-violet-100 text-violet-700 font-bold border border-violet-100 rounded-lg text-[10px] transition-colors block w-full">
+                            <a href="/dashboard/?conv_id=${v.conversation_id}" target="_blank" class="text-center px-2 py-1.5 bg-violet-50 hover:bg-violet-100 text-violet-700 font-bold border border-violet-100 rounded-lg text-[10px] transition-colors block w-full">
                                 💬 Ouvrir Chat
                             </a>
                             ` : ''}
@@ -1787,7 +1787,7 @@
                                 <option value="CANCELED" ${v.status === 'CANCELED' ? 'selected' : ''}>Annulée</option>
                             </select>
                             ${v.conversation_id ? `
-                            <a href="/chat/${v.conversation_id}/" target="_blank" class="px-4 py-2 bg-violet-50 hover:bg-violet-100 text-violet-700 font-bold border border-violet-100 rounded-xl text-xs text-center whitespace-nowrap">
+                            <a href="/dashboard/?conv_id=${v.conversation_id}" target="_blank" class="px-4 py-2 bg-violet-50 hover:bg-violet-100 text-violet-700 font-bold border border-violet-100 rounded-xl text-xs text-center whitespace-nowrap">
                                 💬 Chat
                             </a>
                             ` : ''}

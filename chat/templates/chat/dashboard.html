@@ -3648,8 +3648,17 @@ ${r.title}`);
         // When a conversation is selected on mobile, go to chat view
         const _origSelectConv = typeof selectConversation === 'function' ? selectConversation : null;
         document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const convId = urlParams.get('conv_id') || urlParams.get('conversation_id');
+            if (convId) {
+                selectConversation(convId);
+            }
             if (window.innerWidth < 768) {
-                mobileNavTo('list');
+                if (convId) {
+                    mobileNavTo('chat');
+                } else {
+                    mobileNavTo('list');
+                }
             }
         });
 
