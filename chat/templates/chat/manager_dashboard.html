@@ -57,44 +57,73 @@
         }
         .app-header {
             background: linear-gradient(135deg, #052212 0%, #0f4f2c 60%, #1b6b3e 100%);
-            box-shadow: 0 2px 20px rgba(15, 81, 50, 0.3);
+            box-shadow: 0 4px 20px rgba(15, 81, 50, 0.2);
+        }
+        /* Custom Scrollbar for Desktop */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Card lifts & animations */
+        .kpi-card {
+            transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s ease;
+        }
+        .kpi-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.05), 0 8px 16px -6px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Mobile specific card views */
+        @media (max-width: 768px) {
+            .mobile-card-list {
+                display: flex;
+                flex-direction: column;
+                gap: 1rem;
+            }
+            .desktop-table-view {
+                display: none;
+            }
         }
     </style>
 </head>
 <body class="min-h-screen flex flex-col font-sans">
 
     <!-- HEADER -->
-    <header class="app-header h-16 flex items-center justify-between px-6 z-10 text-white">
-        <div class="flex items-center gap-3">
-            <img src="{% static 'logo.png' %}" class="w-10 h-10 rounded-xl object-cover shadow-md" alt="Logo">
-            <div class="flex items-center gap-2">
-                <span class="font-extrabold text-lg tracking-wide">Loger Sénégal</span>
-                <span class="text-xs bg-white/20 text-white font-semibold px-2 py-0.5 rounded-full">Console Manager</span>
+    <header class="app-header h-16 flex items-center justify-between px-4 md:px-6 z-10 text-white flex-shrink-0">
+        <div class="flex items-center gap-2 md:gap-3">
+            <img src="{% static 'logo.png' %}" class="w-9 h-9 md:w-10 md:h-10 rounded-xl object-cover shadow-md" alt="Logo">
+            <div class="flex items-center gap-1.5">
+                <span class="font-extrabold text-sm md:text-lg tracking-wide whitespace-nowrap">Loger Sénégal</span>
+                <span class="text-[9px] md:text-xs bg-white/20 text-white font-semibold px-2 py-0.5 rounded-full whitespace-nowrap">Console Manager</span>
             </div>
         </div>
         
-        <div class="flex items-center gap-4">
-            <div class="flex items-center gap-2">
-                <div class="w-8 h-8 rounded-full bg-white/25 flex items-center justify-center font-bold text-white text-sm">
+        <div class="flex items-center gap-2 md:gap-4">
+            <div class="hidden sm:flex items-center gap-2">
+                <div class="w-7 h-7 rounded-full bg-white/25 flex items-center justify-center font-bold text-white text-xs">
                     M
                 </div>
-                <div class="hidden md:block text-left">
-                    <p class="text-xs font-semibold text-white">{{ user.first_name|default:user.username }}</p>
-                    <p class="text-[10px] text-teal-200/70">Manager connecté</p>
+                <div class="text-left">
+                    <p class="text-[11px] font-semibold text-white leading-none">{{ user.first_name|default:user.username }}</p>
+                    <p class="text-[9px] text-teal-200/70 mt-0.5">Manager</p>
                 </div>
             </div>
             
-            <div class="flex items-center gap-2">
-                <a href="{% url 'media_manager' %}" class="px-3 py-1.5 bg-forest-600 hover:bg-forest-500 text-xs font-bold rounded-xl transition-all shadow-sm" title="Gérer les fichiers">
-                    📦 Médias
+            <div class="flex items-center gap-1.5">
+                <a href="{% url 'media_manager' %}" class="px-2.5 py-1.5 bg-forest-600 hover:bg-forest-500 text-[10px] md:text-xs font-bold rounded-xl transition-all shadow-sm" title="Gérer les fichiers">
+                    📦 Fichiers
                 </a>
-                <a href="{% url 'dashboard' %}" class="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-xs font-bold rounded-xl transition-all" title="Accéder à la console Agent">
+                <a href="{% url 'dashboard' %}" class="px-2.5 py-1.5 bg-white/10 hover:bg-white/20 text-[10px] md:text-xs font-bold rounded-xl transition-all whitespace-nowrap" title="Accéder à la console Agent">
                     Console Agent ➔
                 </a>
             </div>
             
-            <a href="{% url 'logout' %}" class="p-2 text-white/50 hover:text-white hover:bg-white/10 rounded-xl transition-all duration-200" title="Se déconnecter">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+            <a href="{% url 'logout' %}" class="p-1.5 md:p-2 text-white/50 hover:text-white hover:bg-white/10 rounded-xl transition-all duration-200" title="Se déconnecter">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4.5 h-4.5 md:w-5 md:h-5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M19 12H9m10 0l-3-3m3 3l-3 3" />
                 </svg>
             </a>
@@ -102,99 +131,90 @@
     </header>
 
     <!-- CONTAINER -->
-    <div class="flex-1 max-w-7xl w-full mx-auto p-6 flex flex-col gap-6">
+    <div class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 flex flex-col gap-6 overflow-x-hidden">
         
         <!-- NAVIGATION TABS -->
-        <div class="flex border-b border-gray-200 gap-6">
-            <button onclick="switchTab('stats')" id="tab-stats-btn" class="py-3 text-sm font-bold border-b-2 border-forest-600 text-forest-600 transition-all">
-                📊 Statistiques de Performance
+        <div class="flex border-b border-gray-200 gap-4 md:gap-6 overflow-x-auto hide-scrollbar whitespace-nowrap -mx-4 px-4 md:mx-0 md:px-0 scroll-smooth">
+            <button onclick="switchTab('stats')" id="tab-stats-btn" class="py-3 text-xs md:text-sm font-bold border-b-2 border-forest-600 text-forest-600 transition-all flex-shrink-0">
+                📊 Performance &amp; Rapports
             </button>
-            <button onclick="switchTab('agents')" id="tab-agents-btn" class="py-3 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-forest-600 transition-all">
-                👥 Gestion des Agents
+            <button onclick="switchTab('agents')" id="tab-agents-btn" class="py-3 text-xs md:text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-forest-600 transition-all flex-shrink-0">
+                👥 Conseillers
             </button>
-            <button onclick="switchTab('delegate')" id="tab-delegate-btn" class="py-3 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-forest-600 transition-all">
-                🔄 Attribution des Tâches
+            <button onclick="switchTab('delegate')" id="tab-delegate-btn" class="py-3 text-xs md:text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-forest-600 transition-all flex-shrink-0">
+                🔄 Assignation
             </button>
-            <button onclick="switchTab('matches')" id="tab-matches-btn" class="py-3 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-forest-600 transition-all">
-                🤝 Suivi des Visites
+            <button onclick="switchTab('matches')" id="tab-matches-btn" class="py-3 text-xs md:text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-forest-600 transition-all flex-shrink-0">
+                📅 Suivi Visites
             </button>
-            <button onclick="switchTab('templates')" id="tab-templates-btn" class="py-3 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-forest-600 transition-all">
-                💬 Modèles de Réponses
+            <button onclick="switchTab('templates')" id="tab-templates-btn" class="py-3 text-xs md:text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-forest-600 transition-all flex-shrink-0">
+                💬 Modèles SMS/WA
             </button>
-            <button onclick="switchTab('help')" id="tab-help-btn" class="py-3 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-forest-600 transition-all">
+            <button onclick="switchTab('help')" id="tab-help-btn" class="py-3 text-xs md:text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-forest-600 transition-all flex-shrink-0">
                 ℹ️ Centre d'Aide
             </button>
         </div>
 
         <!-- TAB CONTENT: STATS -->
         <div id="tab-stats" class="tab-pane flex flex-col gap-6">
-            <!-- DATE FILTER ROW -->
-            <div class="flex justify-between items-center bg-white px-6 py-4 rounded-2xl border border-gray-100 shadow-sm">
-                <div class="flex flex-col">
-                    <h4 class="font-bold text-gray-800 text-sm">Filtre des Statistiques</h4>
-                    <p class="text-[10px] text-gray-400">Sélectionnez la période d'analyse des données de performance.</p>
+            <!-- CONTROL CENTER (MERGED date filters, export and settings) -->
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 md:p-6 flex flex-col gap-6">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-gray-150 pb-4">
+                    <div>
+                        <h4 class="font-extrabold text-gray-800 text-sm md:text-base">🎛️ Centre de Contrôle &amp; Actions</h4>
+                        <p class="text-[10px] md:text-xs text-gray-400">Gérez la période d'analyse, exportez les données et configurez les frais d'assistance.</p>
+                    </div>
                 </div>
-                <div class="flex items-center gap-2">
-                    <span class="text-xs text-gray-500 font-semibold">Période :</span>
-                    <select id="statsDateFilter" onchange="loadDashboardData()" class="bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5 text-xs text-gray-700 font-semibold focus:outline-none focus:ring-1 focus:ring-forest-500 cursor-pointer">
-                        <option value="all" selected>Toute la période</option>
-                        <option value="today">Aujourd'hui</option>
-                        <option value="yesterday">Hier</option>
-                        <option value="7days">7 derniers jours</option>
-                        <option value="30days">30 derniers jours</option>
-                    </select>
-                </div>
-            </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Column 1: Filter Period -->
+                    <div class="flex flex-col gap-2 bg-gray-50/50 p-4 rounded-xl border border-gray-100">
+                        <label class="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Période d'analyse</label>
+                        <select id="statsDateFilter" onchange="loadDashboardData()" class="w-full bg-white border border-gray-250 rounded-xl px-3 py-2 text-xs text-gray-700 font-semibold focus:outline-none focus:ring-1 focus:ring-forest-500 cursor-pointer">
+                            <option value="all" selected>Toute la période</option>
+                            <option value="today">Aujourd'hui</option>
+                            <option value="yesterday">Hier</option>
+                            <option value="7days">7 derniers jours</option>
+                            <option value="30days">30 derniers jours</option>
+                        </select>
+                    </div>
 
-            <!-- EXPORT CRM ROW -->
-            <div class="flex justify-between items-center bg-white px-6 py-4 rounded-2xl border border-gray-100 shadow-sm">
-                <div class="flex flex-col">
-                    <h4 class="font-bold text-gray-800 text-sm">Extraction CRM (Excel/CSV)</h4>
-                    <p class="text-[10px] text-gray-400">Exportez les données clients pour vos campagnes de prospection.</p>
-                </div>
-                <div class="flex items-center gap-3">
-                    <div class="flex items-center gap-2">
-                        <span class="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Du :</span>
-                        <input type="date" id="exportStartDate" class="bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5 text-xs text-gray-700 font-semibold focus:outline-none focus:ring-1 focus:ring-forest-500 cursor-pointer">
+                    <!-- Column 2: Export Data -->
+                    <div class="flex flex-col gap-2 bg-gray-50/50 p-4 rounded-xl border border-gray-100">
+                        <label class="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Extraction CRM (Excel/CSV)</label>
+                        <div class="flex flex-col sm:flex-row gap-2">
+                            <input type="date" id="exportStartDate" class="w-full sm:w-1/2 bg-white border border-gray-250 rounded-xl px-3 py-2 text-xs text-gray-700 font-semibold focus:outline-none focus:ring-1 focus:ring-forest-500 cursor-pointer" title="Du">
+                            <input type="date" id="exportEndDate" class="w-full sm:w-1/2 bg-white border border-gray-250 rounded-xl px-3 py-2 text-xs text-gray-700 font-semibold focus:outline-none focus:ring-1 focus:ring-forest-500 cursor-pointer" title="Au">
+                        </div>
+                        <button onclick="triggerCRMExport()" class="w-full mt-1 px-4 py-2 bg-forest-600 hover:bg-forest-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center justify-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                            </svg>
+                            Exporter les leads
+                        </button>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <span class="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Au :</span>
-                        <input type="date" id="exportEndDate" class="bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5 text-xs text-gray-700 font-semibold focus:outline-none focus:ring-1 focus:ring-forest-500 cursor-pointer">
-                    </div>
-                    <button onclick="triggerCRMExport()" class="px-4 py-1.5 bg-forest-600 hover:bg-forest-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
-                          <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-                        </svg>
-                        Exporter Excel
-                    </button>
-                </div>
-            </div>
 
-            {% if user.is_superuser %}
-            <!-- SETTINGS ROW -->
-            <div class="flex justify-between items-center bg-white px-6 py-4 rounded-2xl border border-gray-100 shadow-sm">
-                <div class="flex flex-col">
-                    <h4 class="font-bold text-gray-800 text-sm">Paramètres d'Assistance</h4>
-                    <p class="text-[10px] text-gray-400">Configurez les frais d'assistance par défaut facturés aux clients.</p>
-                </div>
-                <div class="flex items-center gap-3">
-                    <div class="flex items-center gap-2">
-                        <span class="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Frais (CFA) :</span>
-                        <input type="number" id="settingAssistanceFee" class="bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5 text-xs text-gray-700 font-semibold focus:outline-none focus:ring-1 focus:ring-forest-500 w-24">
+                    <!-- Column 3: Settings (Superuser only) -->
+                    <div class="flex flex-col gap-2 bg-gray-50/50 p-4 rounded-xl border border-gray-100 {% if not user.is_superuser %}opacity-50 pointer-events-none{% endif %}">
+                        <label class="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Frais d'Assistance (CFA)</label>
+                        <div class="flex gap-2">
+                            <input type="number" id="settingAssistanceFee" {% if not user.is_superuser %}disabled{% endif %} class="flex-1 bg-white border border-gray-250 rounded-xl px-3 py-2 text-xs text-gray-700 font-semibold focus:outline-none focus:ring-1 focus:ring-forest-500">
+                            {% if user.is_superuser %}
+                            <button onclick="updateSettingsFee()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-1.5 whitespace-nowrap">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                </svg>
+                                Sauver
+                            </button>
+                            {% endif %}
+                        </div>
                     </div>
-                    <button onclick="updateSettingsFee()" class="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                        </svg>
-                        Enregistrer
-                    </button>
                 </div>
             </div>
-            {% endif %}
 
             <!-- STATS CARDS -->
             <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
-                <div onclick="openConversationsListModal('CLIENTS')" class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between cursor-pointer hover:shadow-md transition-shadow">
+                <div onclick="openConversationsListModal('CLIENTS')" class="kpi-card bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between cursor-pointer hover:shadow-md transition-shadow">
                     <div>
                         <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Clients Assistés</p>
                         <h3 class="text-3xl font-extrabold text-gray-800 mt-1" id="stat-total-clients">-</h3>
@@ -206,7 +226,7 @@
                     </div>
                 </div>
 
-                <div onclick="openConversationsListModal('ACTIVE')" class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between cursor-pointer hover:shadow-md transition-shadow">
+                <div onclick="openConversationsListModal('ACTIVE')" class="kpi-card bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between cursor-pointer hover:shadow-md transition-shadow">
                     <div>
                         <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Discussions Actives</p>
                         <h3 class="text-3xl font-extrabold text-forest-600 mt-1" id="stat-active-convs">-</h3>
@@ -218,7 +238,7 @@
                     </div>
                 </div>
 
-                <div onclick="openConversationsListModal('PENDING')" class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between cursor-pointer hover:shadow-md transition-shadow">
+                <div onclick="openConversationsListModal('PENDING')" class="kpi-card bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between cursor-pointer hover:shadow-md transition-shadow">
                     <div>
                         <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">En Attente</p>
                         <h3 class="text-3xl font-extrabold text-amber-500 mt-1" id="stat-pending-convs">-</h3>
@@ -230,7 +250,7 @@
                     </div>
                 </div>
 
-                <div onclick="openConversationsListModal('CLOSED')" class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between cursor-pointer hover:shadow-md transition-shadow">
+                <div onclick="openConversationsListModal('CLOSED')" class="kpi-card bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between cursor-pointer hover:shadow-md transition-shadow">
                     <div>
                         <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Discussions Clôturées</p>
                         <h3 class="text-3xl font-extrabold text-gray-500 mt-1" id="stat-closed-convs">-</h3>
@@ -243,7 +263,7 @@
                     </div>
                 </div>
 
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+                <div class="kpi-card bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
                     <div>
                         <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Revenus Assistance</p>
                         <h3 class="text-3xl font-extrabold text-forest-600 mt-1"><span id="stat-assistance-revenue">0</span> <span class="text-lg text-forest-400">CFA</span></h3>
@@ -258,7 +278,7 @@
 
             <!-- PARTNERS & SLA CARDS (SECOND ROW) -->
             <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+                <div class="kpi-card bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
                     <div>
                         <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Visites Transmises</p>
                         <h3 class="text-3xl font-extrabold text-blue-600 mt-1" id="stat-total-matches">-</h3>
@@ -270,7 +290,7 @@
                     </div>
                 </div>
 
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+                <div class="kpi-card bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
                     <div>
                         <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Visites Gagnées (Ventes)</p>
                         <h3 class="text-3xl font-extrabold text-emerald-600 mt-1" id="stat-won-matches">-</h3>
@@ -282,7 +302,7 @@
                     </div>
                 </div>
 
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+                <div class="kpi-card bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
                     <div>
                         <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Taux de Réussite</p>
                         <h3 class="text-3xl font-extrabold text-indigo-600 mt-1" id="stat-conversion-rate">-</h3>
@@ -294,7 +314,7 @@
                     </div>
                 </div>
 
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+                <div class="kpi-card bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
                     <div>
                         <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Violations de SLA</p>
                         <h3 class="text-3xl font-extrabold text-rose-600 mt-1" id="stat-sla-violations">-</h3>
@@ -306,7 +326,7 @@
                     </div>
                 </div>
 
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+                <div class="kpi-card bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
                     <div>
                         <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Satisfaction</p>
                         <h3 class="text-3xl font-extrabold text-amber-500 mt-1"><span id="stat-avg-satisfaction">-</span><span class="text-lg text-amber-300">/5</span></h3>
@@ -343,7 +363,7 @@
                         </button>
                     </div>
                 </div>
-                <div class="overflow-x-auto">
+                <div class="overflow-x-auto hidden md:block">
                     <table class="w-full text-left border-collapse">
                         <thead>
                             <tr class="bg-gray-50 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
@@ -363,6 +383,10 @@
                         </tbody>
                     </table>
                 </div>
+                <!-- Mobile Card View Alternative -->
+                <div id="globalVisitsMobileList" class="md:hidden p-4 bg-gray-50/30 flex flex-col gap-4">
+                    <div class="text-center text-gray-400 text-xs py-4">Chargement des visites...</div>
+                </div>
             </div>
             <!-- RECENT SURVEYS (NEW) -->
             <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mt-8">
@@ -372,7 +396,7 @@
                         <p class="text-xs text-gray-500 mt-1">Dernières évaluations de satisfaction laissées par les clients.</p>
                     </div>
                 </div>
-                <div class="overflow-x-auto">
+                <div class="overflow-x-auto hidden md:block">
                     <table class="w-full text-left border-collapse">
                         <thead>
                             <tr class="bg-gray-50 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
@@ -389,6 +413,10 @@
                             </tr>
                         </tbody>
                     </table>
+                </div>
+                <!-- Mobile Card View Alternative -->
+                <div id="recentSurveysMobileList" class="md:hidden p-4 bg-gray-50/30 flex flex-col gap-4">
+                    <div class="text-center text-gray-400 text-xs py-4">Chargement des avis...</div>
                 </div>
             </div>
 
@@ -451,19 +479,25 @@
 
             <!-- Agents List Table -->
             <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="bg-gray-50 border-b border-gray-150 text-xs font-bold text-gray-500 uppercase">
-                            <th class="p-4">Nom Complet</th>
-                            <th class="p-4">Identifiant</th>
-                            <th class="p-4">Téléphone</th>
-                            <th class="p-4">Statut</th>
-                        </tr>
-                    </thead>
-                    <tbody id="agents-table-body" class="divide-y divide-gray-100 text-sm text-gray-700">
-                        <!-- Agents will be injected here -->
-                    </tbody>
-                </table>
+                <div class="overflow-x-auto hidden md:block">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-50 border-b border-gray-150 text-xs font-bold text-gray-500 uppercase">
+                                <th class="p-4">Nom Complet</th>
+                                <th class="p-4">Identifiant</th>
+                                <th class="p-4">Téléphone</th>
+                                <th class="p-4">Statut</th>
+                            </tr>
+                        </thead>
+                        <tbody id="agents-table-body" class="divide-y divide-gray-100 text-sm text-gray-700">
+                            <!-- Agents will be injected here -->
+                        </tbody>
+                    </table>
+                </div>
+                <!-- Mobile List view -->
+                <div id="agents-mobile-list" class="md:hidden p-4 bg-gray-50/30 flex flex-col gap-4">
+                    <div class="text-center text-gray-400 text-xs py-4">Chargement des agents...</div>
+                </div>
             </div>
         </div>
 
@@ -476,21 +510,27 @@
 
             <!-- Conversations List Table -->
             <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="bg-gray-50 border-b border-gray-150 text-xs font-bold text-gray-500 uppercase">
-                            <th class="p-4">Client</th>
-                            <th class="p-4">Sujet</th>
-                            <th class="p-4">Canal</th>
-                            <th class="p-4">Statut</th>
-                            <th class="p-4">Agent Actuellement Assigné</th>
-                            <th class="p-4">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="delegate-table-body" class="divide-y divide-gray-100 text-sm text-gray-700">
-                        <!-- Conversations will be injected here -->
-                    </tbody>
-                </table>
+                <div class="overflow-x-auto hidden md:block">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-50 border-b border-gray-150 text-xs font-bold text-gray-500 uppercase">
+                                <th class="p-4">Client</th>
+                                <th class="p-4">Sujet</th>
+                                <th class="p-4">Canal</th>
+                                <th class="p-4">Statut</th>
+                                <th class="p-4">Agent Actuellement Assigné</th>
+                                <th class="p-4">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="delegate-table-body" class="divide-y divide-gray-100 text-sm text-gray-700">
+                            <!-- Conversations will be injected here -->
+                        </tbody>
+                    </table>
+                </div>
+                <!-- Mobile List view -->
+                <div id="delegate-mobile-list" class="md:hidden p-4 bg-gray-50/30 flex flex-col gap-4">
+                    <div class="text-center text-gray-400 text-xs py-4">Chargement des conversations...</div>
+                </div>
             </div>
         </div>
 
@@ -524,49 +564,61 @@
 
             <!-- PARTNER MATCHES TABLE -->
             <div id="container-matches" class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="bg-gray-50 border-b border-gray-150 text-xs font-bold text-gray-500 uppercase">
-                            <th class="p-4">Date</th>
-                            <th class="p-4">Client</th>
-                            <th class="p-4">Visiteur</th>
-                            <th class="p-4">Partenaire</th>
-                            <th class="p-4">Bien / Zone</th>
-                            <th class="p-4">Budget (FCFA)</th>
-                            <th class="p-4">Statut</th>
-                            <th class="p-4">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="matches-table-body" class="divide-y divide-gray-100 text-sm text-gray-700">
-                        <!-- Matches will be injected here -->
-                    </tbody>
-                </table>
+                <div class="overflow-x-auto hidden md:block">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-50 border-b border-gray-150 text-xs font-bold text-gray-500 uppercase">
+                                <th class="p-4">Date</th>
+                                <th class="p-4">Client</th>
+                                <th class="p-4">Visiteur</th>
+                                <th class="p-4">Partenaire</th>
+                                <th class="p-4">Bien / Zone</th>
+                                <th class="p-4">Budget (FCFA)</th>
+                                <th class="p-4">Statut</th>
+                                <th class="p-4">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="matches-table-body" class="divide-y divide-gray-100 text-sm text-gray-700">
+                            <!-- Matches will be injected here -->
+                        </tbody>
+                    </table>
+                </div>
+                <!-- Mobile List view -->
+                <div id="matches-mobile-list" class="md:hidden p-4 bg-gray-50/30 flex flex-col gap-4">
+                    <div class="text-center text-gray-400 text-xs py-4">Chargement des visites partenaires...</div>
+                </div>
             </div>
 
             <!-- DIRECT VISITS TABLE -->
             <div id="container-visits" class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hidden">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="bg-gray-50 border-b border-gray-150 text-xs font-bold text-gray-500 uppercase">
-                            <th class="p-4">Date Création</th>
-                            <th class="p-4">Date Prévue</th>
-                            <th class="p-4">Client / Prospect</th>
-                            <th class="p-4">Agent en charge</th>
-                            <th class="p-4">Bien / Titre</th>
-                            <th class="p-4">Notes</th>
-                            <th class="p-4">Statut</th>
-                            <th class="p-4">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="visits-table-body" class="divide-y divide-gray-100 text-sm text-gray-700">
-                        <!-- Visits will be injected here -->
-                    </tbody>
-                </table>
+                <div class="overflow-x-auto hidden md:block">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-50 border-b border-gray-150 text-xs font-bold text-gray-500 uppercase">
+                                <th class="p-4">Date Création</th>
+                                <th class="p-4">Date Prévue</th>
+                                <th class="p-4">Client / Prospect</th>
+                                <th class="p-4">Agent en charge</th>
+                                <th class="p-4">Bien / Titre</th>
+                                <th class="p-4">Notes</th>
+                                <th class="p-4">Statut</th>
+                                <th class="p-4">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="visits-table-body" class="divide-y divide-gray-100 text-sm text-gray-700">
+                            <!-- Visits will be injected here -->
+                        </tbody>
+                    </table>
+                </div>
+                <!-- Mobile List view -->
+                <div id="visits-mobile-list" class="md:hidden p-4 bg-gray-50/30 flex flex-col gap-4">
+                    <div class="text-center text-gray-400 text-xs py-4">Chargement des visites directes...</div>
+                </div>
             </div>
         </div>
 
         <!-- TAB CONTENT: TEMPLATES -->
-        <div id="tab-templates" class="tab-pane hidden flex-col gap-6">
+        <div id="tab-templates" class="tab-pane hidden flex flex-col gap-6">
             <div class="flex justify-between items-end">
                 <div>
                     <h3 class="text-xl font-bold text-gray-800">Modèles de Réponses</h3>
@@ -579,7 +631,7 @@
             </div>
 
             <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
-                <div class="overflow-x-auto">
+                <div class="overflow-x-auto hidden md:block">
                     <table class="w-full text-left border-collapse">
                         <thead>
                             <tr class="bg-gray-50/80 border-b border-gray-200">
@@ -593,6 +645,10 @@
                             <!-- Templates injected here via JS -->
                         </tbody>
                     </table>
+                </div>
+                <!-- Mobile List view -->
+                <div id="templates-mobile-list" class="md:hidden p-4 bg-gray-50/30 flex flex-col gap-4">
+                    <div class="text-center text-gray-400 text-xs py-4">Chargement des modèles...</div>
                 </div>
             </div>
         </div>
@@ -669,8 +725,8 @@
     </div>
 
     <!-- MODAL: CONVERSATIONS LIST -->
-    <div id="conversations-list-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4 z-50 transition-all">
-        <div class="bg-white w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden transform scale-95 transition-all flex flex-col max-h-[90vh]">
+    <div id="conversations-list-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-0 md:p-4 z-50 transition-all">
+        <div class="bg-white w-full h-full md:h-auto md:max-w-4xl rounded-none md:rounded-3xl shadow-2xl overflow-hidden transform scale-95 transition-all flex flex-col max-h-screen md:max-h-[90vh]">
             <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
                 <div>
                     <h3 class="font-bold text-gray-800 text-lg" id="convListModalTitle">Liste des Discussions</h3>
@@ -679,32 +735,34 @@
                 <button onclick="closeConversationsListModal()" class="text-gray-400 hover:text-gray-600 text-2xl font-bold transition-colors">&times;</button>
             </div>
             <div class="p-6 overflow-y-auto flex-1">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="bg-gray-50 border-b border-gray-150 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                            <th class="p-3">Client</th>
-                            <th class="p-3">Agent</th>
-                            <th class="p-3">Dernier Msg</th>
-                            <th class="p-3">Statut</th>
-                            <th class="p-3">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="conv-list-modal-body" class="divide-y divide-gray-100 text-sm text-gray-700">
-                        <!-- Filled by JS -->
-                    </tbody>
-                </table>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse min-w-[600px]">
+                        <thead>
+                            <tr class="bg-gray-50 border-b border-gray-150 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                                <th class="p-3">Client</th>
+                                <th class="p-3">Agent</th>
+                                <th class="p-3">Dernier Msg</th>
+                                <th class="p-3">Statut</th>
+                                <th class="p-3">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="conv-list-modal-body" class="divide-y divide-gray-100 text-sm text-gray-700">
+                            <!-- Filled by JS -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- MODAL: CREATE AGENT -->
-    <div id="create-agent-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4 z-50 transition-all">
-        <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden transform scale-95 transition-all">
-            <div class="p-6 border-b border-gray-100 flex justify-between items-center">
+    <div id="create-agent-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-0 md:p-4 z-50 transition-all">
+        <div class="bg-white w-full h-full md:h-auto md:max-w-md rounded-none md:rounded-3xl shadow-2xl overflow-hidden transform scale-95 transition-all flex flex-col max-h-screen md:max-h-[90vh]">
+            <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
                 <h3 class="font-bold text-gray-800 text-lg">Nouveau Conseiller Agent</h3>
                 <button onclick="closeCreateAgentModal()" class="text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button>
             </div>
-            <form onsubmit="submitCreateAgent(event)" class="p-6 flex flex-col gap-4">
+            <form onsubmit="submitCreateAgent(event)" class="p-6 flex flex-col gap-4 overflow-y-auto flex-1">
                 <div>
                     <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5">Identifiant de connexion *</label>
                     <input type="text" id="new-agent-username" required class="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-forest-500">
@@ -727,7 +785,7 @@
                     <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5">Téléphone WhatsApp</label>
                     <input type="text" id="new-agent-phone" placeholder="ex: 221771234567" class="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-forest-500">
                 </div>
-                <button type="submit" class="w-full py-3 bg-forest-600 hover:bg-forest-700 text-white font-bold rounded-xl text-sm transition-all mt-2">
+                <button type="submit" class="w-full py-3 bg-forest-600 hover:bg-forest-700 text-white font-bold rounded-xl text-sm transition-all mt-2 flex-shrink-0">
                     Créer le profil Agent
                 </button>
             </form>
@@ -799,6 +857,7 @@
         
         function renderFilteredGlobalVisits() {
             const tbody = document.getElementById('globalVisitsTableBody');
+            const mobileList = document.getElementById('globalVisitsMobileList');
             const agentFilter = document.getElementById('globalVisitsAgentFilter').value;
             const statusFilter = document.getElementById('globalVisitsStatusFilter').value;
             
@@ -807,18 +866,22 @@
             if (statusFilter !== 'ALL') filtered = filtered.filter(v => v.status === statusFilter);
             
             if (filtered.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-gray-400 text-sm">Aucune visite trouvée.</td></tr>';
+                const emptyHtml = '<tr><td colspan="7" class="p-8 text-center text-gray-400 text-sm">Aucune visite trouvée.</td></tr>';
+                const emptyMobile = '<div class="text-center text-gray-400 text-xs py-6 bg-white rounded-2xl border border-gray-100">Aucune visite trouvée.</div>';
+                if (tbody) tbody.innerHTML = emptyHtml;
+                if (mobileList) mobileList.innerHTML = emptyMobile;
                 return;
             }
             
             let html = '';
+            let mobileHtml = '';
             filtered.forEach(v => {
                 const d = new Date(v.visit_date);
                 const ds = d.toLocaleDateString('fr-FR') + ' à ' + d.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
                 
-                let badgeClass = 'bg-yellow-100 text-yellow-800';
-                if(v.status === 'COMPLETED') badgeClass = 'bg-green-100 text-green-800';
-                if(v.status === 'CANCELED') badgeClass = 'bg-red-100 text-red-800';
+                let badgeClass = 'bg-yellow-100 text-yellow-800 border border-yellow-200';
+                if(v.status === 'COMPLETED') badgeClass = 'bg-green-100 text-green-800 border border-green-200';
+                if(v.status === 'CANCELED') badgeClass = 'bg-red-100 text-red-800 border border-red-200';
                 
                 let statusDisplay = v.status;
                 if(v.status === 'PLANNED') statusDisplay = 'Planifiée';
@@ -868,8 +931,36 @@
                         </td>
                     </tr>
                 `;
+
+                mobileHtml += `
+                    <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col gap-3">
+                        <div class="flex items-center justify-between border-b border-gray-100 pb-2">
+                            <span class="text-[11px] font-semibold text-gray-400">📅 ${ds}</span>
+                            <span class="px-2 py-0.5 rounded text-[9px] font-bold ${badgeClass}">${statusDisplay}</span>
+                        </div>
+                        <div class="flex flex-col gap-1 text-xs">
+                            <div><span class="text-gray-450">Agent :</span> <span class="font-bold text-gray-800">${v.agent_name}</span></div>
+                            <div><span class="text-gray-455">Client :</span> <span class="font-bold text-gray-900">${v.client_name || '-'} (${v.client_phone || '-'})</span></div>
+                            <div><span class="text-gray-450">Bien :</span> <span class="text-gray-800">${v.property_title}</span></div>
+                            ${v.notes ? `<div class="mt-1 p-2 bg-indigo-50/50 rounded-xl text-[11px] text-indigo-700 italic">💬 Note: ${v.notes}</div>` : ''}
+                        </div>
+                        <div class="flex gap-2 items-center mt-1 pt-2 border-t border-gray-100">
+                            <select onchange="updateGlobalVisitStatus('${v.id}', this.value)" class="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-2.5 py-2 text-xs text-gray-700 focus:outline-none">
+                                <option value="PLANNED" ${v.status === 'PLANNED' ? 'selected' : ''}>Planifiée</option>
+                                <option value="COMPLETED" ${v.status === 'COMPLETED' ? 'selected' : ''}>Effectuée</option>
+                                <option value="CANCELED" ${v.status === 'CANCELED' ? 'selected' : ''}>Annulée</option>
+                            </select>
+                            ${v.conv_id ? `
+                            <a href="/chat/${v.conv_id}/" target="_blank" class="px-4 py-2 bg-forest-50 hover:bg-forest-100 text-forest-700 rounded-xl text-xs font-bold border border-forest-100 text-center whitespace-nowrap">
+                                💬 Chat
+                            </a>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
             });
-            tbody.innerHTML = html;
+            if (tbody) tbody.innerHTML = html;
+            if (mobileList) mobileList.innerHTML = mobileHtml;
         }
 
         function updateGlobalVisitStatus(visitId, status) {
@@ -927,16 +1018,20 @@
 
                     // Render recent surveys
                     const surveysTbody = document.getElementById('recentSurveysTableBody');
+                    const surveysMobileList = document.getElementById('recentSurveysMobileList');
                     if (surveysTbody) {
                         surveysTbody.innerHTML = '';
+                        if (surveysMobileList) surveysMobileList.innerHTML = '';
+                        
                         if (data.recent_surveys && data.recent_surveys.length > 0) {
+                            let mobileHtml = '';
                             data.recent_surveys.forEach(survey => {
                                 const tr = document.createElement('tr');
                                 tr.className = 'hover:bg-gray-50/50 transition-colors';
                                 tr.innerHTML = `
                                     <td class="p-4 font-medium text-gray-800">${survey.date}</td>
                                     <td class="p-4 font-bold text-gray-900">${survey.client_name}</td>
-                                    <td class="p-4 text-gray-600">${survey.agent_name}</td>
+                                    <td class="p-4 text-gray-650">${survey.agent_name}</td>
                                     <td class="p-4 text-center">
                                         <span class="inline-flex items-center gap-1 bg-amber-50 text-amber-600 px-2 py-1 rounded-lg border border-amber-100 font-black text-sm">
                                             ${survey.rating}
@@ -948,9 +1043,24 @@
                                     </td>
                                 `;
                                 surveysTbody.appendChild(tr);
+
+                                mobileHtml += `
+                                    <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col gap-2">
+                                        <div class="flex items-center justify-between">
+                                            <span class="font-bold text-gray-900 text-xs">${survey.client_name}</span>
+                                            <span class="inline-flex items-center gap-1 bg-amber-50 text-amber-600 px-2 py-0.5 rounded-lg border border-amber-100 font-extrabold text-xs">
+                                                ${survey.rating} ★
+                                            </span>
+                                        </div>
+                                        <div class="text-[10px] text-gray-400">Pour : <span class="font-semibold">${survey.agent_name}</span> • ${survey.date}</div>
+                                        ${survey.comment ? `<p class="text-xs text-gray-600 italic mt-1 bg-gray-50 p-2.5 rounded-xl border border-gray-100 border-dashed">"${survey.comment}"</p>` : '<span class="text-gray-300 text-xs italic">Aucun commentaire</span>'}
+                                    </div>
+                                `;
                             });
+                            if (surveysMobileList) surveysMobileList.innerHTML = mobileHtml;
                         } else {
                             surveysTbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-gray-400 text-sm">Aucun avis reçu pour cette période.</td></tr>`;
+                            if (surveysMobileList) surveysMobileList.innerHTML = `<div class="text-center text-gray-400 text-xs py-6 bg-white rounded-2xl border border-gray-100">Aucun avis reçu pour cette période.</div>`;
                         }
                     }
                     document.getElementById('stat-won-matches').textContent = data.won_matches || '0';
@@ -1100,18 +1210,23 @@
         // TABLE RENDERING
         function renderAgentsTable() {
             const tbody = document.getElementById('agents-table-body');
+            const mobileList = document.getElementById('agents-mobile-list');
             let html = '';
+            let mobileHtml = '';
             
             if (agentsList.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-400">Aucun agent disponible</td></tr>';
+                const emptyHtml = '<tr><td colspan="4" class="p-4 text-center text-gray-400">Aucun agent disponible</td></tr>';
+                const emptyMobile = '<div class="text-center text-gray-400 text-xs py-6 bg-white rounded-2xl border border-gray-100">Aucun agent disponible</div>';
+                if (tbody) tbody.innerHTML = emptyHtml;
+                if (mobileList) mobileList.innerHTML = emptyMobile;
                 return;
             }
 
             agentsList.forEach(a => {
                 const name = `${a.first_name} ${a.last_name}`.trim() || 'Sans nom';
                 const statusBadge = a.is_active 
-                    ? '<span class="px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded-full font-bold">Actif</span>'
-                    : '<span class="px-2 py-0.5 text-xs bg-red-100 text-red-700 rounded-full font-bold">Inactif</span>';
+                    ? '<span class="px-2 py-0.5 text-[10px] bg-green-100 text-green-700 rounded-full font-bold border border-green-200">Actif</span>'
+                    : '<span class="px-2 py-0.5 text-[10px] bg-red-100 text-red-700 rounded-full font-bold border border-red-200">Inactif</span>';
                 
                 html += `
                     <tr class="hover:bg-gray-50/50">
@@ -1121,30 +1236,49 @@
                         <td class="p-4">${statusBadge}</td>
                     </tr>
                 `;
+
+                mobileHtml += `
+                    <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col gap-2">
+                        <div class="flex items-center justify-between border-b border-gray-100 pb-1.5">
+                            <span class="font-bold text-gray-900 text-sm">${name}</span>
+                            ${statusBadge}
+                        </div>
+                        <div class="flex flex-col gap-1 text-xs">
+                            <div><span class="text-gray-400">Identifiant :</span> <span class="font-semibold text-gray-700">${a.username}</span></div>
+                            <div><span class="text-gray-400">Téléphone :</span> <span class="font-semibold text-gray-700">${a.phone_number || 'Non renseigné'}</span></div>
+                        </div>
+                    </div>
+                `;
             });
-            tbody.innerHTML = html;
+            if (tbody) tbody.innerHTML = html;
+            if (mobileList) mobileList.innerHTML = mobileHtml;
         }
 
         function renderDelegateTable(conversations) {
             const tbody = document.getElementById('delegate-table-body');
+            const mobileList = document.getElementById('delegate-mobile-list');
             let html = '';
+            let mobileHtml = '';
             
             // Only show ACTIVE and PENDING conversations for delegation
             const delegable = conversations.filter(c => c.status !== 'CLOSED');
 
             if (delegable.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-gray-400">Aucune conversation active ou en attente à déléguer</td></tr>';
+                const emptyHtml = '<tr><td colspan="6" class="p-4 text-center text-gray-400">Aucune conversation active ou en attente à déléguer</td></tr>';
+                const emptyMobile = '<div class="text-center text-gray-400 text-xs py-6 bg-white rounded-2xl border border-gray-100">Aucune conversation active ou en attente à déléguer</div>';
+                if (tbody) tbody.innerHTML = emptyHtml;
+                if (mobileList) mobileList.innerHTML = emptyMobile;
                 return;
             }
 
             delegable.forEach(c => {
                 const channelBadge = c.is_whatsapp 
-                    ? '<span class="inline-flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full font-bold">WhatsApp</span>'
-                    : '<span class="inline-flex items-center gap-1 text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full font-bold">Web Chat</span>';
+                    ? '<span class="inline-flex items-center gap-1 text-[10px] text-green-600 bg-green-50 px-2 py-0.5 rounded-full font-bold border border-green-100">WhatsApp</span>'
+                    : '<span class="inline-flex items-center gap-1 text-[10px] text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full font-bold border border-blue-100">Web Chat</span>';
                 
                 const statusBadge = c.status === 'PENDING'
-                    ? '<span class="text-xs font-bold px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full">En attente</span>'
-                    : '<span class="text-xs font-bold px-2 py-0.5 bg-green-100 text-green-700 rounded-full">Active</span>';
+                    ? '<span class="text-[10px] font-bold px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full border border-amber-200">En attente</span>'
+                    : '<span class="text-[10px] font-bold px-2 py-0.5 bg-green-100 text-green-700 rounded-full border border-green-200">Active</span>';
 
                 // Dropdown select options for agents
                 let selectOptions = '<option value="unassigned">Non assigné</option>';
@@ -1168,8 +1302,31 @@
                         </td>
                     </tr>
                 `;
+
+                mobileHtml += `
+                    <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col gap-3">
+                        <div class="flex items-center justify-between border-b border-gray-100 pb-2">
+                            <span class="font-bold text-gray-950 text-sm">${c.client_name}</span>
+                            <div class="flex items-center gap-1.5">
+                                ${channelBadge}
+                                ${statusBadge}
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-1 text-xs">
+                            <div><span class="text-gray-400">Sujet :</span> <span class="font-semibold text-gray-700">${c.topic}</span></div>
+                            <div><span class="text-gray-400">Assigné à :</span> <span class="font-bold text-forest-700">${c.assigned_to || 'Non assigné'}</span></div>
+                        </div>
+                        <div class="flex items-center gap-2 mt-1 pt-2 border-t border-gray-100">
+                            <span class="text-xs text-gray-505 whitespace-nowrap">Réassigner :</span>
+                            <select onchange="delegateConversation('${c.id}', this)" class="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-2.5 py-2 text-xs font-semibold text-gray-700 focus:outline-none">
+                                ${selectOptions}
+                            </select>
+                        </div>
+                    </div>
+                `;
             });
-            tbody.innerHTML = html;
+            if (tbody) tbody.innerHTML = html;
+            if (mobileList) mobileList.innerHTML = mobileHtml;
         }
 
         // DELEGATE CONVERSATION API
@@ -1400,7 +1557,9 @@
             const query = document.getElementById('matchSearchInput') ? document.getElementById('matchSearchInput').value.toLowerCase().trim() : '';
             
             const tbody = document.getElementById('matches-table-body');
-            tbody.innerHTML = '';
+            const mobileList = document.getElementById('matches-mobile-list');
+            if (tbody) tbody.innerHTML = '';
+            if (mobileList) mobileList.innerHTML = '';
             
             const filtered = matches.filter(m => {
                 return (
@@ -1413,23 +1572,28 @@
             });
 
             if (filtered.length === 0) {
-                tbody.innerHTML = `
+                const emptyHtml = `
                     <tr>
                         <td colspan="8" class="p-6 text-center text-gray-400 text-xs">
                             Aucune visite partenaire correspondante pour le moment.
                         </td>
                     </tr>
                 `;
+                const emptyMobile = '<div class="text-center text-gray-400 text-xs py-6 bg-white rounded-2xl border border-gray-100">Aucune visite partenaire correspondante.</div>';
+                if (tbody) tbody.innerHTML = emptyHtml;
+                if (mobileList) mobileList.innerHTML = emptyMobile;
                 return;
             }
 
+            let html = '';
+            let mobileHtml = '';
             filtered.forEach(m => {
-                let badgeClass = 'bg-yellow-50 text-yellow-700 border border-yellow-250';
-                if (m.status === 'VISITED') badgeClass = 'bg-blue-50 text-blue-700 border border-blue-250';
-                if (m.status === 'WON') badgeClass = 'bg-emerald-50 text-emerald-700 border border-emerald-250';
-                if (m.status === 'LOST') badgeClass = 'bg-rose-50 text-rose-700 border border-rose-250';
+                let badgeClass = 'bg-yellow-50 text-yellow-750 border border-yellow-200';
+                if (m.status === 'VISITED') badgeClass = 'bg-blue-50 text-blue-755 border border-blue-200';
+                if (m.status === 'WON') badgeClass = 'bg-emerald-50 text-emerald-755 border border-emerald-200';
+                if (m.status === 'LOST') badgeClass = 'bg-rose-50 text-rose-755 border border-rose-200';
 
-                tbody.innerHTML += `
+                html += `
                     <tr class="hover:bg-gray-50/50 transition-colors border-b border-gray-100">
                         <td class="p-4 text-xs text-gray-500">${m.created_at}</td>
                         <td class="p-4 font-semibold text-gray-800">
@@ -1463,7 +1627,39 @@
                         </td>
                     </tr>
                 `;
+
+                mobileHtml += `
+                    <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col gap-2.5">
+                        <div class="flex items-center justify-between border-b border-gray-100 pb-1.5">
+                            <span class="font-bold text-gray-900 text-sm">${m.client_name}</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold ${badgeClass}">
+                                ${m.status_display}
+                            </span>
+                        </div>
+                        <div class="flex flex-col gap-1.5 text-xs text-gray-750">
+                            <div><span class="text-gray-400">Date :</span> <span class="font-medium">${m.created_at}</span></div>
+                            <div><span class="text-gray-400">Visiteur :</span> <span class="font-semibold">${m.visitor_name} (${m.visitor_phone})</span></div>
+                            <div><span class="text-gray-400">Partenaire :</span> <span class="font-semibold text-gray-800">${m.partner_name}</span></div>
+                            <div><span class="text-gray-400">Zone / Budget :</span> <span class="font-bold text-forest-750">${m.zone} • ${m.price.toLocaleString('fr-FR')} FCFA</span></div>
+                        </div>
+                        <div class="flex items-center gap-2 mt-1.5 pt-2 border-t border-gray-100">
+                            <select onchange="updateMatchStatus('${m.id}', this.value)" class="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-2.5 py-2 text-xs text-gray-700 focus:outline-none">
+                                <option value="PENDING" ${m.status === 'PENDING' ? 'selected' : ''}>En attente</option>
+                                <option value="VISITED" ${m.status === 'VISITED' ? 'selected' : ''}>Visité</option>
+                                <option value="WON" ${m.status === 'WON' ? 'selected' : ''}>Gagné (Commission)</option>
+                                <option value="LOST" ${m.status === 'LOST' ? 'selected' : ''}>Perdu</option>
+                            </select>
+                            ${m.conversation_id ? `
+                            <a href="/chat/${m.conversation_id}/" target="_blank" class="px-4 py-2 bg-forest-50 hover:bg-forest-100 text-forest-700 font-bold border border-forest-100 rounded-xl text-xs text-center whitespace-nowrap">
+                                💬 Chat
+                            </a>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
             });
+            if (tbody) tbody.innerHTML = html;
+            if (mobileList) mobileList.innerHTML = mobileHtml;
         }
 
         function filterMatchesTable(query) {
@@ -1479,7 +1675,9 @@
             const query = document.getElementById('matchSearchInput') ? document.getElementById('matchSearchInput').value.toLowerCase().trim() : '';
             
             const tbody = document.getElementById('visits-table-body');
-            tbody.innerHTML = '';
+            const mobileList = document.getElementById('visits-mobile-list');
+            if (tbody) tbody.innerHTML = '';
+            if (mobileList) mobileList.innerHTML = '';
             
             const filtered = visits.filter(v => {
                 return (
@@ -1491,22 +1689,27 @@
             });
 
             if (filtered.length === 0) {
-                tbody.innerHTML = `
+                const emptyHtml = `
                     <tr>
                         <td colspan="8" class="p-6 text-center text-gray-400 text-xs">
                             Aucune visite directe correspondante pour le moment.
                         </td>
                     </tr>
                 `;
+                const emptyMobile = '<div class="text-center text-gray-400 text-xs py-6 bg-white rounded-2xl border border-gray-100">Aucune visite directe correspondante.</div>';
+                if (tbody) tbody.innerHTML = emptyHtml;
+                if (mobileList) mobileList.innerHTML = emptyMobile;
                 return;
             }
 
+            let html = '';
+            let mobileHtml = '';
             filtered.forEach(v => {
-                let badgeClass = 'bg-yellow-50 text-yellow-700 border border-yellow-250';
-                if (v.status === 'COMPLETED') badgeClass = 'bg-emerald-50 text-emerald-700 border border-emerald-250';
-                if (v.status === 'CANCELED') badgeClass = 'bg-rose-50 text-rose-700 border border-rose-250';
+                let badgeClass = 'bg-yellow-50 text-yellow-750 border border-yellow-200';
+                if (v.status === 'COMPLETED') badgeClass = 'bg-emerald-50 text-emerald-755 border border-emerald-200';
+                if (v.status === 'CANCELED') badgeClass = 'bg-rose-50 text-rose-755 border border-rose-200';
 
-                tbody.innerHTML += `
+                html += `
                     <tr class="hover:bg-gray-50/50 transition-colors border-b border-gray-100">
                         <td class="p-4 text-xs text-gray-500">${v.created_at}</td>
                         <td class="p-4 text-xs font-bold text-gray-700">${v.visit_date || '-'}</td>
@@ -1536,7 +1739,38 @@
                         </td>
                     </tr>
                 `;
+
+                mobileHtml += `
+                    <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col gap-2.5">
+                        <div class="flex items-center justify-between border-b border-gray-100 pb-1.5">
+                            <span class="font-bold text-gray-900 text-sm">${v.client_name || '-'}</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold ${badgeClass}">
+                                ${v.status_display}
+                            </span>
+                        </div>
+                        <div class="flex flex-col gap-1.5 text-xs text-gray-750">
+                            <div><span class="text-gray-400">Date visite :</span> <span class="font-bold text-gray-800">${v.visit_date || '-'}</span></div>
+                            <div><span class="text-gray-400">Agent en charge :</span> <span class="font-semibold text-gray-800">${v.agent_name}</span></div>
+                            <div><span class="text-gray-400">Bien / Titre :</span> <span class="font-medium text-gray-750">${v.property_title}</span></div>
+                            ${v.notes ? `<div class="mt-1 p-2 bg-indigo-50/50 rounded-xl text-[11px] text-indigo-700 italic">💬 Note: ${v.notes}</div>` : ''}
+                        </div>
+                        <div class="flex items-center gap-2 mt-1.5 pt-2 border-t border-gray-100">
+                            <select onchange="updateVisitStatus('${v.id}', this.value)" class="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-2.5 py-2 text-xs text-gray-700 focus:outline-none">
+                                <option value="PLANNED" ${v.status === 'PLANNED' ? 'selected' : ''}>Planifiée</option>
+                                <option value="COMPLETED" ${v.status === 'COMPLETED' ? 'selected' : ''}>Effectuée</option>
+                                <option value="CANCELED" ${v.status === 'CANCELED' ? 'selected' : ''}>Annulée</option>
+                            </select>
+                            ${v.conversation_id ? `
+                            <a href="/chat/${v.conversation_id}/" target="_blank" class="px-4 py-2 bg-forest-50 hover:bg-forest-100 text-forest-700 font-bold border border-forest-100 rounded-xl text-xs text-center whitespace-nowrap">
+                                💬 Chat
+                            </a>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
             });
+            if (tbody) tbody.innerHTML = html;
+            if (mobileList) mobileList.innerHTML = mobileHtml;
         }
 
         function updateVisitStatus(visitId, status) {
@@ -1690,31 +1924,62 @@
 
         function renderTemplatesTable() {
             const tbody = document.getElementById('templates-table-body');
-            tbody.innerHTML = '';
+            const mobileList = document.getElementById('templates-mobile-list');
+            if (tbody) tbody.innerHTML = '';
+            if (mobileList) mobileList.innerHTML = '';
+            
             if (allTemplates.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-400 text-xs">Aucun modèle de réponse disponible</td></tr>';
+                const emptyHtml = '<tr><td colspan="4" class="p-4 text-center text-gray-400 text-xs">Aucun modèle de réponse disponible</td></tr>';
+                const emptyMobile = '<div class="text-center text-gray-400 text-xs py-6 bg-white rounded-2xl border border-gray-100">Aucun modèle de réponse disponible</div>';
+                if (tbody) tbody.innerHTML = emptyHtml;
+                if (mobileList) mobileList.innerHTML = emptyMobile;
                 return;
             }
             
+            let html = '';
+            let mobileHtml = '';
             allTemplates.forEach(t => {
-                tbody.innerHTML += `
+                const escapedContent = t.content.replace(/"/g, '&quot;');
+                html += `
                     <tr class="hover:bg-gray-50/50 transition-colors border-b border-gray-100">
                         <td class="p-4 font-bold text-gray-800 text-xs">${t.title}</td>
                         <td class="p-4 text-xs font-mono text-gray-500">
                             <span class="px-2 py-1 bg-gray-100 rounded-md">${t.category || 'UTILITY'}</span>
                         </td>
-                        <td class="p-4 text-xs text-gray-600 truncate max-w-xs" title="${t.content.replace(/"/g, '&quot;')}">${t.content}</td>
-                        <td class="p-4 flex gap-2">
-                            <button onclick="editTemplate('${t.id}')" class="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-all" title="Modifier">
-                                ✏️
-                            </button>
-                            <button onclick="deleteTemplate('${t.id}')" class="p-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition-all" title="Supprimer">
-                                🗑️
-                            </button>
+                        <td class="p-4 text-xs text-gray-600 truncate max-w-xs" title="${escapedContent}">${t.content}</td>
+                        <td class="p-4">
+                            <div class="flex gap-2">
+                                <button onclick="editTemplate('${t.id}')" class="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-all" title="Modifier">
+                                    ✏️
+                                </button>
+                                <button onclick="deleteTemplate('${t.id}')" class="p-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition-all" title="Supprimer">
+                                    🗑️
+                                </button>
+                            </div>
                         </td>
                     </tr>
                 `;
+
+                mobileHtml += `
+                    <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col gap-3">
+                        <div class="flex items-center justify-between border-b border-gray-100 pb-1.5">
+                            <span class="font-bold text-gray-900 text-xs">${t.title}</span>
+                            <span class="px-2 py-0.5 bg-gray-100 text-gray-500 rounded text-[9px] font-bold border border-gray-150">${t.category || 'UTILITY'}</span>
+                        </div>
+                        <p class="text-xs text-gray-700 bg-gray-50/70 p-2.5 rounded-xl border border-gray-100 leading-relaxed">${t.content}</p>
+                        <div class="flex justify-end gap-2.5 mt-1 pt-2 border-t border-gray-55/70">
+                            <button onclick="editTemplate('${t.id}')" class="px-3.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-xl text-xs font-bold transition-all flex items-center gap-1">
+                                ✏️ Modifier
+                            </button>
+                            <button onclick="deleteTemplate('${t.id}')" class="px-3.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl text-xs font-bold transition-all flex items-center gap-1">
+                                🗑️ Supprimer
+                            </button>
+                        </div>
+                    </div>
+                `;
             });
+            if (tbody) tbody.innerHTML = html;
+            if (mobileList) mobileList.innerHTML = mobileHtml;
         }
 
         function openTemplateModal(id = null) {
@@ -1836,27 +2101,27 @@
     </script>
 
     <!-- TEMPLATE MODAL -->
-    <div id="template-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
-        <div class="bg-white rounded-3xl max-w-lg w-full p-6 flex flex-col gap-4 shadow-2xl transform scale-95 transition-all duration-150 relative">
+    <div id="template-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center p-0 md:p-4">
+        <div class="bg-white rounded-none md:rounded-3xl max-w-lg w-full h-full md:h-auto p-6 flex flex-col gap-4 shadow-2xl transform scale-95 transition-all duration-150 relative max-h-screen md:max-h-[90vh]">
             <h3 class="text-lg font-bold text-gray-800" id="templateModalTitle">Nouveau Modèle</h3>
             <button onclick="closeTemplateModal()" class="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full text-gray-400 transition-all">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
-            <form onsubmit="saveTemplate(event)" class="flex flex-col gap-4">
+            <form onsubmit="saveTemplate(event)" class="flex flex-col gap-4 overflow-y-auto flex-1 pb-16 md:pb-0">
                 <input type="hidden" id="template-id">
                 <div>
                     <label class="block text-xs font-bold text-gray-700 mb-1">Titre du modèle *</label>
-                    <input type="text" id="template-title" required placeholder="Ex: Bonjour par défaut" class="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-forest-500">
+                    <input type="text" id="template-title" required placeholder="Ex: Bonjour par défaut" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-forest-500">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-gray-700 mb-1">Catégorie</label>
-                    <input type="text" id="template-category" placeholder="Ex: ACCUEIL" class="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-forest-500">
+                    <input type="text" id="template-category" placeholder="Ex: ACCUEIL" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-forest-500">
                 </div>
-                <div>
+                <div class="flex-1 flex flex-col min-h-[150px]">
                     <label class="block text-xs font-bold text-gray-700 mb-1">Contenu du message *</label>
-                    <textarea id="template-content" required rows="4" placeholder="Tapez le message complet ici..." class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-forest-500 resize-none"></textarea>
+                    <textarea id="template-content" required rows="6" placeholder="Tapez le message complet ici..." class="w-full flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-forest-500 resize-none"></textarea>
                 </div>
-                <div class="flex justify-end gap-3 mt-2">
+                <div class="flex justify-end gap-3 mt-2 flex-shrink-0">
                     <button type="button" onclick="closeTemplateModal()" class="px-5 py-2 text-gray-600 font-bold hover:bg-gray-100 rounded-xl text-sm transition-all">Annuler</button>
                     <button type="submit" class="px-5 py-2 bg-forest-600 hover:bg-forest-700 text-white font-bold rounded-xl shadow-md text-sm transition-all">Enregistrer</button>
                 </div>
