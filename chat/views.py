@@ -1961,7 +1961,7 @@ def manager_visits(request):
         if end_date:
             visits = visits.filter(created_at__lt=end_date)
             
-        visits = visits.order_by('-created_at')
+        visits = visits.order_by('-visit_date')
         visits_data = []
         for v in visits:
             visits_data.append({
@@ -2310,7 +2310,7 @@ def list_visits(request):
             visits = Visit.objects.filter(agent=request.user).select_related('agent', 'conversation')
             
         visits_data = []
-        for v in visits.order_by('visit_date'):  # Ascending: upcoming visits first
+        for v in visits.order_by('-visit_date'):  # Descending: newest / upcoming first
             visits_data.append({
                 'id': str(v.id),
                 'property_title': v.property_title,

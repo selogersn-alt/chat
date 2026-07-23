@@ -56,8 +56,8 @@
             -webkit-font-smoothing: antialiased;
         }
         .app-header {
-            background: linear-gradient(135deg, #052212 0%, #0f4f2c 60%, #1b6b3e 100%);
-            box-shadow: 0 4px 20px rgba(15, 81, 50, 0.2);
+            background: linear-gradient(135deg, #1e1b4b 0%, #4c1d95 60%, #6d28d9 100%);
+            box-shadow: 0 4px 20px rgba(109, 40, 217, 0.2);
         }
         /* Custom Scrollbar for Desktop */
         .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -109,12 +109,12 @@
                 </div>
                 <div class="text-left">
                     <p class="text-[11px] font-semibold text-white leading-none">{{ user.first_name|default:user.username }}</p>
-                    <p class="text-[9px] text-teal-200/70 mt-0.5">Manager</p>
+                    <p class="text-[9px] text-violet-200/70 mt-0.5">Manager</p>
                 </div>
             </div>
             
             <div class="flex items-center gap-1.5">
-                <a href="{% url 'media_manager' %}" class="px-2.5 py-1.5 bg-forest-600 hover:bg-forest-500 text-[10px] md:text-xs font-bold rounded-xl transition-all shadow-sm" title="Gérer les fichiers">
+                <a href="{% url 'media_manager' %}" class="px-2.5 py-1.5 bg-violet-650 hover:bg-violet-550 text-[10px] md:text-xs font-bold rounded-xl transition-all shadow-sm" style="background-color: #6d28d9;" title="Gérer les fichiers">
                     📦 Fichiers
                 </a>
                 <a href="{% url 'dashboard' %}" class="px-2.5 py-1.5 bg-white/10 hover:bg-white/20 text-[10px] md:text-xs font-bold rounded-xl transition-all whitespace-nowrap" title="Accéder à la console Agent">
@@ -135,22 +135,22 @@
         
         <!-- NAVIGATION TABS -->
         <div class="flex border-b border-gray-200 gap-4 md:gap-6 overflow-x-auto hide-scrollbar whitespace-nowrap -mx-4 px-4 md:mx-0 md:px-0 scroll-smooth">
-            <button onclick="switchTab('stats')" id="tab-stats-btn" class="py-3 text-xs md:text-sm font-bold border-b-2 border-forest-600 text-forest-600 transition-all flex-shrink-0">
+            <button onclick="switchTab('stats')" id="tab-stats-btn" class="py-3 text-xs md:text-sm font-bold border-b-2 border-violet-600 text-violet-600 transition-all flex-shrink-0">
                 📊 Performance &amp; Rapports
             </button>
-            <button onclick="switchTab('agents')" id="tab-agents-btn" class="py-3 text-xs md:text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-forest-600 transition-all flex-shrink-0">
+            <button onclick="switchTab('agents')" id="tab-agents-btn" class="py-3 text-xs md:text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-violet-600 transition-all flex-shrink-0">
                 👥 Conseillers
             </button>
-            <button onclick="switchTab('delegate')" id="tab-delegate-btn" class="py-3 text-xs md:text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-forest-600 transition-all flex-shrink-0">
+            <button onclick="switchTab('delegate')" id="tab-delegate-btn" class="py-3 text-xs md:text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-violet-600 transition-all flex-shrink-0">
                 🔄 Assignation
             </button>
-            <button onclick="switchTab('matches')" id="tab-matches-btn" class="py-3 text-xs md:text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-forest-600 transition-all flex-shrink-0">
+            <button onclick="switchTab('matches')" id="tab-matches-btn" class="py-3 text-xs md:text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-violet-600 transition-all flex-shrink-0">
                 📅 Suivi Visites
             </button>
-            <button onclick="switchTab('templates')" id="tab-templates-btn" class="py-3 text-xs md:text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-forest-600 transition-all flex-shrink-0">
+            <button onclick="switchTab('templates')" id="tab-templates-btn" class="py-3 text-xs md:text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-violet-600 transition-all flex-shrink-0">
                 💬 Modèles SMS/WA
             </button>
-            <button onclick="switchTab('help')" id="tab-help-btn" class="py-3 text-xs md:text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-forest-600 transition-all flex-shrink-0">
+            <button onclick="switchTab('help')" id="tab-help-btn" class="py-3 text-xs md:text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-violet-600 transition-all flex-shrink-0">
                 ℹ️ Centre d'Aide
             </button>
         </div>
@@ -170,7 +170,7 @@
                     <!-- Column 1: Filter Period -->
                     <div class="flex flex-col gap-2 bg-gray-50/50 p-4 rounded-xl border border-gray-100">
                         <label class="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Période d'analyse</label>
-                        <select id="statsDateFilter" onchange="loadDashboardData()" class="w-full bg-white border border-gray-250 rounded-xl px-3 py-2 text-xs text-gray-700 font-semibold focus:outline-none focus:ring-1 focus:ring-forest-500 cursor-pointer">
+                        <select id="statsDateFilter" onchange="loadDashboardData()" class="w-full bg-white border border-gray-250 rounded-xl px-3 py-2 text-xs text-gray-700 font-semibold focus:outline-none focus:ring-1 focus:ring-violet-500 cursor-pointer">
                             <option value="all" selected>Toute la période</option>
                             <option value="today">Aujourd'hui</option>
                             <option value="yesterday">Hier</option>
@@ -183,10 +183,10 @@
                     <div class="flex flex-col gap-2 bg-gray-50/50 p-4 rounded-xl border border-gray-100">
                         <label class="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Extraction CRM (Excel/CSV)</label>
                         <div class="flex flex-col sm:flex-row gap-2">
-                            <input type="date" id="exportStartDate" class="w-full sm:w-1/2 bg-white border border-gray-250 rounded-xl px-3 py-2 text-xs text-gray-700 font-semibold focus:outline-none focus:ring-1 focus:ring-forest-500 cursor-pointer" title="Du">
-                            <input type="date" id="exportEndDate" class="w-full sm:w-1/2 bg-white border border-gray-250 rounded-xl px-3 py-2 text-xs text-gray-700 font-semibold focus:outline-none focus:ring-1 focus:ring-forest-500 cursor-pointer" title="Au">
+                            <input type="date" id="exportStartDate" class="w-full sm:w-1/2 bg-white border border-gray-250 rounded-xl px-3 py-2 text-xs text-gray-700 font-semibold focus:outline-none focus:ring-1 focus:ring-violet-500 cursor-pointer" title="Du">
+                            <input type="date" id="exportEndDate" class="w-full sm:w-1/2 bg-white border border-gray-250 rounded-xl px-3 py-2 text-xs text-gray-700 font-semibold focus:outline-none focus:ring-1 focus:ring-violet-500 cursor-pointer" title="Au">
                         </div>
-                        <button onclick="triggerCRMExport()" class="w-full mt-1 px-4 py-2 bg-forest-600 hover:bg-forest-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center justify-center gap-2">
+                        <button onclick="triggerCRMExport()" class="w-full mt-1 px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center justify-center gap-2">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
                               <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
                             </svg>
@@ -198,7 +198,7 @@
                     <div class="flex flex-col gap-2 bg-gray-50/50 p-4 rounded-xl border border-gray-100 {% if not user.is_superuser %}opacity-50 pointer-events-none{% endif %}">
                         <label class="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Frais d'Assistance (CFA)</label>
                         <div class="flex gap-2">
-                            <input type="number" id="settingAssistanceFee" {% if not user.is_superuser %}disabled{% endif %} class="flex-1 bg-white border border-gray-250 rounded-xl px-3 py-2 text-xs text-gray-700 font-semibold focus:outline-none focus:ring-1 focus:ring-forest-500">
+                            <input type="number" id="settingAssistanceFee" {% if not user.is_superuser %}disabled{% endif %} class="flex-1 bg-white border border-gray-250 rounded-xl px-3 py-2 text-xs text-gray-700 font-semibold focus:outline-none focus:ring-1 focus:ring-violet-500">
                             {% if user.is_superuser %}
                             <button onclick="updateSettingsFee()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-1.5 whitespace-nowrap">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
@@ -219,7 +219,7 @@
                         <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Clients Assistés</p>
                         <h3 class="text-3xl font-extrabold text-gray-800 mt-1" id="stat-total-clients">-</h3>
                     </div>
-                    <div class="w-12 h-12 rounded-xl bg-forest-50 flex items-center justify-center text-forest-600">
+                    <div class="w-12 h-12 rounded-xl bg-violet-50 flex items-center justify-center text-violet-600">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.109A11.386 11.386 0 0 1 10.089 18M15 19.128a9.38 9.38 0 0 1-2.625.372 9.336 9.336 0 0 1-4.121-.952 4.125 4.125 0 0 1 7.533-2.493M10.089 18v-.003c0-1.113.285-2.16.786-3.07M10.089 18A11.386 11.386 0 0 0 15 19.128M10.089 18a11.386 11.386 0 0 1-4.917-1.128M8 21.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M8 21.128v-.003c0-1.113-.285-2.16-.786-3.07M8 21.128a9.38 9.38 0 0 1-2.625.372 9.336 9.336 0 0 1-4.121-.952 4.125 4.125 0 0 1 7.533-2.493M3.758 18.093A11.386 11.386 0 0 0 8 19.128" />
                         </svg>
@@ -229,7 +229,7 @@
                 <div onclick="openConversationsListModal('ACTIVE')" class="kpi-card bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between cursor-pointer hover:shadow-md transition-shadow">
                     <div>
                         <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Discussions Actives</p>
-                        <h3 class="text-3xl font-extrabold text-forest-600 mt-1" id="stat-active-convs">-</h3>
+                        <h3 class="text-3xl font-extrabold text-violet-600 mt-1" id="stat-active-convs">-</h3>
                     </div>
                     <div class="w-12 h-12 rounded-xl bg-teal-50 flex items-center justify-center text-teal-600">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6">
@@ -266,9 +266,9 @@
                 <div class="kpi-card bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
                     <div>
                         <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Revenus Assistance</p>
-                        <h3 class="text-3xl font-extrabold text-forest-600 mt-1"><span id="stat-assistance-revenue">0</span> <span class="text-lg text-forest-400">CFA</span></h3>
+                        <h3 class="text-3xl font-extrabold text-violet-600 mt-1"><span id="stat-assistance-revenue">0</span> <span class="text-lg text-violet-400">CFA</span></h3>
                     </div>
-                    <div class="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center text-green-600">
+                    <div class="w-12 h-12 rounded-xl bg-violet-50 flex items-center justify-center text-violet-600">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
@@ -348,16 +348,16 @@
                         <p class="text-xs text-gray-500 mt-1">Suivi et gestion de toutes les visites planifiées par les agents via le CRM.</p>
                     </div>
                     <div class="flex items-center gap-3">
-                        <select id="globalVisitsAgentFilter" onchange="renderFilteredGlobalVisits()" class="bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-semibold text-gray-700 focus:outline-none focus:ring-1 focus:ring-forest-500 min-w-[150px]">
+                        <select id="globalVisitsAgentFilter" onchange="renderFilteredGlobalVisits()" class="bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-semibold text-gray-700 focus:outline-none focus:ring-1 focus:ring-violet-500 min-w-[150px]">
                             <option value="ALL">Tous les agents</option>
                         </select>
-                        <select id="globalVisitsStatusFilter" onchange="renderFilteredGlobalVisits()" class="bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-semibold text-gray-700 focus:outline-none focus:ring-1 focus:ring-forest-500">
+                        <select id="globalVisitsStatusFilter" onchange="renderFilteredGlobalVisits()" class="bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-semibold text-gray-700 focus:outline-none focus:ring-1 focus:ring-violet-500">
                             <option value="ALL">Tous les statuts</option>
                             <option value="PLANNED">Planifiées</option>
                             <option value="COMPLETED">Effectuées</option>
                             <option value="CANCELED">Annulées</option>
                         </select>
-                        <button onclick="loadGlobalVisits()" class="px-3 py-1.5 bg-white border border-gray-200 text-gray-600 hover:text-forest-600 hover:border-forest-200 rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center gap-2">
+                        <button onclick="loadGlobalVisits()" class="px-3 py-1.5 bg-white border border-gray-200 text-gray-600 hover:text-violet-600 hover:border-violet-200 rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center gap-2">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
                             Rafraîchir
                         </button>
@@ -469,7 +469,7 @@
         <div id="tab-agents" class="tab-pane hidden flex flex-col gap-4">
             <div class="flex justify-between items-center">
                 <h4 class="font-bold text-gray-800 text-lg">Conseillers &amp; Agents Enregistrés</h4>
-                <button onclick="openCreateAgentModal()" class="px-4 py-2 bg-forest-600 hover:bg-forest-700 text-white font-bold rounded-xl text-sm transition-all flex items-center gap-2">
+                <button onclick="openCreateAgentModal()" class="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white font-bold rounded-xl text-sm transition-all flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M18 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0ZM3 19.235v-.11a6 6 0 0 1 7.952-5.698a6 6 0 0 1 7.952 5.698v.11" />
                     </svg>
@@ -544,7 +544,7 @@
                 
                 <!-- TOGGLE VISITS / MATCHES -->
                 <div class="flex bg-gray-100 p-1 rounded-xl">
-                    <button onclick="toggleVisitView('matches')" id="btn-view-matches" class="px-4 py-2 text-xs font-bold rounded-lg bg-white shadow-sm text-forest-700 transition-all">
+                    <button onclick="toggleVisitView('matches')" id="btn-view-matches" class="px-4 py-2 text-xs font-bold rounded-lg bg-white shadow-sm text-violet-700 transition-all">
                         🤝 Visites Partenaires
                     </button>
                     <button onclick="toggleVisitView('visits')" id="btn-view-visits" class="px-4 py-2 text-xs font-semibold rounded-lg text-gray-500 hover:text-gray-800 transition-all">
@@ -555,8 +555,8 @@
 
             <!-- SEARCH / SECTOR FILTER ROW -->
             <div class="flex items-center gap-3 bg-white px-5 py-3.5 rounded-2xl border border-gray-100 shadow-sm">
-                <input type="text" id="matchSearchInput" oninput="filterMatchesTable(this.value)" placeholder="Filtrer par secteur (ex: Ouakam), client, courtier, agent..." class="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-forest-500 w-80">
-                <span id="activeSectorBadge" class="hidden bg-forest-50 border border-forest-200 text-forest-700 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-2">
+                <input type="text" id="matchSearchInput" oninput="filterMatchesTable(this.value)" placeholder="Filtrer par secteur (ex: Ouakam), client, courtier, agent..." class="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500 w-80">
+                <span id="activeSectorBadge" class="hidden bg-violet-50 border border-violet-200 text-violet-700 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-2">
                     <span id="activeSectorText"></span>
                     <button onclick="clearSectorFilter()" class="hover:text-red-500 font-extrabold text-sm">&times;</button>
                 </span>
@@ -624,7 +624,7 @@
                     <h3 class="text-xl font-bold text-gray-800">Modèles de Réponses</h3>
                     <p class="text-xs text-gray-500 mt-1">Gérez les messages prédéfinis que les agents peuvent envoyer en un clic.</p>
                 </div>
-                <button onclick="openTemplateModal()" class="px-4 py-2.5 bg-forest-600 hover:bg-forest-700 text-white font-bold rounded-xl text-xs flex items-center gap-2 shadow-sm transition-all">
+                <button onclick="openTemplateModal()" class="px-4 py-2.5 bg-violet-600 hover:bg-violet-700 text-white font-bold rounded-xl text-xs flex items-center gap-2 shadow-sm transition-all">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
                     Ajouter un modèle
                 </button>
@@ -765,27 +765,27 @@
             <form onsubmit="submitCreateAgent(event)" class="p-6 flex flex-col gap-4 overflow-y-auto flex-1">
                 <div>
                     <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5">Identifiant de connexion *</label>
-                    <input type="text" id="new-agent-username" required class="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-forest-500">
+                    <input type="text" id="new-agent-username" required class="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500">
                 </div>
                 <div>
                     <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5">Mot de passe *</label>
-                    <input type="password" id="new-agent-password" required class="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-forest-500">
+                    <input type="password" id="new-agent-password" required class="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500">
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5">Prénom</label>
-                        <input type="text" id="new-agent-firstname" class="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-forest-500">
+                        <input type="text" id="new-agent-firstname" class="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500">
                     </div>
                     <div>
                         <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5">Nom de famille</label>
-                        <input type="text" id="new-agent-lastname" class="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-forest-500">
+                        <input type="text" id="new-agent-lastname" class="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500">
                     </div>
                 </div>
                 <div>
                     <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5">Téléphone WhatsApp</label>
-                    <input type="text" id="new-agent-phone" placeholder="ex: 221771234567" class="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-forest-500">
+                    <input type="text" id="new-agent-phone" placeholder="ex: 221771234567" class="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500">
                 </div>
-                <button type="submit" class="w-full py-3 bg-forest-600 hover:bg-forest-700 text-white font-bold rounded-xl text-sm transition-all mt-2 flex-shrink-0">
+                <button type="submit" class="w-full py-3 bg-violet-600 hover:bg-violet-700 text-white font-bold rounded-xl text-sm transition-all mt-2 flex-shrink-0">
                     Créer le profil Agent
                 </button>
             </form>
@@ -835,6 +835,7 @@
                 .then(data => {
                     if (data.status === 'success') {
                         allGlobalVisits = data.visits || [];
+                        allGlobalVisits.sort((a, b) => new Date(b.visit_date) - new Date(a.visit_date));
                         
                         // Populate Agent Filter
                         const agentSelect = document.getElementById('globalVisitsAgentFilter');
@@ -889,7 +890,7 @@
                 if(v.status === 'CANCELED') statusDisplay = 'Annulée';
                 
                 const notesHtml = v.notes 
-                    ? `<span class="text-xs text-indigo-600 italic" title="${v.notes}">${v.notes.length > 40 ? v.notes.substring(0, 40) + '…' : v.notes}</span>`
+                    ? `<span class="text-xs text-violet-650 italic" title="${v.notes}">${v.notes.length > 40 ? v.notes.substring(0, 40) + '…' : v.notes}</span>`
                     : '<span class="text-[10px] text-gray-300">—</span>';
                 
                 html += `
@@ -900,7 +901,7 @@
                         </td>
                         <td class="p-4">
                             <div class="flex items-center gap-2">
-                                <div class="w-6 h-6 rounded-full bg-forest-100 text-forest-700 flex items-center justify-center text-[10px] font-bold flex-shrink-0">
+                                <div class="w-6 h-6 rounded-full bg-violet-100 text-violet-700 flex items-center justify-center text-[10px] font-bold flex-shrink-0">
                                     ${v.agent_name.charAt(0).toUpperCase()}
                                 </div>
                                 <span class="font-medium text-sm">${v.agent_name}</span>
@@ -917,13 +918,13 @@
                         </td>
                         <td class="p-4">
                             <div class="flex flex-col gap-1.5">
-                                <select onchange="updateGlobalVisitStatus('${v.id}', this.value)" class="bg-gray-50 border border-gray-200 rounded-lg px-2 py-1 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-forest-500 w-full">
+                                <select onchange="updateGlobalVisitStatus('${v.id}', this.value)" class="bg-gray-50 border border-gray-200 rounded-lg px-2 py-1 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-violet-500 w-full">
                                     <option value="PLANNED" ${v.status === 'PLANNED' ? 'selected' : ''}>Planifiée</option>
                                     <option value="COMPLETED" ${v.status === 'COMPLETED' ? 'selected' : ''}>Effectuée</option>
                                     <option value="CANCELED" ${v.status === 'CANCELED' ? 'selected' : ''}>Annulée</option>
                                 </select>
-                                ${v.conv_id ? `
-                                <a href="/chat/${v.conv_id}/" target="_blank" class="text-center px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-lg text-[10px] transition-colors border border-gray-200 block w-full">
+                                ${v.conversation_id ? `
+                                <a href="/chat/${v.conversation_id}/" target="_blank" class="text-center px-2 py-1 bg-violet-50 hover:bg-violet-100 text-violet-700 font-bold border border-violet-100 rounded-lg text-[10px] transition-colors block w-full">
                                     💬 Ouvrir Chat
                                 </a>
                                 ` : ''}
@@ -935,23 +936,25 @@
                 mobileHtml += `
                     <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col gap-3">
                         <div class="flex items-center justify-between border-b border-gray-100 pb-2">
-                            <span class="text-[11px] font-semibold text-gray-400">📅 ${ds}</span>
-                            <span class="px-2 py-0.5 rounded text-[9px] font-bold ${badgeClass}">${statusDisplay}</span>
+                            <span class="font-bold text-gray-950 text-sm">${v.client_name}</span>
+                            <div class="flex items-center gap-1.5">
+                                <span class="px-2 py-0.5 rounded-lg text-[10px] font-bold ${badgeClass}">${statusDisplay}</span>
+                            </div>
                         </div>
                         <div class="flex flex-col gap-1 text-xs">
-                            <div><span class="text-gray-450">Agent :</span> <span class="font-bold text-gray-800">${v.agent_name}</span></div>
-                            <div><span class="text-gray-455">Client :</span> <span class="font-bold text-gray-900">${v.client_name || '-'} (${v.client_phone || '-'})</span></div>
-                            <div><span class="text-gray-450">Bien :</span> <span class="text-gray-800">${v.property_title}</span></div>
-                            ${v.notes ? `<div class="mt-1 p-2 bg-indigo-50/50 rounded-xl text-[11px] text-indigo-700 italic">💬 Note: ${v.notes}</div>` : ''}
+                            <div><span class="text-gray-400">Date visite :</span> <span class="font-bold text-gray-800">${ds}</span></div>
+                            <div><span class="text-gray-400">Agent en charge :</span> <span class="font-semibold text-gray-800">${v.agent_name}</span></div>
+                            <div><span class="text-gray-400">Bien / Titre :</span> <span class="font-medium text-gray-750">${v.property_title}</span></div>
+                            ${v.notes ? `<div class="mt-1 p-2 bg-violet-50/50 rounded-xl text-[11px] text-violet-750 italic">💬 Note: ${v.notes}</div>` : ''}
                         </div>
-                        <div class="flex gap-2 items-center mt-1 pt-2 border-t border-gray-100">
-                            <select onchange="updateGlobalVisitStatus('${v.id}', this.value)" class="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-2.5 py-2 text-xs text-gray-700 focus:outline-none">
+                        <div class="flex items-center gap-2 mt-1.5 pt-2 border-t border-gray-100">
+                            <select onchange="updateGlobalVisitStatus('${v.id}', this.value)" class="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-2.5 py-2 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-violet-500">
                                 <option value="PLANNED" ${v.status === 'PLANNED' ? 'selected' : ''}>Planifiée</option>
                                 <option value="COMPLETED" ${v.status === 'COMPLETED' ? 'selected' : ''}>Effectuée</option>
                                 <option value="CANCELED" ${v.status === 'CANCELED' ? 'selected' : ''}>Annulée</option>
                             </select>
-                            ${v.conv_id ? `
-                            <a href="/chat/${v.conv_id}/" target="_blank" class="px-4 py-2 bg-forest-50 hover:bg-forest-100 text-forest-700 rounded-xl text-xs font-bold border border-forest-100 text-center whitespace-nowrap">
+                            ${v.conversation_id ? `
+                            <a href="/chat/${v.conversation_id}/" target="_blank" class="px-4 py-2 bg-violet-50 hover:bg-violet-100 text-violet-700 font-bold border border-violet-100 rounded-xl text-xs text-center whitespace-nowrap">
                                 💬 Chat
                             </a>
                             ` : ''}
@@ -988,12 +991,26 @@
         function switchTab(tabId) {
             currentTab = tabId;
             document.querySelectorAll('.tab-pane').forEach(el => el.classList.add('hidden'));
-            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            
+            const targetPane = document.getElementById(`tab-${tabId}`);
+            if (targetPane) {
+                targetPane.classList.remove('hidden');
+            }
 
             document.querySelectorAll('[id^="tab-"][id$="-btn"]').forEach(btn => {
-                btn.className = 'py-3 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-forest-600 transition-all';
+                // Supprimer les classes de sélection active
+                btn.classList.remove('font-bold', 'border-violet-600', 'text-violet-600', 'border-forest-600', 'text-forest-600');
+                // Ajouter les classes inactives par défaut
+                btn.classList.add('font-semibold', 'border-transparent', 'text-gray-500');
             });
-            document.getElementById(`tab-${tabId}-btn`).className = 'py-3 text-sm font-bold border-b-2 border-forest-600 text-forest-600 transition-all';
+            
+            const activeBtn = document.getElementById(`tab-${tabId}-btn`);
+            if (activeBtn) {
+                // Enlever les classes inactives du bouton sélectionné
+                activeBtn.classList.remove('font-semibold', 'border-transparent', 'text-gray-500');
+                // Ajouter les classes actives (violet vibrant)
+                activeBtn.classList.add('font-bold', 'border-violet-600', 'text-violet-600');
+            }
         }
 
         function loadDashboardData() {
@@ -1124,12 +1141,15 @@
             const btnMatches = document.getElementById('btn-view-matches');
             const btnVisits = document.getElementById('btn-view-visits');
             
-            if (view === 'matches') {
-                btnMatches.className = 'px-4 py-2 text-xs font-bold rounded-lg bg-white shadow-sm text-forest-700 transition-all';
-                btnVisits.className = 'px-4 py-2 text-xs font-semibold rounded-lg text-gray-500 hover:text-gray-800 transition-all';
-            } else {
-                btnVisits.className = 'px-4 py-2 text-xs font-bold rounded-lg bg-white shadow-sm text-forest-700 transition-all';
-                btnMatches.className = 'px-4 py-2 text-xs font-semibold rounded-lg text-gray-500 hover:text-gray-800 transition-all';
+            [btnMatches, btnVisits].forEach(btn => {
+                btn.classList.remove('font-bold', 'bg-white', 'shadow-sm', 'text-violet-700', 'text-forest-700');
+                btn.classList.add('font-semibold', 'text-gray-500', 'hover:text-gray-800');
+            });
+            
+            const activeBtn = document.getElementById(`btn-view-${view}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('font-semibold', 'text-gray-500', 'hover:text-gray-800');
+                activeBtn.classList.add('font-bold', 'bg-white', 'shadow-sm', 'text-violet-700');
             }
         }
 
@@ -1148,7 +1168,7 @@
                     labels: ['Actives', 'En attente', 'Clôturées'],
                     datasets: [{
                         data: [active, pending, closed],
-                        backgroundColor: ['#1b6b3e', '#fb923c', '#94a3b8'],
+                        backgroundColor: ['#7c3aed', '#fb923c', '#94a3b8'],
                         borderWidth: 0
                     }]
                 },
@@ -1187,7 +1207,7 @@
                     datasets: [{
                         label: 'Conversations Actives',
                         data: counts,
-                        backgroundColor: '#1b6b3e',
+                        backgroundColor: '#7c3aed',
                         borderRadius: 8
                     }]
                 },
@@ -1296,7 +1316,7 @@
                         <td class="p-4">${statusBadge}</td>
                         <td class="p-4 text-gray-500 font-medium">${c.assigned_to || 'Non assigné'}</td>
                         <td class="p-4">
-                            <select onchange="delegateConversation('${c.id}', this)" class="bg-gray-50 border border-gray-200 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-gray-700 focus:outline-none focus:ring-1 focus:ring-forest-500 cursor-pointer">
+                            <select onchange="delegateConversation('${c.id}', this)" class="bg-gray-50 border border-gray-200 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-gray-700 focus:outline-none focus:ring-1 focus:ring-violet-500 cursor-pointer">
                                 ${selectOptions}
                             </select>
                         </td>
@@ -1314,11 +1334,16 @@
                         </div>
                         <div class="flex flex-col gap-1 text-xs">
                             <div><span class="text-gray-400">Sujet :</span> <span class="font-semibold text-gray-700">${c.topic}</span></div>
-                            <div><span class="text-gray-400">Assigné à :</span> <span class="font-bold text-forest-700">${c.assigned_to || 'Non assigné'}</span></div>
+                            <div><span class="text-gray-400">Assigné à :</span> <span class="font-bold text-violet-700">${c.assigned_to || 'Non assigné'}</span></div>
                         </div>
                         <div class="flex items-center gap-2 mt-1 pt-2 border-t border-gray-100">
                             <span class="text-xs text-gray-505 whitespace-nowrap">Réassigner :</span>
                             <select onchange="delegateConversation('${c.id}', this)" class="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-2.5 py-2 text-xs font-semibold text-gray-700 focus:outline-none">
+                                ${selectOptions}
+                            </select>
+                        </div>
+                    </div>
+                `;unded-xl px-2.5 py-2 text-xs font-semibold text-gray-700 focus:outline-none">
                                 ${selectOptions}
                             </select>
                         </div>
@@ -1443,7 +1468,7 @@
                                 <span class="px-2 py-1 rounded-md text-[10px] font-bold ${badgeColor}">${c.status}</span>
                             </td>
                             <td class="p-3">
-                                <a href="/chat/${c.id}/" target="_blank" class="px-3 py-1.5 bg-forest-50 hover:bg-forest-100 text-forest-700 rounded-lg text-xs font-bold transition-all whitespace-nowrap border border-forest-100">
+                                <a href="/chat/${c.id}/" target="_blank" class="px-3 py-1.5 bg-violet-50 hover:bg-violet-100 text-violet-700 rounded-lg text-xs font-bold transition-all whitespace-nowrap border border-violet-100">
                                     💬 Ouvrir
                                 </a>
                             </td>
@@ -1501,7 +1526,7 @@
         function showToast(message, type = 'success') {
             const container = document.getElementById('toastContainer');
             const toast = document.createElement('div');
-            const colorClass = type === 'success' ? 'bg-forest-600 border-l-4 border-l-teal-400' : 'bg-red-600 border-l-4 border-l-red-400';
+            const colorClass = type === 'success' ? 'bg-violet-600 border-l-4 border-l-violet-400' : 'bg-red-600 border-l-4 border-l-red-400';
             
             toast.className = `pointer-events-auto text-white rounded-2xl p-4 shadow-xl flex items-center justify-between gap-3 text-xs font-semibold ${colorClass} transition-all duration-300 transform translate-y-2 opacity-0`;
             toast.innerHTML = `
@@ -1613,14 +1638,14 @@
                             </span>
                         </td>
                         <td class="p-4 flex flex-col gap-2">
-                            <select onchange="updateMatchStatus('${m.id}', this.value)" class="bg-gray-50 border border-gray-200 rounded-lg px-2 py-1 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-forest-500 w-full">
+                            <select onchange="updateMatchStatus('${m.id}', this.value)" class="bg-gray-50 border border-gray-200 rounded-lg px-2 py-1 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-violet-500 w-full">
                                 <option value="PENDING" ${m.status === 'PENDING' ? 'selected' : ''}>En attente</option>
                                 <option value="VISITED" ${m.status === 'VISITED' ? 'selected' : ''}>Visité</option>
                                 <option value="WON" ${m.status === 'WON' ? 'selected' : ''}>Gagné (Commission)</option>
                                 <option value="LOST" ${m.status === 'LOST' ? 'selected' : ''}>Perdu</option>
                             </select>
                             ${m.conversation_id ? `
-                            <a href="/chat/${m.conversation_id}/" target="_blank" class="text-center px-2 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-lg text-[10px] transition-colors border border-gray-200 block w-full">
+                            <a href="/chat/${m.conversation_id}/" target="_blank" class="text-center px-2 py-1.5 bg-violet-50 hover:bg-violet-100 text-violet-700 font-bold border border-violet-100 rounded-lg text-[10px] transition-colors block w-full">
                                 💬 Ouvrir Chat
                             </a>
                             ` : ''}
@@ -1640,7 +1665,7 @@
                             <div><span class="text-gray-400">Date :</span> <span class="font-medium">${m.created_at}</span></div>
                             <div><span class="text-gray-400">Visiteur :</span> <span class="font-semibold">${m.visitor_name} (${m.visitor_phone})</span></div>
                             <div><span class="text-gray-400">Partenaire :</span> <span class="font-semibold text-gray-800">${m.partner_name}</span></div>
-                            <div><span class="text-gray-400">Zone / Budget :</span> <span class="font-bold text-forest-750">${m.zone} • ${m.price.toLocaleString('fr-FR')} FCFA</span></div>
+                            <div><span class="text-gray-400">Zone / Budget :</span> <span class="font-bold text-violet-750">${m.zone} • ${m.price.toLocaleString('fr-FR')} FCFA</span></div>
                         </div>
                         <div class="flex items-center gap-2 mt-1.5 pt-2 border-t border-gray-100">
                             <select onchange="updateMatchStatus('${m.id}', this.value)" class="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-2.5 py-2 text-xs text-gray-700 focus:outline-none">
@@ -1650,7 +1675,7 @@
                                 <option value="LOST" ${m.status === 'LOST' ? 'selected' : ''}>Perdu</option>
                             </select>
                             ${m.conversation_id ? `
-                            <a href="/chat/${m.conversation_id}/" target="_blank" class="px-4 py-2 bg-forest-50 hover:bg-forest-100 text-forest-700 font-bold border border-forest-100 rounded-xl text-xs text-center whitespace-nowrap">
+                            <a href="/chat/${m.conversation_id}/" target="_blank" class="px-4 py-2 bg-violet-50 hover:bg-violet-100 text-violet-700 font-bold border border-violet-100 rounded-xl text-xs text-center whitespace-nowrap">
                                 💬 Chat
                             </a>
                             ` : ''}
@@ -1726,13 +1751,13 @@
                             </span>
                         </td>
                         <td class="p-4 flex flex-col gap-2">
-                            <select onchange="updateVisitStatus('${v.id}', this.value)" class="bg-gray-50 border border-gray-200 rounded-lg px-2 py-1 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-forest-500 w-full">
+                            <select onchange="updateVisitStatus('${v.id}', this.value)" class="bg-gray-50 border border-gray-200 rounded-lg px-2 py-1 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-violet-500 w-full">
                                 <option value="PLANNED" ${v.status === 'PLANNED' ? 'selected' : ''}>Planifiée</option>
                                 <option value="COMPLETED" ${v.status === 'COMPLETED' ? 'selected' : ''}>Effectuée</option>
                                 <option value="CANCELED" ${v.status === 'CANCELED' ? 'selected' : ''}>Annulée</option>
                             </select>
                             ${v.conversation_id ? `
-                            <a href="/chat/${v.conversation_id}/" target="_blank" class="text-center px-2 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-lg text-[10px] transition-colors border border-gray-200 block w-full">
+                            <a href="/chat/${v.conversation_id}/" target="_blank" class="text-center px-2 py-1.5 bg-violet-50 hover:bg-violet-100 text-violet-700 font-bold border border-violet-100 rounded-lg text-[10px] transition-colors block w-full">
                                 💬 Ouvrir Chat
                             </a>
                             ` : ''}
@@ -1761,7 +1786,7 @@
                                 <option value="CANCELED" ${v.status === 'CANCELED' ? 'selected' : ''}>Annulée</option>
                             </select>
                             ${v.conversation_id ? `
-                            <a href="/chat/${v.conversation_id}/" target="_blank" class="px-4 py-2 bg-forest-50 hover:bg-forest-100 text-forest-700 font-bold border border-forest-100 rounded-xl text-xs text-center whitespace-nowrap">
+                            <a href="/chat/${v.conversation_id}/" target="_blank" class="px-4 py-2 bg-violet-50 hover:bg-violet-100 text-violet-700 font-bold border border-violet-100 rounded-xl text-xs text-center whitespace-nowrap">
                                 💬 Chat
                             </a>
                             ` : ''}
@@ -1832,9 +1857,9 @@
             }
             sectors.forEach(s => {
                 container.innerHTML += `
-                    <button onclick="filterBySector('${s.zone}')" class="px-3 py-1.5 bg-forest-50 hover:bg-forest-100 text-forest-755 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm border border-forest-100">
+                    <button onclick="filterBySector('${s.zone}')" class="px-3 py-1.5 bg-violet-50 hover:bg-violet-100 text-violet-700 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm border border-violet-100">
                         📍 ${s.zone}
-                        <span class="bg-forest-600 text-white text-[10px] px-1.5 py-0.5 rounded-full">${s.count}</span>
+                        <span class="bg-violet-600 text-white text-[10px] px-1.5 py-0.5 rounded-full">${s.count}</span>
                     </button>
                 `;
             });
@@ -2111,19 +2136,19 @@
                 <input type="hidden" id="template-id">
                 <div>
                     <label class="block text-xs font-bold text-gray-700 mb-1">Titre du modèle *</label>
-                    <input type="text" id="template-title" required placeholder="Ex: Bonjour par défaut" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-forest-500">
+                    <input type="text" id="template-title" required placeholder="Ex: Bonjour par défaut" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-gray-700 mb-1">Catégorie</label>
-                    <input type="text" id="template-category" placeholder="Ex: ACCUEIL" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-forest-500">
+                    <input type="text" id="template-category" placeholder="Ex: ACCUEIL" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500">
                 </div>
                 <div class="flex-1 flex flex-col min-h-[150px]">
                     <label class="block text-xs font-bold text-gray-700 mb-1">Contenu du message *</label>
-                    <textarea id="template-content" required rows="6" placeholder="Tapez le message complet ici..." class="w-full flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-forest-500 resize-none"></textarea>
+                    <textarea id="template-content" required rows="6" placeholder="Tapez le message complet ici..." class="w-full flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none"></textarea>
                 </div>
                 <div class="flex justify-end gap-3 mt-2 flex-shrink-0">
                     <button type="button" onclick="closeTemplateModal()" class="px-5 py-2 text-gray-600 font-bold hover:bg-gray-100 rounded-xl text-sm transition-all">Annuler</button>
-                    <button type="submit" class="px-5 py-2 bg-forest-600 hover:bg-forest-700 text-white font-bold rounded-xl shadow-md text-sm transition-all">Enregistrer</button>
+                    <button type="submit" class="px-5 py-2 bg-violet-600 hover:bg-violet-700 text-white font-bold rounded-xl shadow-md text-sm transition-all">Enregistrer</button>
                 </div>
             </form>
         </div>
