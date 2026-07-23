@@ -1184,8 +1184,21 @@
         setInterval(updateSLATimers, 1000);
 
         let syncFailures = 0;
+        let _syncAbortController = null; // Tracks in-flight sync request for cancellation
 
         function syncData(fastLoad = false) {
+            // ── Race-condition fix: capture conversation ID at fetch time ──
+            // If a new conversation is clicked before a previous sync returns,
+            // we discard the stale response by comparing IDs when data arrives.
+            const fetchedForConvId = currentConversationId;
+
+            // Abort any in-flight full sync when user explicitly selects a conversation (fastLoad)
+            if (fastLoad && _syncAbortController) {
+                _syncAbortController.abort();
+            }
+            const abortCtrl = new AbortController();
+            if (fastLoad) _syncAbortController = abortCtrl;
+
             let url = `/api/sync/`;
             let params = new URLSearchParams();
             if (currentConversationId) {
@@ -1213,10 +1226,19 @@
                 url += '?' + params.toString();
             }
             
-            fetch(url)
+            fetch(url, { signal: abortCtrl.signal })
                 .then(res => res.json())
                 .then(data => {
                     syncFailures = 0; // Reset failures on success
+
+                    // ── Stale response guard ──
+                    // If the user clicked another conversation while this fetch was in flight,
+                    // discard the response entirely to prevent overwriting the correct chat view.
+                    if (fetchedForConvId !== currentConversationId) {
+                        console.warn(`[syncData] Discarding stale response (fetched for ${fetchedForConvId}, current is ${currentConversationId})`);
+                        return;
+                    }
+
                     // Caching UI updates to prevent flickering
                     if (!fastLoad) {
                         const newConvHash = JSON.stringify(data.conversations || []);
@@ -1333,6 +1355,11 @@
                     }
                 })
                 .catch(err => {
+                    // AbortError is expected (user clicked another conv) — don't count as failure
+                    if (err && err.name === 'AbortError') {
+                        console.log('[syncData] Fetch aborted (conversation changed), ignoring.');
+                        return;
+                    }
                     console.error("Error syncing dashboard:", err);
                     syncFailures++;
                     if (syncFailures >= 3) {
