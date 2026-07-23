@@ -176,15 +176,29 @@
 
         /* ── Conversation Tiles ── */
         .conv-tile {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            background-color: transparent;
+            transition: all 0.2s ease-in-out;
+            border-left: 4px solid transparent !important;
         }
         .conv-tile:hover {
-            background-color: rgba(241, 245, 249, 0.6);
+            background-color: #f1f5f9 !important;
         }
         .conv-tile.active {
-            background: linear-gradient(90deg, #dcfce7, #f0fdf4);
-            border-left-color: #16a34a;
+            background: linear-gradient(90deg, #e1efe7, #f2f8f5) !important;
+            border-left-color: #1b6b3e !important;
+        }
+        .conv-tile.unread {
+            background-color: #eff6ff !important;
+            border-left-color: #3b82f6 !important;
+        }
+        .conv-tile.unread:hover {
+            background-color: #dbeafe !important;
+        }
+        .conv-tile.sla-red-tile {
+            background-color: #fef2f2 !important;
+            border-left-color: #ef4444 !important;
+        }
+        .conv-tile.sla-red-tile:hover {
+            background-color: #fee2e2 !important;
         }
 
         /* ── Chat bubbles ── */
@@ -1198,18 +1212,20 @@
                         }
                     }
                     
-                    const newPropHash = JSON.stringify(data.properties || []);
-                    if (newPropHash !== lastPropertiesHash) {
-                        loadedProperties = data.properties || [];
-                        lastPropertiesHash = newPropHash;
-                        renderCatalog();
-                    }
-                    
-                    const newTempHash = JSON.stringify(data.templates || []);
-                    if (newTempHash !== lastTemplatesHash) {
-                        loadedTemplates = data.templates || [];
-                        lastTemplatesHash = newTempHash;
-                        renderTemplates();
+                    if (!fastLoad) {
+                        const newPropHash = JSON.stringify(data.properties || []);
+                        if (newPropHash !== lastPropertiesHash) {
+                            loadedProperties = data.properties || [];
+                            lastPropertiesHash = newPropHash;
+                            renderCatalog();
+                        }
+                        
+                        const newTempHash = JSON.stringify(data.templates || []);
+                        if (newTempHash !== lastTemplatesHash) {
+                            loadedTemplates = data.templates || [];
+                            lastTemplatesHash = newTempHash;
+                            renderTemplates();
+                        }
                     }
                     
                     renderAiSuggestions(data.suggested_properties);
@@ -1407,9 +1423,19 @@
                 const isActive = c.id === currentConversationId;
                 const isUnread = c.unread_count > 0;
                 
+                // Calculate SLA RED dynamically for tile highlighting
+                let isSlaRed = false;
+                if (c.status === 'ACTIVE' && c.is_last_msg_from_client && c.sla_started_at && c.sla_enabled) {
+                    const startedTime = new Date(c.sla_started_at);
+                    const elapsedMs = new Date(Date.now() + serverLocalTimeDiff) - startedTime;
+                    const limitMs = parseInt(c.sla_limit_minutes || '15') * 60 * 1000;
+                    isSlaRed = (elapsedMs >= 0.9 * limitMs);
+                }
+                
                 let activeClasses = 'conv-tile';
                 if (isActive) activeClasses += ' active';
-                else if (isUnread) activeClasses += ' bg-blue-50 border-l-4 border-l-blue-500';
+                else if (isSlaRed) activeClasses += ' sla-red-tile';
+                else if (isUnread) activeClasses += ' unread';
                 
                 const fontWeight = isUnread ? 'font-black text-blue-900' : 'font-bold text-gray-800';
                 const msgFontWeight = isUnread ? 'font-semibold text-gray-800' : 'text-gray-500';
