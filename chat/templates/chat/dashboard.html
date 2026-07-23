@@ -646,7 +646,7 @@
                     </div>
                     
                     <div class="flex items-center gap-1.5 md:gap-2 flex-shrink-0">
-                        <button id="validerPaiementBtn" onclick="validerPaiementAssistance()" class="hidden flex items-center gap-1.5 px-2 md:px-2.5 py-1.5 bg-green-50 hover:bg-green-100 text-green-700 rounded-xl md:text-[10px] font-bold transition-all border border-green-200/50" title="Valider Paiement (Assistance)">
+                        <button id="validerPaiementBtn" onclick="validerPaiementAssistance()" style="display:none" class="items-center gap-1.5 px-2 md:px-2.5 py-1.5 bg-green-50 hover:bg-green-100 text-green-700 rounded-xl md:text-[10px] font-bold transition-all border border-green-200/50" title="Valider Paiement (Assistance)">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4 text-green-600">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
@@ -664,8 +664,8 @@
                             </svg>
                             <span class="hidden md:inline">Fermer</span>
                         </button>
-                        <button onclick="mobileOpenCRM()" class="md:hidden p-2 bg-forest-50 text-forest-600 rounded-xl hover:bg-forest-100" title="Détails CRM">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4.5 h-4.5">
+                        <button onclick="mobileOpenCRM()" class="md:hidden p-2.5 bg-forest-50 text-forest-600 rounded-xl hover:bg-forest-100 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Détails CRM">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
                             </svg>
                         </button>
@@ -1562,6 +1562,19 @@
             activeView.classList.remove('hidden');
             setTimeout(() => activeView.classList.remove('opacity-0'), 50);
             
+            // Afficher squelette de chargement immédiat
+            const messagesContainer = document.getElementById('messagesContainer');
+            messagesContainer.innerHTML = `
+                <div class="flex flex-col gap-4 animate-pulse px-2 py-4">
+                    <div class="flex justify-start"><div class="h-10 bg-gray-200 rounded-2xl w-48"></div></div>
+                    <div class="flex justify-end"><div class="h-10 bg-forest-100 rounded-2xl w-56"></div></div>
+                    <div class="flex justify-start"><div class="h-14 bg-gray-200 rounded-2xl w-64"></div></div>
+                    <div class="flex justify-end"><div class="h-10 bg-forest-100 rounded-2xl w-40"></div></div>
+                    <div class="flex justify-start"><div class="h-10 bg-gray-200 rounded-2xl w-52"></div></div>
+                    <div class="flex items-center justify-center mt-4"><svg class="animate-spin h-5 w-5 text-forest-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></div>
+                </div>
+            `;
+            
             // Mobile toggle
             if (window.innerWidth < 768) {
                 document.getElementById('colLeft').classList.add('hidden');
@@ -1622,15 +1635,15 @@
                 document.getElementById('whatsappBadge').classList.add('hidden');
             }
             
-            // Assistance Paid
+            // Assistance Paid — utiliser style.display pour éviter conflit Tailwind hidden/flex
             const assistanceBadge = document.getElementById('assistancePaidBadge');
             const validerPaiementBtn = document.getElementById('validerPaiementBtn');
             if (info.is_assistance_paid) {
                 assistanceBadge.classList.remove('hidden');
-                validerPaiementBtn.classList.add('hidden');
+                validerPaiementBtn.style.display = 'none';
             } else {
                 assistanceBadge.classList.add('hidden');
-                validerPaiementBtn.classList.remove('hidden');
+                validerPaiementBtn.style.display = 'flex';
             }
             
             // Show or hide claim banner
@@ -1789,11 +1802,23 @@
                         const urlLower = m.attachment_url.toLowerCase();
                         const contentLower = m.content.toLowerCase();
                         // Improve media detection: if it doesn't end with typical extensions but contains media keywords, or if from whatsapp webhook often it is an image
-                        const isImg = urlLower.match(/\.(jpg|jpeg|png|gif|webp)$/i) || contentLower.includes('image') || urlLower.includes('media') && !urlLower.includes('mp4') && !contentLower.includes('vid');
-                        const isVid = urlLower.match(/\.(mp4|mov|avi|webm)$/i) || contentLower.includes('vidéo') || contentLower.includes('video');
+                        const isImg = urlLower.match(/\.(jpg|jpeg|png|gif|webp)$/i) !== null;
+                        const isVid = urlLower.match(/\.(mp4|mov|avi|webm|3gp)$/i) !== null;
+                        const isAudio = urlLower.match(/\.(mp3|ogg|m4a|wav|aac|oga|opus)$/i) !== null;
                         
                         let mediaPreview = '';
-                        if (isImg) {
+                        if (isAudio && !m.content.includes('[Note Vocale WhatsApp]')) {
+                            // Render inline audio player for audio files
+                            attachmentHtml = `
+                                <div class="mt-2 pt-2 border-t border-white/20 text-xs">
+                                    <audio controls src="${m.attachment_url}" preload="metadata" class="h-10 w-full rounded-lg"></audio>
+                                    <a href="${m.attachment_url}?download=1" target="_blank" class="mt-1 px-2.5 py-1.5 bg-white/20 hover:bg-white/30 text-white font-bold rounded-lg text-[10px] flex items-center gap-1 transition-all">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-3.5 h-3.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+                                        Télécharger l'audio
+                                    </a>
+                                </div>
+                            `;
+                        } else if (isImg) {
                             // Using object-contain instead of object-cover to preserve aspect ratio
                             mediaPreview = `<img src="${m.attachment_url}" onclick="window.open('${m.attachment_url}', '_blank')" class="rounded-xl max-h-64 object-contain mt-2 w-full border border-gray-200/50 bg-gray-50/50 hover:opacity-95 transition-opacity cursor-zoom-in" alt="Media Attachment">`;
                         } else if (isVid) {
@@ -2513,6 +2538,9 @@ ${window.location.origin}/survey/${currentConversationId}/`;
         // Close/resolve current conversation (sets status to CLOSED)
         function closeCurrentConversation() {
             if (!currentConversationId) return;
+            
+            // Confirmation avant fermeture définitive
+            if (!confirm('Êtes-vous sûr de vouloir fermer cette discussion ? Elle passera en statut « Fermée ».')) return;
             
             fetch('/api/conversation/close/', {
                 method: 'POST',

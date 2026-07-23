@@ -33,7 +33,7 @@ def format_time_short(dt):
     if msg_time.date() == now.date():
         return msg_time.strftime("%H:%M")
     elif msg_time.date() == (now - timezone.timedelta(days=1)).date():
-        return "Hier"
+        return "Hier " + msg_time.strftime("%H:%M")
     else:
         return msg_time.strftime("%d/%m/%y")
 
@@ -786,7 +786,6 @@ def sync_messages(request):
             'sla_enabled': conv.sla_enabled,
             'unread_count': unread_count,
             'is_blacklisted': is_blacklisted,
-            'is_blacklisted': is_blacklisted,
             'is_assistance_paid': client.is_assistance_paid if client else False,
         })
         
@@ -890,18 +889,32 @@ def sync_messages(request):
             pass
 
     # Load all active reminders for current agent to trigger alerts
-    agent_reminders = Reminder.objects.filter(agent=agent, is_done=False).order_by('remind_at')
-    agent_reminders_data = [{
-        'id': str(r.id),
-        'conversation_id': str(r.conversation.id),
-        'client_name': r.conversation.participants.filter(role=User.RoleEnum.CLIENT).first().first_name if r.conversation.participants.filter(role=User.RoleEnum.CLIENT).first() else "Client",
-        'title': r.title,
-        'remind_at': r.remind_at.isoformat()
-    } for r in agent_reminders]
+    # Optimisation: select_related pour éviter les N+1 queries
+    agent_reminders = Reminder.objects.filter(
+        agent=agent, is_done=False
+    ).select_related('conversation').prefetch_related(
+        Prefetch('conversation__participants', queryset=User.objects.filter(role=User.RoleEnum.CLIENT), to_attr='client_participants')
+    ).order_by('remind_at')
+    
+    agent_reminders_data = []
+    for r in agent_reminders:
+        client_participants = getattr(r.conversation, 'client_participants', [])
+        client_name = client_participants[0].first_name if client_participants else "Client"
+        agent_reminders_data.append({
+            'id': str(r.id),
+            'conversation_id': str(r.conversation.id),
+            'client_name': client_name,
+            'title': r.title,
+            'remind_at': r.remind_at.isoformat()
+        })
 
-    # Load templates and properties for UI helper
-    properties = get_live_properties()
-    templates = list(QuickTemplate.objects.all().values('id', 'title', 'content', 'category'))
+    # Load templates and properties for UI helper — skip if fast_load to save server time
+    if fast_load:
+        properties = []
+        templates = []
+    else:
+        properties = get_live_properties()
+        templates = list(QuickTemplate.objects.all().values('id', 'title', 'content', 'category'))
 
     return JsonResponse({
         'conversations': conv_data,
