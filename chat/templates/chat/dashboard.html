@@ -32,7 +32,7 @@
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -40,17 +40,17 @@
             theme: {
                 extend: {
                     fontFamily: {
-                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        sans: ['"Outfit"', 'sans-serif'],
                     },
                     colors: {
                         forest: {
-                            50: '#f2f8f5',
-                            100: '#e1efe7',
-                            200: '#c5e0cf',
-                            500: '#1b6b3e',
-                            600: '#0f4f2c',
-                            700: '#0b3c21',
-                            900: '#052212',
+                            50: '#F0FDF4',
+                            100: '#DCFCE7',
+                            200: '#BBF7D0',
+                            500: '#22C55E',
+                            600: '#16A34A',
+                            700: '#15803D',
+                            900: '#14532D',
                         }
                     }
                 }
@@ -78,8 +78,11 @@
 
         /* ── Header: Rich gradient ── */
         .app-header {
-            background: linear-gradient(135deg, #0f5132 0%, #1a7f4e 60%, #0d9488 100%);
-            box-shadow: 0 2px 20px rgba(15, 81, 50, 0.3);
+            background: linear-gradient(135deg, rgba(15, 81, 50, 0.95) 0%, rgba(26, 127, 78, 0.95) 60%, rgba(13, 148, 136, 0.95) 100%);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            box-shadow: 0 4px 20px rgba(15, 81, 50, 0.2);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         /* ── Left sidebar: warm slate background ── */
@@ -114,10 +117,12 @@
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             box-shadow: 0 4px 24px -4px rgba(0, 0, 0, 0.15);
-            transition: all 0.3s ease-in-out;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .crm-card:hover {
             background: rgba(255, 255, 255, 0.12);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px -4px rgba(0, 0, 0, 0.2);
         }
         .crm-card-label {
             font-size: 9px;
@@ -437,6 +442,73 @@
             max-height: 60px;
             opacity: 1;
         }
+
+        /* ══════════════════════════════════════════
+           FLUIDITY & UI IMPROVEMENTS
+        ══════════════════════════════════════════ */
+        
+        /* Smooth Entrance for Messages */
+        @keyframes slideUpFadeIn {
+            0% { opacity: 0; transform: translateY(15px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* The container for messages */
+        #messagesContainer {
+            scroll-behavior: smooth;
+        }
+        
+        /* Apply animation to all message wrappers (client and agent) */
+        .msg-bubble-wrap {
+            animation: slideUpFadeIn 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+            will-change: transform, opacity;
+        }
+
+        /* Bubble hover effects */
+        .bubble-agent, .bubble-client, .bubble-system {
+            transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.25s ease;
+        }
+        .bubble-agent:hover, .bubble-client:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+        }
+
+        /* Glassmorphism for Chat Header */
+        #activeChatView > div:first-child {
+            background: rgba(255, 255, 255, 0.75) !important;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            z-index: 10;
+        }
+
+        /* Glassmorphism for Chat Input Area */
+        .chat-input-bar {
+            background: rgba(255, 255, 255, 0.85) !important;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(0,0,0,0.05) !important;
+            box-shadow: 0 -10px 30px rgba(0,0,0,0.03) !important;
+        }
+
+        /* Refined Smooth Typing Indicator */
+        .typing-dot {
+            animation: typing-sine 1.4s infinite ease-in-out both !important;
+        }
+        @keyframes typing-sine {
+            0%, 80%, 100% { transform: scale(0.8) translateY(0); opacity: 0.5; }
+            40% { transform: scale(1.15) translateY(-5px); opacity: 1; background-color: #22c55e; }
+        }
+        
+        /* Toolbar buttons smooth hover */
+        #chatToolbar button {
+            transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        #chatToolbar button:hover {
+            transform: scale(1.05);
+            background-color: rgba(243, 244, 246, 0.8);
+        }
+
     </style>
 </head>
 <body class="flex flex-col font-sans" style="height:100dvh;height:100vh">
@@ -697,6 +769,24 @@
                     </button>
                 </div>
 
+                <!-- 🔍 In-Chat Message Search Bar -->
+                <div id="chatSearchBar" class="hidden flex-shrink-0 px-4 py-2 bg-white border-b border-gray-100 flex items-center gap-2">
+                    <div class="relative flex-1">
+                        <input type="text" id="chatSearchInput" placeholder="Rechercher dans cette discussion..." autocomplete="off"
+                            class="w-full pl-9 pr-10 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-forest-500 transition-all"
+                            oninput="filterChatMessages(this.value)">
+                        <div class="absolute left-3 top-2.5 text-gray-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-3.5 h-3.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.602 10.602z" />
+                            </svg>
+                        </div>
+                        <span id="chatSearchCount" class="absolute right-3 top-2 text-[10px] font-bold text-gray-400 hidden"></span>
+                    </div>
+                    <button onclick="closeChatSearch()" class="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-all flex-shrink-0" title="Fermer la recherche">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+
                 <!-- Messages Scroll Area -->
                 <div class="flex-1 overflow-y-auto p-3 md:p-6 space-y-3 md:space-y-4 custom-scrollbar chat-bg" id="messagesContainer">
                     <!-- Messages will be injected here -->
@@ -714,13 +804,22 @@
                         <div id="slashTemplatesList" class="flex flex-col gap-1"></div>
                     </div>
 
-                    <!-- Session Expired Alert Banner -->
-                    <div id="sessionExpiredBanner" class="hidden bg-red-50 border border-red-100 rounded-xl px-4 py-2.5 flex items-center justify-between">
-                        <div class="flex items-center gap-2 text-xs font-semibold text-red-800">
-                            <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-                            <span>Session WhatsApp expirée (+24h). Les réponses libres sont désactivées.</span>
+                    <!-- Session Expired Alert Banner (Enhanced with HSM template picker) -->
+                    <div id="sessionExpiredBanner" class="hidden flex-col gap-2 bg-red-50 border border-red-200 rounded-2xl px-4 py-3 shadow-sm">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2 text-xs font-semibold text-red-800">
+                                <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                                <span>Session WhatsApp expirée (+24h)</span>
+                            </div>
+                            <span class="text-[10px] bg-red-100 text-red-700 font-bold px-2 py-0.5 rounded-full border border-red-200">Hors fenêtre</span>
                         </div>
-                        <span class="text-[10px] bg-red-100 text-red-700 font-bold px-2 py-0.5 rounded-full">Utilisez un modèle</span>
+                        <p class="text-[10px] text-red-600">Relancez le client avec un modèle de message approuvé :</p>
+                        <div class="flex flex-col gap-1.5" id="hsmTemplatesList">
+                            <!-- Injected dynamically from templates -->
+                            <button onclick="sendHsmTemplate('Bonjour ! 😊 Nous avons de nouvelles opportunités immobilières qui pourraient vous intéresser. Souhaitez-vous reprendre notre discussion ?')" class="text-left w-full px-3 py-2 rounded-xl bg-white border border-red-100 text-xs text-gray-700 hover:bg-red-50 hover:border-red-300 transition-all font-medium leading-snug">💬 Relance générale — Reprendre la discussion</button>
+                            <button onclick="sendHsmTemplate('Bonjour ! 🏡 Nous avons trouvé de nouvelles annonces correspondant à votre recherche. Pouvez-vous nous contacter pour en savoir plus ?')" class="text-left w-full px-3 py-2 rounded-xl bg-white border border-red-100 text-xs text-gray-700 hover:bg-red-50 hover:border-red-300 transition-all font-medium leading-snug">🏡 Nouvelles annonces disponibles</button>
+                            <button onclick="sendHsmTemplate('Bonjour ! 📅 Suite à notre échange, nous souhaitons planifier une visite pour vous. Êtes-vous disponible cette semaine ?')" class="text-left w-full px-3 py-2 rounded-xl bg-white border border-red-100 text-xs text-gray-700 hover:bg-red-50 hover:border-red-300 transition-all font-medium leading-snug">📅 Proposition de visite</button>
+                        </div>
                     </div>
 
                     <!-- Quick Actions Row - flex-wrap instead of overflow-x to allow dropdowns -->
@@ -785,6 +884,12 @@
 
                         <!-- SLA Controls -->
                         <div class="flex items-center gap-1.5 border-l border-gray-300 pl-1.5 ml-0.5 flex-shrink-0">
+                            <!-- 🔍 In-chat search toggle -->
+                            <button type="button" onclick="toggleChatSearch()" id="chatSearchToggleBtn" title="Rechercher dans la discussion" class="w-7 h-7 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-indigo-100 text-gray-500 hover:text-indigo-700 transition-colors border border-gray-200 flex-shrink-0">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-3.5 h-3.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.602 10.602z" />
+                                </svg>
+                            </button>
                             <select id="chatSlaSelect" onchange="updateChatSlaLimit(this)" class="bg-gray-100 hover:bg-gray-200 border-none rounded-lg px-2 py-1 text-[11px] font-bold text-gray-700 focus:outline-none focus:ring-1 focus:ring-forest-500 cursor-pointer shadow-sm">
                                 <option value="15">15m</option>
                                 <option value="60">1h</option>
@@ -842,11 +947,42 @@
                 <button onclick="setRightTab('CURRENT')" id="rightTabCurrent" class="right-tab-btn active flex-1">🏠 Fiche</button>
                 <button onclick="setRightTab('CATALOG')" id="rightTabCatalog" class="right-tab-btn flex-1">📋 Catalogue</button>
                 <button onclick="setRightTab('VISITS')" id="rightTabVisits" class="right-tab-btn flex-1">📅 Visites</button>
-                <button onclick="setRightTab('PARTNERS')" id="rightTabPartners" class="right-tab-btn flex-1">🤝 Partenaires</button>
             </div>
 
             <!-- Tab Content Container -->
             <div class="flex-1 overflow-y-auto p-4 custom-scrollbar" style="scrollbar-color: rgba(255,255,255,0.12) transparent;">
+
+                <!-- ✨ PROSPECT SUMMARY CARD -->
+                <div id="prospectSummaryCard" class="hidden mb-4 rounded-2xl overflow-hidden border border-white/15 shadow-lg">
+                    <div class="bg-gradient-to-r from-forest-700 to-teal-700 px-4 py-2.5 flex items-center justify-between">
+                        <span class="text-[11px] font-extrabold text-white uppercase tracking-wider">🧑‍💼 Fiche Prospect</span>
+                        <span id="prospectSummaryPipelineBadge" class="text-[10px] font-bold px-2 py-0.5 bg-white/20 text-white rounded-full">Nouveau</span>
+                    </div>
+                    <div class="bg-white/5 backdrop-blur-sm px-4 py-3 flex flex-col gap-2">
+                        <div class="grid grid-cols-2 gap-x-3 gap-y-2">
+                            <div class="flex flex-col">
+                                <span class="text-[9px] font-bold text-white/50 uppercase tracking-wider mb-0.5">Projet</span>
+                                <span id="summaryProject" class="text-xs font-semibold text-white truncate">—</span>
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="text-[9px] font-bold text-white/50 uppercase tracking-wider mb-0.5">Type</span>
+                                <span id="summaryPropertyType" class="text-xs font-semibold text-white truncate">—</span>
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="text-[9px] font-bold text-white/50 uppercase tracking-wider mb-0.5">Zone</span>
+                                <span id="summaryZone" class="text-xs font-semibold text-white truncate">—</span>
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="text-[9px] font-bold text-white/50 uppercase tracking-wider mb-0.5">Assistance</span>
+                                <span id="summaryAssistance" class="text-xs font-bold">—</span>
+                            </div>
+                        </div>
+                        <div id="summaryTagsRow" class="flex flex-wrap gap-1 pt-1 border-t border-white/10">
+                            <!-- Tags injected by JS -->
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Current Property Tab -->
                 <div id="currentPropertyTab">
                     <!-- Prospect Labels Section -->
@@ -975,59 +1111,6 @@
                     </div>
                 </div>
 
-                <!-- Partners Tab (Hidden initially) -->
-                <div id="partnersTab" class="hidden flex flex-col gap-4">
-                    <div class="crm-card bg-emerald-950/20 border border-emerald-500/20 p-4 rounded-2xl flex flex-col gap-3">
-                        <h4 class="text-xs font-bold text-white flex items-center gap-1.5">
-                            🤝 Mise en relation Partenaire
-                        </h4>
-                        
-                        <div class="flex flex-col gap-1">
-                            <label class="text-[9px] text-gray-400 font-semibold uppercase tracking-wider">Recherche par Nom / Réf / Mots-clés</label>
-                            <input type="text" id="partnerKeywordInput" oninput="searchPartners()" placeholder="Ex: Presta, Abdu, SEYLON..." class="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-forest-500">
-                        </div>
-
-                        <div class="flex flex-col gap-1">
-                            <label class="text-[9px] text-gray-400 font-semibold uppercase tracking-wider">Zone de Recherche</label>
-                            <select id="partnerZoneInput" onchange="searchPartners()" class="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-forest-500">
-                                <option value="">Toutes les zones</option>
-                                {% for d in districts %}
-                                <option value="{{ d.name }}">{{ d.name }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-2">
-                            <div class="flex flex-col gap-1">
-                                <label class="text-[9px] text-gray-400 font-semibold uppercase tracking-wider">Prix du bien (FCFA)</label>
-                                <input type="number" id="partnerPriceInput" placeholder="Ex: 500000" class="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-forest-500">
-                            </div>
-                            <div class="flex flex-col gap-1">
-                                <label class="text-[9px] text-gray-400 font-semibold uppercase tracking-wider">Type de bien</label>
-                                <select id="partnerTypeInput" onchange="searchPartners()" class="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-forest-500">
-                                    <option value="">Tous les types</option>
-                                    {% for pt in property_types %}
-                                    <option value="{{ pt.name }}">{{ pt.name }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="border-t border-white/5 pt-2 flex flex-col gap-2">
-                            <label class="text-[9px] text-gray-400 font-semibold uppercase tracking-wider">Coordonnées du Visiteur</label>
-                            <input type="text" id="partnerVisitorName" placeholder="Nom du visiteur" class="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-forest-500">
-                            <input type="text" id="partnerVisitorPhone" placeholder="Téléphone du visiteur" class="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-forest-500">
-                        </div>
-                    </div>
-
-                    <div class="flex flex-col gap-2">
-                        <label class="text-[9px] text-gray-400 font-semibold uppercase tracking-wider">Partenaires Trouvés (<span id="partnerCount">0</span>)</label>
-                        <div id="partnerList" class="flex flex-col gap-2 max-h-[350px] overflow-y-auto custom-scrollbar">
-                            <!-- Dynamically loaded partners -->
-                        </div>
-                    </div>
-                </div>
-
                 <!-- Visits Tab -->
                 <div id="visitsTab" class="hidden flex flex-col gap-4">
                     <div class="crm-card">
@@ -1035,7 +1118,9 @@
                         <div class="flex flex-col gap-2">
                             <input type="text" id="visitPropertyTitle" placeholder="Bien immobilier à visiter..." class="w-full bg-white border border-gray-200 rounded-xl px-2.5 py-1.5 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-forest-500">
                             <input type="datetime-local" id="visitDate" class="w-full bg-white border border-gray-200 rounded-xl px-2.5 py-1.5 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-forest-500">
-                            <textarea id="visitNotes" placeholder="Notes optionnelles (ex: clés chez le gardien)..." rows="2" class="w-full bg-white border border-gray-200 rounded-xl px-2.5 py-1.5 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-forest-500 resize-none"></textarea>
+                            <select id="visitPartnerId" class="w-full bg-white border border-gray-200 rounded-xl px-2.5 py-1.5 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-forest-500">
+                                <option value="">Aucun partenaire</option>
+                            </select>
                             <button onclick="scheduleVisit()" class="w-full py-1.5 bg-forest-600 hover:bg-forest-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm">Planifier la visite</button>
                         </div>
                     </div>
@@ -1182,6 +1267,9 @@
         // Update the session countdown every second for real-time HH:MM:SS
         setInterval(updateSessionCountdown, 1000);
         setInterval(updateSLATimers, 1000);
+        
+        // Bulletproof HTTP fallback polling: sync every 4 seconds in case WebSockets fail or sleep
+        setInterval(() => { syncData(false); }, 4000);
 
         let syncFailures = 0;
         let _syncAbortController = null; // Tracks in-flight sync request for cancellation
@@ -1488,7 +1576,7 @@
                             <div class="flex items-center gap-2">
                                 <span class="presence-dot ${getActivityStatus(c.client_last_message_at).level}"></span>
                                 <span class="${fontWeight} text-sm flex items-center gap-2">
-                                    ${c.client_name}
+                                    ${escapeHTML(c.client_name)}
                                     ${c.is_blacklisted ? '<span class="bg-red-600 text-white text-[9px] px-1.5 py-0.5 rounded-full font-bold">BLACKLISTÉ</span>' : ''}
                                     ${c.is_assistance_paid ? '<span class="bg-green-600 text-white text-[9px] px-1.5 py-0.5 rounded-full font-bold shadow-sm" title="Assistance Payée">PAYÉE</span>' : ''}
                                     ${isUnread ? `<span class="bg-blue-600 text-white text-[9px] px-1.5 py-0.5 rounded-full">${c.unread_count}</span>` : ''}
@@ -1513,7 +1601,7 @@
                             </span>
                         </div>
                         <div class="flex items-center gap-1.5 mt-1 overflow-x-auto no-scrollbar flex-nowrap" style="scrollbar-width: none; -ms-overflow-style: none;">
-                            <span class="text-[10px] font-bold text-forest-600 bg-forest-100 rounded px-1.5 py-0.5 w-max flex-shrink-0">${c.topic}</span>
+                            <span class="text-[10px] font-bold text-forest-600 bg-forest-100 rounded px-1.5 py-0.5 w-max flex-shrink-0">${escapeHTML(c.topic)}</span>
                             ${c.assigned_to ? `<span class="text-[9px] font-bold text-emerald-700 bg-emerald-100 rounded px-1.5 py-0.5 flex-shrink-0" title="Gérée par ${c.assigned_to}">Gérée</span>` : `<span class="text-[9px] font-bold text-amber-700 bg-amber-100 rounded px-1.5 py-0.5 flex-shrink-0">Non assignée</span>`}
                             <span class="text-[9px] font-bold px-1.5 py-0.5 rounded flex-shrink-0 ${
                                 c.pipeline_stage === 'WON' ? 'bg-green-100 text-green-800' :
@@ -1672,26 +1760,11 @@
             document.getElementById('chatHeaderPhone').textContent = info.client_phone;
             document.getElementById('chatHeaderAvatar').textContent = info.client_name.charAt(0);
             
-            // Pre-fill Partner match visitor fields
-            document.getElementById('partnerVisitorName').value = info.client_name || "";
-            document.getElementById('partnerVisitorPhone').value = info.client_phone || "";
-            
             // Pre-fill visit property title from the currently displayed property (if any)
             const propTitleEl = document.getElementById('assocPropTitle');
             const visitTitleInput = document.getElementById('visitPropertyTitle');
             if (propTitleEl && visitTitleInput && !visitTitleInput.value && propTitleEl.textContent && propTitleEl.textContent !== 'Titre Bien') {
                 visitTitleInput.value = propTitleEl.textContent.trim();
-            }
-            
-            if (info.client_property_type) {
-                const pt = info.client_property_type.toUpperCase();
-                const select = document.getElementById('partnerTypeInput');
-                if (["APPARTEMENT", "VILLA", "TERRAIN", "STUDIO", "BUREAU", "CHAMBRE"].includes(pt)) {
-                    select.value = pt;
-                }
-            }
-            if (info.client_zone) {
-                document.getElementById('partnerZoneInput').value = info.client_zone || "";
             }
             
             // Update presence UI (dot and badge)
@@ -1786,6 +1859,9 @@
             currentProspectTags = [...new Set(currentProspectTags)];
             renderProspectTags();
 
+            // Update prospect summary card (fiche synthèse)
+            updateProspectSummaryCard(info);
+
             // Populate and render pipeline stage
             document.getElementById('pipelineSelect').value = info.pipeline_stage || 'NEW';
             
@@ -1811,6 +1887,7 @@
             
             if (currentRightTab === 'VISITS') {
                 loadVisits();
+                if(!window.allPartnersLoaded) { fetchAllPartnersForVisit(); }
             }
             
             // If softUpdate is true, we ONLY updated the header/UI above, we skip regenerating messages HTML.
@@ -1831,9 +1908,23 @@
                     `;
                 } else {
                     const isSelf = m.sender_is_self;
-                    const containerClass = isSelf ? 'justify-end' : 'justify-start';
-                    const bubbleClass = isSelf ? 'bg-forest-600 text-white rounded-tr-none' : 'bg-white text-gray-800 rounded-tl-none border border-gray-200';
-                    const nameClass = isSelf ? 'text-right' : 'text-left';
+                    const isPrompt = m.is_icebreaker_prompt;
+                    const isResponse = m.is_icebreaker_response;
+                    
+                    let containerClass = isSelf ? 'justify-end' : 'justify-start';
+                    let bubbleClass = isSelf ? 'bg-forest-600 text-white rounded-tr-none shadow-sm' : 'bg-white text-gray-800 rounded-tl-none border border-gray-200 shadow-sm';
+                    let nameClass = isSelf ? 'text-right' : 'text-left';
+                    let badgeTag = '';
+                    
+                    if (isPrompt) {
+                        containerClass = 'justify-start';
+                        bubbleClass = 'bg-gradient-to-r from-indigo-50/90 to-purple-50/90 text-indigo-950 border border-indigo-200 rounded-tl-none shadow-sm';
+                        badgeTag = `<div class="mb-1.5"><span class="inline-flex items-center gap-1 px-2.5 py-0.5 bg-indigo-100/90 text-indigo-800 text-[10px] font-extrabold rounded-full border border-indigo-200/80 shadow-2xs"><svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>🤖 Assistant Automatique (Icebreaker)</span></div>`;
+                    } else if (isResponse) {
+                        containerClass = 'justify-start';
+                        bubbleClass = 'bg-teal-50/90 text-teal-950 border border-teal-300 rounded-tl-none shadow-sm ring-1 ring-teal-200/50';
+                        badgeTag = `<div class="mb-1.5"><span class="inline-flex items-center gap-1 px-2.5 py-0.5 bg-teal-100 text-teal-900 text-[10px] font-extrabold rounded-full border border-teal-200/90 shadow-2xs"><svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-teal-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>✨ Choix Formulaire (Icebreaker)</span></div>`;
+                    }
                     
                     let statusTicks = '';
                     if (isSelf && info.is_whatsapp) {
@@ -1869,31 +1960,38 @@
                     if (m.attachment_url && !m.content.includes('[Note Vocale WhatsApp]')) {
                         const urlLower = m.attachment_url.toLowerCase();
                         const contentLower = m.content.toLowerCase();
-                        // Improve media detection: if it doesn't end with typical extensions but contains media keywords, or if from whatsapp webhook often it is an image
-                        const isImg = urlLower.match(/\.(jpg|jpeg|png|gif|webp)$/i) !== null;
-                        const isVid = urlLower.match(/\.(mp4|mov|avi|webm|3gp)$/i) !== null;
-                        const isAudio = urlLower.match(/\.(mp3|ogg|m4a|wav|aac|oga|opus)$/i) !== null;
+                        
+                        // Robust media type detection for WhatsApp & local media
+                        const isImg = urlLower.match(/\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i) !== null || 
+                                      contentLower.includes('[image') || 
+                                      urlLower.includes('image');
+                        const isVid = urlLower.match(/\.(mp4|mov|avi|webm|3gp)(\?.*)?$/i) !== null || 
+                                      contentLower.includes('[vidéo') || 
+                                      contentLower.includes('[video');
+                        const isAudio = urlLower.match(/\.(mp3|ogg|m4a|wav|aac|oga|opus)(\?.*)?$/i) !== null || 
+                                       contentLower.includes('[audio') || 
+                                       contentLower.includes('voice');
                         
                         let mediaPreview = '';
-                        if (isAudio && !m.content.includes('[Note Vocale WhatsApp]')) {
+                        if (isAudio) {
                             // Render inline audio player for audio files
                             attachmentHtml = `
                                 <div class="mt-2 pt-2 border-t border-white/20 text-xs">
                                     <audio controls src="${m.attachment_url}" preload="metadata" class="h-10 w-full rounded-lg"></audio>
-                                    <a href="${m.attachment_url}?download=1" target="_blank" class="mt-1 px-2.5 py-1.5 bg-white/20 hover:bg-white/30 text-white font-bold rounded-lg text-[10px] flex items-center gap-1 transition-all">
+                                    <a href="${m.attachment_url}" download target="_blank" class="mt-1 px-2.5 py-1.5 bg-white/20 hover:bg-white/30 text-white font-bold rounded-lg text-[10px] flex items-center gap-1 transition-all">
                                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-3.5 h-3.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
                                         Télécharger l'audio
                                     </a>
                                 </div>
                             `;
                         } else if (isImg) {
-                            // Using object-contain instead of object-cover to preserve aspect ratio
-                            mediaPreview = `<img src="${m.attachment_url}" onclick="window.open('${m.attachment_url}', '_blank')" class="rounded-xl max-h-64 object-contain mt-2 w-full border border-gray-200/50 bg-gray-50/50 hover:opacity-95 transition-opacity cursor-zoom-in" alt="Media Attachment">`;
+                            // Using object-contain and lazy loading for high performance
+                            mediaPreview = `<img src="${m.attachment_url}" loading="lazy" onclick="window.open('${m.attachment_url}', '_blank')" class="rounded-xl max-h-72 object-contain mt-2 w-full border border-gray-200/50 bg-gray-50/50 hover:opacity-95 transition-all cursor-zoom-in shadow-sm" alt="Image WhatsApp">`;
                         } else if (isVid) {
-                            mediaPreview = `<video src="${m.attachment_url}" controls preload="metadata" class="rounded-xl max-h-64 w-full object-contain mt-2 border border-gray-200/50 bg-gray-50/50"></video>`;
+                            mediaPreview = `<video src="${m.attachment_url}" controls preload="metadata" class="rounded-xl max-h-72 w-full object-contain mt-2 border border-gray-200/50 bg-gray-50/50 shadow-sm"></video>`;
                         } else {
                             mediaPreview = `
-                                <a href="${m.attachment_url}" target="_blank" class="underline flex items-center gap-1 font-bold mt-2 text-forest-600 hover:text-forest-700">
+                                <a href="${m.attachment_url}" target="_blank" class="inline-flex items-center gap-1.5 font-bold mt-2 px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-xs transition-all">
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m.75 12l3 3m0 0l3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
                                     </svg>
@@ -1902,27 +2000,30 @@
                             `;
                         }
                         
-                        attachmentHtml = `
-                            <div class="mt-2 border-t border-white/20 pt-2 text-xs">
-                                ${mediaPreview}
-                                <div class="mt-2 flex gap-2">
-                                    <a href="${m.attachment_url}?download=1" target="_blank" 
-                                        class="px-2.5 py-1.5 bg-white/20 hover:bg-white/30 text-white font-bold rounded-lg text-[10px] flex items-center gap-1 transition-all">
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-3.5 h-3.5">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-                                        </svg>
-                                        Télécharger le fichier
-                                    </a>
+                        if (!isAudio) {
+                            attachmentHtml = `
+                                <div class="mt-2 border-t border-white/20 pt-2 text-xs">
+                                    ${mediaPreview}
+                                    <div class="mt-2 flex gap-2">
+                                        <a href="${m.attachment_url}" download target="_blank" 
+                                            class="px-2.5 py-1.5 bg-white/20 hover:bg-white/30 text-white font-bold rounded-lg text-[10px] flex items-center gap-1 transition-all">
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-3.5 h-3.5">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                                            </svg>
+                                            Télécharger le fichier
+                                        </a>
+                                    </div>
                                 </div>
-                            </div>
-                        `;
+                            `;
+                        }
                     }
                     
                     html += `
                         <div class="flex ${containerClass}">
                             <div class="max-w-[70%] msg-bubble-wrap flex flex-col gap-1">
                                 <span class="text-[10px] font-semibold text-gray-400 ${nameClass}">${m.sender_name}</span>
-                                <div class="px-4 py-3 rounded-2xl text-sm shadow-sm leading-relaxed ${bubbleClass}">
+                                <div class="px-4 py-3 rounded-2xl text-sm leading-relaxed ${bubbleClass}">
+                                    ${badgeTag}
                                     ${contentHtml}
                                     ${attachmentHtml}
                                 </div>
@@ -1980,22 +2081,6 @@
             // Look for matching property in loadedProperties from the topic title
             const match = loadedProperties.find(p => (topic || '').includes(p.title));
             
-            // Guess Zone
-            let guessedZone = "";
-            const zonesData = [
-                {% for d in districts %}
-                { upper: "{{ d.name }}".toUpperCase(), exact: "{{ d.name }}" },
-                {% endfor %}
-            ];
-            const textToSearch = (topic + " " + (match ? match.title + " " + match.description : "")).toUpperCase();
-            for (let z of zonesData) {
-                if (textToSearch.includes(z.upper)) {
-                    guessedZone = z.exact;
-                    break;
-                }
-            }
-            document.getElementById('partnerZoneInput').value = guessedZone;
-
             if (match) {
                 noProp.classList.add('hidden');
                 card.classList.remove('hidden');
@@ -2009,14 +2094,9 @@
                 // Store active property data to easily share
                 card.dataset.url = match.url;
                 card.dataset.title = match.title;
-                
-                // Pre-fill partner price
-                document.getElementById('partnerPriceInput').value = match.price;
             } else {
                 noProp.classList.remove('hidden');
                 card.classList.add('hidden');
-                
-                document.getElementById('partnerPriceInput').value = "";
             }
         }
 
@@ -2032,9 +2112,9 @@
             loadedProperties.forEach(p => {
                 html += `
                     <div class="flex gap-3 bg-gray-50 border border-gray-100 rounded-xl p-2.5 shadow-sm hover:shadow transition-all">
-                        <img src="${p.image_url}" alt="${p.title}" class="h-16 w-16 object-cover rounded-lg flex-shrink-0">
+                        <img src="${p.image_url}" alt="${escapeHTML(p.title)}" class="h-16 w-16 object-cover rounded-lg flex-shrink-0">
                         <div class="flex-1 min-w-0">
-                            <h6 class="font-bold text-gray-800 text-xs truncate">${p.title}</h6>
+                            <h6 class="font-bold text-gray-800 text-xs truncate">${escapeHTML(p.title)}</h6>
                             <span class="text-[10px] font-bold text-forest-600">${p.price.toLocaleString('fr-FR')} FCFA</span>
                             <div class="flex gap-2 mt-2">
                                 <button onclick="insertText('Regardez cette annonce : ${p.url}')" class="px-2 py-1 bg-forest-100 hover:bg-forest-200 text-forest-700 font-bold rounded text-[9px] transition-all">Partager</button>
@@ -2096,22 +2176,18 @@
             
             const btnCurrent = document.getElementById('rightTabCurrent');
             const btnCatalog = document.getElementById('rightTabCatalog');
-            const btnPartners = document.getElementById('rightTabPartners');
             const btnVisits = document.getElementById('rightTabVisits');
             const currentTabDiv = document.getElementById('currentPropertyTab');
             const catalogTabDiv = document.getElementById('catalogPropertyTab');
-            const partnersTabDiv = document.getElementById('partnersTab');
             const visitsTabDiv = document.getElementById('visitsTab');
             
             // Set all inactive
             btnCurrent.classList.remove('active');
             btnCatalog.classList.remove('active');
-            btnPartners.classList.remove('active');
             if(btnVisits) btnVisits.classList.remove('active');
             
             currentTabDiv.classList.add('hidden');
             catalogTabDiv.classList.add('hidden');
-            partnersTabDiv.classList.add('hidden');
             if(visitsTabDiv) visitsTabDiv.classList.add('hidden');
             
             if (tab === 'CURRENT') {
@@ -2120,14 +2196,11 @@
             } else if (tab === 'CATALOG') {
                 btnCatalog.classList.add('active');
                 catalogTabDiv.classList.remove('hidden');
-            } else if (tab === 'PARTNERS') {
-                btnPartners.classList.add('active');
-                partnersTabDiv.classList.remove('hidden');
-                searchPartners();
             } else if (tab === 'VISITS') {
                 if(btnVisits) btnVisits.classList.add('active');
                 if(visitsTabDiv) visitsTabDiv.classList.remove('hidden');
                 loadVisits();
+                if(!window.allPartnersLoaded) { fetchAllPartnersForVisit(); }
             }
         }
 
@@ -2139,7 +2212,9 @@
             }
             const propTitle = document.getElementById('visitPropertyTitle').value.trim();
             const vDate = document.getElementById('visitDate').value;
-            const notes = document.getElementById('visitNotes') ? document.getElementById('visitNotes').value.trim() : '';
+            const partnerSelect = document.getElementById('visitPartnerId');
+            const selectedPartnerName = partnerSelect.options[partnerSelect.selectedIndex].text;
+            const notes = selectedPartnerName !== 'Aucun partenaire' ? `Partenaire: ${selectedPartnerName}` : '';
             
             if (!propTitle || !vDate) {
                 showToast('Veuillez remplir le bien et la date.', 'warning');
@@ -2166,16 +2241,14 @@
                 if(data.status === 'success') {
                     document.getElementById('visitPropertyTitle').value = '';
                     document.getElementById('visitDate').value = '';
-                    if(document.getElementById('visitNotes')) document.getElementById('visitNotes').value = '';
+                    if(document.getElementById('visitPartnerId')) document.getElementById('visitPartnerId').value = '';
                     loadVisits();
                     showToast('Visite planifiée avec succès !', 'success');
                     
                     // Draft a confirmation message for the client
                     const dateObj = new Date(vDate);
                     const formattedDate = dateObj.toLocaleDateString('fr-FR') + ' à ' + dateObj.toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'});
-                    const draftMsg = `*VISITE PLANIFIÉE* 📅
-Nous confirmons votre visite pour le bien: ${propTitle}.
-Date: ${formattedDate}.`;
+                    const draftMsg = `*VISITE PLANIFIÉE* 📅\n\nNous confirmons votre visite pour le bien: ${propTitle}.\nDate: ${formattedDate}.${selectedPartnerName !== 'Aucun partenaire' ? `\nPartenaire: ${selectedPartnerName}` : ''}\n\nMerci de nous faire un retour après la visite !`;
                     insertText(draftMsg);
                 } else {
                     alert("Erreur: " + data.error);
@@ -2219,7 +2292,7 @@ Date: ${formattedDate}.`;
                                 <div class="p-3 bg-white border border-gray-200 rounded-xl">
                                     <div class="flex justify-between items-start gap-2">
                                         <div class="flex-1 min-w-0">
-                                            <div class="text-xs font-bold text-gray-800 truncate">${v.property_title}</div>
+                                            <div class="text-xs font-bold text-gray-800 truncate">${escapeHTML(v.property_title)}</div>
                                             <div class="text-[10px] text-gray-500 mt-0.5">📅 ${ds}</div>
                                             ${noteHtml}
                                         </div>
@@ -2244,6 +2317,25 @@ Date: ${formattedDate}.`;
                 });
         }
         
+        // Search partners dynamically from API
+        function fetchAllPartnersForVisit() {
+            fetch('/api/partners/search/')
+                .then(res => res.json())
+                .then(data => {
+                    const select = document.getElementById('visitPartnerId');
+                    if (data.partners && data.partners.length > 0) {
+                        data.partners.forEach(p => {
+                            const opt = document.createElement('option');
+                            opt.value = p.id;
+                            opt.textContent = `${p.name} - ${p.contact_1} (${p.zone})`;
+                            select.appendChild(opt);
+                        });
+                        window.allPartnersLoaded = true;
+                    }
+                })
+                .catch(err => console.error("Error loading partners:", err));
+        }
+
         function updateVisitStatus(visitId, status) {
             fetch('/api/visits/update/', {
                 method: 'POST',
@@ -2275,62 +2367,6 @@ ${window.location.origin}/survey/${currentConversationId}/`;
             });
         }
 
-
-        // Search partners dynamically from API
-        function searchPartners() {
-            if (!currentConversationId) return;
-            
-            const zoneInput = document.getElementById('partnerZoneInput').value;
-            const priceInput = document.getElementById('partnerPriceInput').value;
-            const typeInput = document.getElementById('partnerTypeInput').value;
-            const keywordInput = document.getElementById('partnerKeywordInput') ? document.getElementById('partnerKeywordInput').value : '';
-            
-            let url = `/api/partners/search/?zone=${encodeURIComponent(zoneInput)}&property_type=${encodeURIComponent(typeInput)}&query=${encodeURIComponent(keywordInput)}`;
-            
-            fetch(url)
-                .then(res => res.json())
-                .then(data => {
-                    const container = document.getElementById('partnerList');
-                    const countSpan = document.getElementById('partnerCount');
-                    container.innerHTML = '';
-                    
-                    if (!data.partners || data.partners.length === 0) {
-                        container.innerHTML = '<div class="text-xs text-gray-500 text-center py-4">Aucun partenaire trouvé.</div>';
-                        countSpan.innerText = '0';
-                        return;
-                    }
-                    
-                    countSpan.innerText = data.partners.length;
-                    
-                    data.partners.forEach(p => {
-                        let dotColor = 'bg-yellow-500';
-                        if (p.meteo === 'ENSOLEILLE') dotColor = 'bg-emerald-500';
-                        if (p.meteo === 'ORAGEUX') dotColor = 'bg-rose-500';
-                        
-                        const item = document.createElement('div');
-                        item.className = 'bg-white/5 border border-white/5 rounded-xl p-3 flex flex-col gap-2 hover:bg-white/10 transition-all';
-                        item.innerHTML = `
-                            <div class="flex items-start justify-between">
-                                <div>
-                                    <div class="flex items-center gap-1.5">
-                                        <span class="w-2 h-2 rounded-full ${dotColor}"></span>
-                                        <span class="text-xs font-bold text-white">${p.name}</span>
-                                        ${p.ref ? `<span class="text-[9px] bg-white/10 text-gray-400 px-1 rounded font-mono">${p.ref}</span>` : ''}
-                                    </div>
-                                    <span class="text-[10px] text-gray-400">${p.zone} • ${p.property_type}</span>
-                                </div>
-                                <span class="text-[10px] text-gray-500 font-semibold">${p.meteo_display}</span>
-                            </div>
-                            <div class="flex items-center justify-between text-[11px] border-t border-white/5 pt-2">
-                                <span class="text-gray-400">📞 ${p.contact_1}</span>
-                                <button onclick="matchWithPartner('${p.id}', '${p.name}', '${p.contact_1}', '${p.zone}')" class="px-2.5 py-1 bg-forest-600 hover:bg-forest-700 text-white rounded-lg font-bold text-[10px] transition-all">Mettre en relation</button>
-                            </div>
-                        `;
-                        container.appendChild(item);
-                    });
-                })
-                .catch(err => console.error("Error searching partners:", err));
-        }
 
         // Call matching API
         function matchWithPartner(partnerId, partnerName, partnerPhone, partnerZone) {
@@ -2392,6 +2428,16 @@ ${window.location.origin}/survey/${currentConversationId}/`;
 
         function closePartnerModal() {
             document.getElementById('partnerMatchModal').classList.add('hidden');
+        }
+
+        function escapeHTML(str) {
+            if (!str) return '';
+            return str.toString()
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
         }
 
         // Dropdown toggle — uses display style to avoid Tailwind flex conflict
@@ -3008,6 +3054,136 @@ ${window.location.origin}/survey/${currentConversationId}/`;
                 return `<a href="${url}" target="_blank" class="underline text-forest-600 hover:text-forest-800 font-bold break-all">${url}</a>`;
             });
         }
+
+        // ─────────────────────────────────────────────────────────────────────
+        // ✨ PROSPECT SUMMARY CARD
+        // ─────────────────────────────────────────────────────────────────────
+        function updateProspectSummaryCard(info) {
+            const card = document.getElementById('prospectSummaryCard');
+            if (!card) return;
+
+            const hasData = info.client_project || info.client_property_type || info.client_zone || (info.tags && info.tags.length);
+            if (!hasData) {
+                card.classList.add('hidden');
+                return;
+            }
+            card.classList.remove('hidden');
+
+            document.getElementById('summaryProject').textContent = info.client_project || '—';
+            document.getElementById('summaryPropertyType').textContent = info.client_property_type || '—';
+            document.getElementById('summaryZone').textContent = info.client_zone || '—';
+
+            const assistanceEl = document.getElementById('summaryAssistance');
+            if (info.is_assistance_paid) {
+                assistanceEl.textContent = '✅ Payée';
+                assistanceEl.className = 'text-xs font-bold text-emerald-300';
+            } else {
+                assistanceEl.textContent = '⏳ Non payée';
+                assistanceEl.className = 'text-xs font-bold text-amber-300';
+            }
+
+            const pipelineLabels = { NEW: 'Nouveau', QUALIFIED: 'Qualifié', VISIT: 'Visite planifiée', NEGOTIATION: 'Négociation', WON: '🏆 Gagné', LOST: '❌ Perdu' };
+            const badge = document.getElementById('prospectSummaryPipelineBadge');
+            badge.textContent = pipelineLabels[info.pipeline_stage] || info.pipeline_stage || 'Nouveau';
+
+            const tagsRow = document.getElementById('summaryTagsRow');
+            const allTags = [...(info.tags || [])];
+            if (tagsRow) {
+                if (allTags.length === 0) {
+                    tagsRow.classList.add('hidden');
+                } else {
+                    tagsRow.classList.remove('hidden');
+                    tagsRow.innerHTML = allTags.map(t => `<span class="px-2 py-0.5 bg-white/15 text-white text-[10px] font-semibold rounded-full">${escapeHTML(t)}</span>`).join('');
+                }
+            }
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
+        // 📡 HSM TEMPLATE SENDER (Session expirée)
+        // ─────────────────────────────────────────────────────────────────────
+        function sendHsmTemplate(messageText) {
+            if (!currentConversationId) return;
+            const textarea = document.getElementById('messageInput');
+            if (textarea) {
+                textarea.value = messageText;
+            }
+            // Temporarily enable input, send, then re-disable
+            const btn = document.getElementById('btnSendMessage');
+            const msgInput = document.getElementById('messageInput');
+            if (msgInput) msgInput.removeAttribute('disabled');
+            if (btn) btn.removeAttribute('disabled');
+            document.querySelector('form[onsubmit]').dispatchEvent(new Event('submit', { cancelable: true }));
+            setTimeout(() => {
+                // Re-check session status after send
+                updateSessionCountdown();
+            }, 500);
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
+        // 🔍 IN-CHAT MESSAGE SEARCH
+        // ─────────────────────────────────────────────────────────────────────
+        let chatSearchActive = false;
+
+        function toggleChatSearch() {
+            const bar = document.getElementById('chatSearchBar');
+            const btn = document.getElementById('chatSearchToggleBtn');
+            chatSearchActive = !chatSearchActive;
+            if (chatSearchActive) {
+                bar.classList.remove('hidden');
+                bar.classList.add('flex');
+                btn.classList.add('bg-indigo-100', 'text-indigo-700', 'border-indigo-300');
+                btn.classList.remove('bg-gray-100', 'text-gray-500', 'border-gray-200');
+                document.getElementById('chatSearchInput').focus();
+            } else {
+                closeChatSearch();
+            }
+        }
+
+        function closeChatSearch() {
+            const bar = document.getElementById('chatSearchBar');
+            const btn = document.getElementById('chatSearchToggleBtn');
+            const input = document.getElementById('chatSearchInput');
+            bar.classList.add('hidden');
+            bar.classList.remove('flex');
+            btn.classList.remove('bg-indigo-100', 'text-indigo-700', 'border-indigo-300');
+            btn.classList.add('bg-gray-100', 'text-gray-500', 'border-gray-200');
+            chatSearchActive = false;
+            if (input) input.value = '';
+            // Clear all highlights
+            document.querySelectorAll('#messagesContainer .msg-bubble-wrap').forEach(el => {
+                el.style.opacity = '';
+                el.style.transition = '';
+            });
+            document.getElementById('chatSearchCount').classList.add('hidden');
+        }
+
+        function filterChatMessages(query) {
+            const bubbles = document.querySelectorAll('#messagesContainer .msg-bubble-wrap');
+            const countEl = document.getElementById('chatSearchCount');
+            if (!query || query.trim() === '') {
+                bubbles.forEach(el => { el.style.opacity = ''; el.style.transition = ''; });
+                countEl.classList.add('hidden');
+                return;
+            }
+            const q = query.toLowerCase();
+            let matches = 0;
+            bubbles.forEach(el => {
+                const text = (el.textContent || '').toLowerCase();
+                const isMatch = text.includes(q);
+                el.style.transition = 'opacity 0.15s ease';
+                el.style.opacity = isMatch ? '1' : '0.2';
+                if (isMatch) {
+                    matches++;
+                    // Scroll to first match
+                    if (matches === 1) {
+                        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                }
+            });
+            countEl.textContent = `${matches} résultat${matches > 1 ? 's' : ''}`;
+            countEl.classList.remove('hidden');
+        }
+
 
         // Handle Left Sidebar Tag Filtering Change
         function handleFilterTagChange(select) {

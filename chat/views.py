@@ -22,7 +22,12 @@ from django.db.models import Q, Count, Max, Prefetch
 from django.core.cache import cache
 from django.core.files.storage import FileSystemStorage
 from django.conf import settings
-from .models import User, Conversation, Message, Property, QuickTemplate, Reminder, Partner, PartnerMatch, Visit, District, PropertyType
+from .models import User, Conversation, Message, Property, QuickTemplate, Reminder, Partner, PartnerMatch, Visit, District, PropertyType, SystemSetting
+
+from rest_framework.authtoken.models import Token
+from rest_framework.decorators import api_view, permission_classes, authentication_classes
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.authentication import TokenAuthentication, SessionAuthentication
 
 logger = logging.getLogger(__name__)
 
@@ -48,54 +53,102 @@ def format_time_long(dt):
     else:
         return msg_time.strftime("%d/%m/%Y %H:%M")
 
+def get_icebreaker_flags(msg):
+    """
+    Retourne le tuple boolean (is_icebreaker_prompt, is_icebreaker_response) pour un message.
+    Supporte les flags explicites et l'auto-détection sur le contenu et l'expéditeur.
+    """
+    is_prompt = getattr(msg, 'is_icebreaker_prompt', False)
+    is_resp = getattr(msg, 'is_icebreaker_response', False)
+    
+    content = (msg.content or "").strip()
+    
+    if not is_prompt and not is_resp and content:
+        # Détection des messages / questions automatiques du bot
+        bot_prompt_keywords = [
+            "Bienvenue chez Loger Sénégal",
+            "Quel est votre projet immobilier",
+            "Quel type de location recherchez-vous",
+            "Quel type de bien souhaitez-vous",
+            "Quel type de studio recherchez-vous",
+            "Quel type de chambre recherchez-vous",
+            "Menu de bienvenue",
+            "Vos critères ont été enregistrés",
+            "Un de nos conseillers"
+        ]
+        if any(kw.lower() in content.lower() for kw in bot_prompt_keywords):
+            is_prompt = True
+            
+        # Détection des choix cliqués par le client dans le formulaire / icebreaker
+        if not is_prompt and msg.sender and getattr(msg.sender, 'role', None) == User.RoleEnum.CLIENT:
+            triage_answers = [
+                "Acheter", "Louer", "Longue durée", "Logement meublé",
+                "Appartement", "Studio", "Villa", "Terrain", "Chambre",
+                "Avec salle de bain", "Simple", "Mini studio", "Studio entre salon", "Studio séparé",
+                "Moins de 150 000 FCFA", "150 000 - 300 000 FCFA", "300 000 - 500 000 FCFA", "Plus de 500 000 FCFA",
+                "Je cherche un bien à louer", "Je cherche à acheter un bien", "Je souhaite confier un bien",
+                "PROJET_ACHETER", "PROJET_LOUER", "LOUER_LONGUE", "LOUER_MEUBLE"
+            ]
+            if content in triage_answers or any(content.lower() == ans.lower() for ans in triage_answers):
+                is_resp = True
+                
+    return is_prompt, is_resp
+
 def get_live_properties():
     """Fetch live properties from the main site API with 5 min caching to avoid API limits during 3s polling."""
     cached = cache.get('live_properties_v2')
     if cached:
         return cached
     try:
-        resp = requests.get('https://logersenegal.com/api/properties/', timeout=3)
-        if resp.status_code == 200:
-            data = resp.json()
-            results = data.get('results', data) if isinstance(data, dict) else data
-            
-            formatted = []
-            for item in results:
-                prop_id = item.get('id', '')
-                title = item.get('title', '') or item.get('name', 'Propriété')
-                price = item.get('price', 0)
-                desc = item.get('description', '')
+        url = 'https://logersenegal.com/api/properties/?page_size=50'
+        formatted = []
+        pages_fetched = 0
+        
+        while url and pages_fetched < 3:  # Fetch up to 3 pages (150 properties)
+            resp = requests.get(url, timeout=5)
+            if resp.status_code == 200:
+                data = resp.json()
+                results = data.get('results', data) if isinstance(data, dict) else data
                 
-                # Image extraction logic
-                image_url = 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&q=80'
-                
-                # Check root level image fields
-                if item.get('image_url'):
-                    image_url = item['image_url']
-                elif item.get('image'):
-                    image_url = item['image']
+                for item in results:
+                    prop_id = item.get('id', '')
+                    title = item.get('title', '') or item.get('name', 'Propriété')
+                    price = item.get('price', 0)
+                    desc = item.get('description', '')
                     
-                # Check nested images array
-                if item.get('images') and isinstance(item['images'], list) and len(item['images']) > 0:
-                    first_img = item['images'][0]
-                    if isinstance(first_img, dict):
-                        image_url = first_img.get('image_url', first_img.get('image', image_url))
-                    elif isinstance(first_img, str):
-                        image_url = first_img
-                
-                # Ensure the URL is absolute
-                if image_url.startswith('/'):
-                    image_url = f"https://logersenegal.com{image_url}"
+                    # Image extraction logic
+                    image_url = 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&q=80'
                     
-                formatted.append({
-                    'id': str(prop_id),
-                    'title': title,
-                    'price': float(price) if price else 0.0,
-                    'description': desc,
-                    'image_url': image_url,
-                    'url': f'https://logersenegal.com/annonces/{prop_id}/'
-                })
-            
+                    if item.get('image_url'):
+                        image_url = item['image_url']
+                    elif item.get('image'):
+                        image_url = item['image']
+                        
+                    if item.get('images') and isinstance(item['images'], list) and len(item['images']) > 0:
+                        first_img = item['images'][0]
+                        if isinstance(first_img, dict):
+                            image_url = first_img.get('image_url', first_img.get('image', image_url))
+                        elif isinstance(first_img, str):
+                            image_url = first_img
+                    
+                    if image_url.startswith('/'):
+                        image_url = f"https://logersenegal.com{image_url}"
+                        
+                    formatted.append({
+                        'id': str(prop_id),
+                        'title': title,
+                        'price': float(price) if price else 0.0,
+                        'description': desc,
+                        'image_url': image_url,
+                        'url': f'https://logersenegal.com/annonces/{prop_id}/'
+                    })
+                
+                url = data.get('next') if isinstance(data, dict) else None
+                pages_fetched += 1
+            else:
+                break
+                
+        if formatted:
             cache.set('live_properties_v2', formatted, 300) # Cache for 5 minutes
             return formatted
     except Exception as e:
@@ -197,13 +250,13 @@ def download_whatsapp_media_async(media_id, message_id):
     """
     from django.core.files.base import ContentFile
     try:
-        wa_token = os.getenv('WA_ACCESS_TOKEN')
+        wa_token = SystemSetting.get_wa_token()
         if not wa_token:
             logger.error("No WA_ACCESS_TOKEN found for media download")
             return
             
         headers = {'Authorization': f'Bearer {wa_token}'}
-        resp = requests.get(f'https://graph.facebook.com/v17.0/{media_id}/', headers=headers, timeout=10)
+        resp = requests.get(f'https://graph.facebook.com/v19.0/{media_id}/', headers=headers, timeout=10)
         
         if resp.status_code == 200:
             media_info = resp.json()
@@ -444,6 +497,7 @@ def whatsapp_webhook(request):
                 conversation.save()
             
             conversation.last_message_at = timezone.now()
+            conversation.warning_24h_sent = False
             conversation.save()
 
             # --- FLUX INTERACTIF CONTINUATION ---
@@ -702,7 +756,7 @@ def sync_messages(request):
             conversations = Conversation.objects.all()
         else:
             conversations = Conversation.objects.filter(
-                Q(assigned_to=agent) | Q(participants=agent) | Q(status=Conversation.StatusEnum.PENDING)
+                Q(assigned_to=agent) | Q(assigned_to__isnull=True) | Q(participants=agent) | Q(status=Conversation.StatusEnum.PENDING)
             )
         
     if query:
@@ -800,7 +854,7 @@ def sync_messages(request):
                 active_conv = Conversation.objects.get(id=active_conv_id)
             else:
                 queryset = Conversation.objects.filter(
-                    Q(participants=agent) | Q(status=Conversation.StatusEnum.PENDING)
+                    Q(assigned_to=agent) | Q(assigned_to__isnull=True) | Q(participants=agent) | Q(status=Conversation.StatusEnum.PENDING)
                 ).distinct()
                 active_conv = get_object_or_404(queryset, id=active_conv_id)
             
@@ -846,6 +900,7 @@ def sync_messages(request):
             # Fetch messages
             msgs = active_conv.messages.all().order_by('created_at')
             for msg in msgs:
+                is_prompt, is_resp = get_icebreaker_flags(msg)
                 messages_data.append({
                     'id': str(msg.id),
                     'sender_name': msg.sender.first_name or msg.sender.username,
@@ -854,7 +909,9 @@ def sync_messages(request):
                     'content': msg.content or "",
                     'attachment_url': msg.attachment_url,
                     'status': msg.status,
-                    'created_at': format_time_long(msg.created_at)
+                    'created_at': format_time_long(msg.created_at),
+                    'is_icebreaker_prompt': is_prompt,
+                    'is_icebreaker_response': is_resp
                 })
                 
             # Fetch real properties from API
@@ -959,17 +1016,16 @@ def toggle_blacklist(request):
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
-@login_required(login_url='login')
+@api_view(['POST'])
+@authentication_classes([TokenAuthentication, SessionAuthentication])
+@permission_classes([IsAuthenticated])
 def send_message(request):
     """
     Endpoint to send message from the agent.
     If is_whatsapp=True, calls Meta Cloud API to send the WhatsApp text.
     """
-    if request.method != 'POST':
-        return JsonResponse({'error': 'Method not allowed'}, status=405)
-        
     try:
-        data = json.loads(request.body)
+        data = request.data if hasattr(request, 'data') and request.data else json.loads(request.body)
         conversation_id = data.get('conversation_id')
         content = data.get('content', '')
         attachment_url = data.get('attachment_url', None)
@@ -1034,9 +1090,9 @@ def trigger_meta_whatsapp_api(to_phone, message_text=None, attachment_url=None, 
     Wrapper to call Meta's Cloud API endpoint.
     Returns (success, msg_id) tuple.
     """
-    token = os.getenv('WA_ACCESS_TOKEN')
-    phone_id = os.getenv('WA_PHONE_NUMBER_ID')
-    version = os.getenv('WA_API_VERSION', 'v19.0')
+    token = SystemSetting.get_wa_token()
+    phone_id = SystemSetting.get_wa_phone_id()
+    version = SystemSetting.get_wa_api_version()
     
     # If credentials are not set, simulate successful delivery (Mock Mode for local tests)
     if not token or token == "your_permanent_access_token_here" or not phone_id:
@@ -1061,8 +1117,9 @@ def trigger_meta_whatsapp_api(to_phone, message_text=None, attachment_url=None, 
         payload["type"] = "interactive"
         payload["interactive"] = interactive_payload
     elif attachment_url:
+        full_attachment_url = f"https://chat.logersenegal.com{attachment_url}" if attachment_url.startswith('/') else attachment_url
         # Detect the type from extension
-        ext = attachment_url.split('?')[0].split('.')[-1].lower() if '.' in attachment_url else ''
+        ext = full_attachment_url.split('?')[0].split('.')[-1].lower() if '.' in full_attachment_url else ''
         
         image_exts = {'jpg', 'jpeg', 'png', 'webp', 'gif'}
         video_exts = {'mp4', '3gp', 'mov'}
@@ -1071,28 +1128,28 @@ def trigger_meta_whatsapp_api(to_phone, message_text=None, attachment_url=None, 
         if ext in image_exts:
             payload["type"] = "image"
             payload["image"] = {
-                "link": attachment_url
+                "link": full_attachment_url
             }
             if message_text:
                 payload["image"]["caption"] = message_text
         elif ext in video_exts:
             payload["type"] = "video"
             payload["video"] = {
-                "link": attachment_url
+                "link": full_attachment_url
             }
             if message_text:
                 payload["video"]["caption"] = message_text
         elif ext in audio_exts:
             payload["type"] = "audio"
             payload["audio"] = {
-                "link": attachment_url
+                "link": full_attachment_url
             }
         else:
             # Default to document
-            filename = attachment_url.split('/')[-1].split('?')[0] or "document.pdf"
+            filename = full_attachment_url.split('/')[-1].split('?')[0] or "document.pdf"
             payload["type"] = "document"
             payload["document"] = {
-                "link": attachment_url,
+                "link": full_attachment_url,
                 "filename": filename
             }
             if message_text:
@@ -2236,11 +2293,12 @@ def create_reminder(request):
         logger.error(f"Error creating reminder: {str(e)}")
         return JsonResponse({'error': str(e)}, status=500)
 
-@login_required(login_url='login')
-@require_POST
+@api_view(['POST'])
+@authentication_classes([TokenAuthentication, SessionAuthentication])
+@permission_classes([IsAuthenticated])
 def create_visit(request):
     try:
-        data = json.loads(request.body)
+        data = request.data if hasattr(request, 'data') and request.data else json.loads(request.body)
         conv_id = data.get('conversation_id')
         visit_date_str = data.get('visit_date')
         property_title = data.get('property_title')
@@ -2248,51 +2306,75 @@ def create_visit(request):
         client_phone = data.get('client_phone', '')
         notes = data.get('notes', '')
         
-        if not conv_id or not visit_date_str or not property_title:
-            return JsonResponse({'error': 'Missing required fields'}, status=400)
+        if not visit_date_str or not property_title:
+            return JsonResponse({'error': 'Date et titre du bien requis'}, status=400)
             
-        conv = get_object_or_404(Conversation, id=conv_id)
+        conv = None
+        if conv_id:
+            conv = Conversation.objects.filter(id=conv_id).first()
+            
+        if not conv and (client_name or client_phone):
+            conv = Conversation.objects.filter(
+                Q(client_name__icontains=client_name) | Q(client_phone__icontains=client_phone)
+            ).first()
+            
+        if not conv:
+            conv = Conversation.objects.create(
+                client_name=client_name or "Client Visite",
+                client_phone=client_phone or "",
+                assigned_to=request.user,
+                status=Conversation.StatusEnum.ACTIVE
+            )
+
         visit_date = parse_datetime(visit_date_str)
-        
         if not visit_date:
-            return JsonResponse({'error': 'Invalid date format'}, status=400)
+            try:
+                from dateutil import parser
+                visit_date = parser.parse(visit_date_str)
+            except Exception:
+                visit_date = timezone.now()
             
         visit = Visit.objects.create(
             conversation=conv,
             agent=request.user,
             property_title=property_title,
             visit_date=visit_date,
-            client_name=client_name,
-            client_phone=client_phone,
+            client_name=client_name or conv.client_name,
+            client_phone=client_phone or conv.client_phone,
             notes=notes,
             status=Visit.StatusEnum.PLANNED
         )
         
-        conv.pipeline_stage = Conversation.PipelineStageEnum.VISIT
-        conv.save()
+        if conv:
+            conv.pipeline_stage = Conversation.PipelineStageEnum.VISIT
+            conv.save()
         
         return JsonResponse({'status': 'success', 'visit_id': str(visit.id)})
     except Exception as e:
         logger.error(f"Error creating visit: {str(e)}")
         return JsonResponse({'error': str(e)}, status=500)
 
-@login_required(login_url='login')
-@require_POST
+@api_view(['POST'])
+@authentication_classes([TokenAuthentication, SessionAuthentication])
+@permission_classes([IsAuthenticated])
 def update_visit(request):
     try:
-        data = json.loads(request.body)
+        data = request.data if hasattr(request, 'data') and request.data else json.loads(request.body)
         visit_id = data.get('visit_id')
         new_status = data.get('status')
         
         if not visit_id or not new_status:
-            return JsonResponse({'error': 'Missing required fields'}, status=400)
+            return JsonResponse({'error': 'Champs requis manquants'}, status=400)
             
-        visit = get_object_or_404(Visit, id=visit_id)
+        visit = Visit.objects.filter(id=visit_id).first()
+        if not visit:
+            return JsonResponse({'error': 'Visite non trouvée'}, status=404)
+
         visit.status = new_status
         visit.save()
         
         # If visit completed, update pipeline stage to VISIT automatically
-        if new_status == Visit.StatusEnum.COMPLETED.value:
+        if new_status == Visit.StatusEnum.COMPLETED.value and visit.conversation:
             visit.conversation.pipeline_stage = Conversation.PipelineStageEnum.VISIT
             visit.conversation.save()
             
@@ -2301,7 +2383,9 @@ def update_visit(request):
         logger.error(f"Error updating visit: {str(e)}")
         return JsonResponse({'error': str(e)}, status=500)
 
-@login_required(login_url='login')
+@api_view(['GET'])
+@authentication_classes([TokenAuthentication, SessionAuthentication])
+@permission_classes([IsAuthenticated])
 def list_visits(request):
     try:
         if request.user.role == User.RoleEnum.MANAGER or request.user.is_superuser:
@@ -2318,26 +2402,22 @@ def list_visits(request):
         for v in visits.order_by('-visit_date'):  # Descending: newest / upcoming first
             visits_data.append({
                 'id': str(v.id),
-                'property_title': v.property_title,
-                'visit_date': v.visit_date.isoformat(),
-                'status': v.status,
-                'status_display': v.get_status_display(),
-                'client_name': v.client_name,
-                'client_phone': v.client_phone,
-                'notes': v.notes,
-                'agent_name': v.agent.get_full_name() or v.agent.username,
-                'conv_id': str(v.conversation.id),
-                'created_at': v.created_at.strftime('%d/%m/%Y %H:%M'),
+                'property_title': v.property_title or "Visite immobilière",
+                'visit_date': v.visit_date.isoformat() if v.visit_date else "",
+                'status': v.status or "PLANNED",
+                'status_display': v.get_status_display() if hasattr(v, 'get_status_display') else v.status,
+                'client_name': v.client_name or (v.conversation.client_name if v.conversation else "Client"),
+                'client_phone': v.client_phone or (v.conversation.client_phone if v.conversation else ""),
+                'notes': v.notes or "",
+                'agent_name': (v.agent.get_full_name() or v.agent.username) if v.agent else "Agent",
+                'conv_id': str(v.conversation.id) if v.conversation else "",
+                'created_at': v.created_at.strftime('%d/%m/%Y %H:%M') if v.created_at else "",
             })
             
         return JsonResponse({'status': 'success', 'visits': visits_data})
     except Exception as e:
         logger.error(f"Error listing visits: {str(e)}")
         return JsonResponse({'error': str(e)}, status=500)
-
-from rest_framework.authtoken.models import Token
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -2368,15 +2448,16 @@ def mobile_login(request):
         return JsonResponse({'error': str(e)}, status=500)
 
 @api_view(['GET'])
+@authentication_classes([TokenAuthentication, SessionAuthentication])
+@permission_classes([IsAuthenticated])
 def mobile_conversations(request):
     try:
-        # Returns conversations assigned to the current agent, or all if manager
         status_filter = request.query_params.get('status')
         
-        if request.user.role == User.RoleEnum.MANAGER:
+        user_role = getattr(request.user, 'role', None)
+        if user_role == User.RoleEnum.MANAGER:
             convs = Conversation.objects.all()
         else:
-            # Agents should see their own conversations PLUS any unassigned pending conversations
             convs = Conversation.objects.filter(
                 Q(assigned_to=request.user) | 
                 Q(status=Conversation.StatusEnum.PENDING, assigned_to__isnull=True)
@@ -2386,26 +2467,43 @@ def mobile_conversations(request):
             convs = convs.filter(status=status_filter)
             
         data = []
-        for c in convs.order_by('-last_message_at'):
-            # Get client name/phone (which is the participant with role=CLIENT)
+        for c in convs.order_by('-updated_at'):
             client = c.participants.filter(role=User.RoleEnum.CLIENT).first()
             client_name = client.get_full_name() or client.username if client else "Client inconnu"
             client_phone = client.phone_number if client else ""
             
-            # Get last message snippet
             last_msg = c.messages.order_by('-created_at').first()
-            last_msg_text = last_msg.text if last_msg else ""
+            last_msg_text = last_msg.content if last_msg else ""
             last_msg_time = last_msg.created_at.isoformat() if last_msg else c.created_at.isoformat()
             
+            avatar_url = ""
+            if client and hasattr(client, 'profile_picture') and client.profile_picture:
+                try:
+                    avatar_url = client.profile_picture.url
+                except Exception:
+                    avatar_url = ""
+            if not avatar_url:
+                import urllib.parse
+                clean_name = urllib.parse.quote(client_name or "Client")
+                avatar_url = f"https://ui-avatars.com/api/?name={clean_name}&background=059669&color=fff&size=128"
+
             data.append({
                 'id': str(c.id),
                 'client_name': client_name,
                 'client_phone': client_phone,
+                'avatar_url': avatar_url,
                 'status': c.status,
+                'is_whatsapp': c.is_whatsapp,
                 'pipeline_stage': c.pipeline_stage,
+                'pipeline_stage_display': c.get_pipeline_stage_display(),
                 'last_message_text': last_msg_text,
+                'last_message': last_msg_text,
                 'last_message_time': last_msg_time,
-                'unread_count': c.messages.filter(is_read=False).exclude(sender=request.user).count()
+                'unread_count': c.messages.filter(is_read=False, sender__role=User.RoleEnum.CLIENT).count(),
+                'notes': c.notes or '',
+                'client_project': c.client_project or '',
+                'client_property_type': c.client_property_type or '',
+                'client_zone': c.client_zone or '',
             })
             
         return JsonResponse({'status': 'success', 'conversations': data})
@@ -2414,31 +2512,38 @@ def mobile_conversations(request):
         return JsonResponse({'error': str(e)}, status=500)
 
 @api_view(['GET'])
+@authentication_classes([TokenAuthentication, SessionAuthentication])
+@permission_classes([IsAuthenticated])
 def mobile_messages(request, conversation_id):
     try:
         conv = get_object_or_404(Conversation, id=conversation_id)
-        # Check permissions
-        if request.user.role != User.RoleEnum.MANAGER and conv.assigned_to != request.user:
+        user_role = getattr(request.user, 'role', None)
+        if user_role != User.RoleEnum.MANAGER and conv.assigned_to != request.user and conv.status != Conversation.StatusEnum.PENDING:
             return JsonResponse({'error': 'Accès interdit'}, status=403)
             
-        # Mark messages as read
         conv.messages.exclude(sender=request.user).update(is_read=True)
         
         msgs = conv.messages.order_by('created_at')
         data = []
         for m in msgs:
+            is_prompt, is_resp = get_icebreaker_flags(m)
+            sender_role = getattr(m.sender, 'role', None)
+            sender_is_self = (m.sender == request.user) or (sender_role in [User.RoleEnum.AGENT, User.RoleEnum.MANAGER])
             data.append({
                 'id': str(m.id),
                 'sender_username': m.sender.username,
-                'sender_role': m.sender.role,
-                'text': m.text,
-                'media_url': m.media_url if m.media_url else '',
-                'mime_type': m.mime_type if m.mime_type else '',
+                'sender_role': sender_role or '',
+                'sender_is_self': sender_is_self,
+                'content': m.content,
+                'text': m.content,
+                'media_url': m.attachment_url if m.attachment_url else '',
+                'mime_type': '',
                 'created_at': m.created_at.isoformat(),
-                'is_read': m.is_read
+                'is_read': m.is_read,
+                'is_icebreaker_prompt': is_prompt,
+                'is_icebreaker_response': is_resp
             })
             
-        # Get conversation meta-info
         client = conv.participants.filter(role=User.RoleEnum.CLIENT).first()
         client_name = client.get_full_name() or client.username if client else "Client inconnu"
         client_phone = client.phone_number if client else ""
@@ -2448,6 +2553,13 @@ def mobile_messages(request, conversation_id):
             'client_name': client_name,
             'client_phone': client_phone,
             'pipeline_stage': conv.pipeline_stage,
+            'pipeline_stage_display': conv.get_pipeline_stage_display(),
+            'notes': conv.notes or '',
+            'client_project': conv.client_project or '',
+            'client_property_type': conv.client_property_type or '',
+            'client_zone': conv.client_zone or '',
+            'is_whatsapp': conv.is_whatsapp,
+            'last_message_at': conv.last_message_at.isoformat() if conv.last_message_at else '',
             'messages': data
         })
     except Exception as e:
@@ -2455,6 +2567,8 @@ def mobile_messages(request, conversation_id):
         return JsonResponse({'error': str(e)}, status=500)
 
 @api_view(['POST'])
+@authentication_classes([TokenAuthentication, SessionAuthentication])
+@permission_classes([IsAuthenticated])
 def mobile_update_conversation(request):
     try:
         conversation_id = request.data.get('conversation_id')
@@ -2462,11 +2576,27 @@ def mobile_update_conversation(request):
             return JsonResponse({'error': 'Missing conversation_id'}, status=400)
             
         conv = get_object_or_404(Conversation, id=conversation_id)
-        if request.user.role != User.RoleEnum.MANAGER and conv.assigned_to != request.user:
+        user_role = getattr(request.user, 'role', None)
+        if user_role != User.RoleEnum.MANAGER and conv.assigned_to != request.user and conv.status != Conversation.StatusEnum.PENDING:
             return JsonResponse({'error': 'Accès interdit'}, status=403)
             
         updated_fields = []
         
+        if request.data.get('claim') is True:
+            conv.assigned_to = request.user
+            conv.status = Conversation.StatusEnum.ACTIVE
+            Message.objects.create(
+                conversation=conv,
+                sender=User.objects.filter(is_superuser=True).first() or request.user,
+                content=f"[SYSTEME] Conversation prise en charge par {request.user.get_full_name() or request.user.username}."
+            )
+            updated_fields.append('assigned_to')
+            updated_fields.append('status')
+            
+        if 'status' in request.data:
+            conv.status = request.data['status']
+            updated_fields.append('status')
+            
         if 'pipeline_stage' in request.data:
             old_stage_display = conv.get_pipeline_stage_display()
             conv.pipeline_stage = request.data['pipeline_stage']
@@ -2507,6 +2637,8 @@ def mobile_update_conversation(request):
         return JsonResponse({'error': str(e)}, status=500)
 
 @api_view(['GET'])
+@authentication_classes([TokenAuthentication, SessionAuthentication])
+@permission_classes([IsAuthenticated])
 def mobile_properties(request):
     try:
         properties = get_live_properties()
@@ -2516,6 +2648,8 @@ def mobile_properties(request):
         return JsonResponse({'error': str(e)}, status=500)
 
 @api_view(['GET'])
+@authentication_classes([TokenAuthentication, SessionAuthentication])
+@permission_classes([IsAuthenticated])
 def mobile_partners(request):
     try:
         zone_filter = request.query_params.get('zone', '').strip()
@@ -2551,6 +2685,8 @@ def mobile_partners(request):
         return JsonResponse({'error': str(e)}, status=500)
 
 @api_view(['POST'])
+@authentication_classes([TokenAuthentication, SessionAuthentication])
+@permission_classes([IsAuthenticated])
 def mobile_create_partner_match(request):
     try:
         conversation_id = request.data.get('conversation_id')
@@ -2564,7 +2700,8 @@ def mobile_create_partner_match(request):
             return JsonResponse({'error': 'Tous les champs sont obligatoires.'}, status=400)
             
         conv = get_object_or_404(Conversation, id=conversation_id)
-        if request.user.role != User.RoleEnum.MANAGER and conv.assigned_to != request.user:
+        user_role = getattr(request.user, 'role', None)
+        if user_role != User.RoleEnum.MANAGER and conv.assigned_to != request.user:
             return JsonResponse({'error': 'Accès interdit'}, status=403)
             
         partner = get_object_or_404(Partner, id=partner_id)
@@ -2585,6 +2722,7 @@ def mobile_create_partner_match(request):
             content=f"[PARTENAIRE] Visite proposée au partenaire {partner.name} pour {visitor_name} ({zone}, {price} FCFA)."
         )
         
+        from urllib.parse import quote
         text_message = f"Bonjour {partner.name}, je te propose une visite pour {visitor_name} ({visitor_phone}) pour le bien à {zone} au prix de {price} FCFA."
         encoded_message = quote(text_message)
         wa_link = f"https://wa.me/{partner.contact_1}?text={encoded_message}"
@@ -2596,6 +2734,18 @@ def mobile_create_partner_match(request):
         })
     except Exception as e:
         logger.error(f"Error in mobile_create_partner_match: {str(e)}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+@api_view(['GET'])
+@authentication_classes([TokenAuthentication, SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def mobile_templates(request):
+    try:
+        templates = QuickTemplate.objects.all().order_by('title')
+        data = [{'id': str(t.id), 'title': t.title, 'category': t.category, 'content': t.content} for t in templates]
+        return JsonResponse({'status': 'success', 'templates': data})
+    except Exception as e:
+        logger.error(f"Error in mobile_templates: {str(e)}")
         return JsonResponse({'error': str(e)}, status=500)
 
 
@@ -2662,12 +2812,15 @@ def agent_profile(request):
             'date': conv.last_message_at.strftime('%d/%m/%Y') if conv.last_message_at else conv.created_at.strftime('%d/%m/%Y')
         })
         
+    scheduled_visits = Visit.objects.filter(agent=user, status=Visit.StatusEnum.PLANNED).order_by('visit_date')
+
     context = {
         'total_conversations': total_conversations,
         'total_won': total_won,
         'total_visits': total_visits,
         'avg_satisfaction': avg_satisfaction,
         'recent_feedback': recent_feedback,
+        'scheduled_visits': scheduled_visits,
     }
     return render(request, 'chat/agent_profile.html', context)
 
@@ -2743,34 +2896,79 @@ def update_system_settings(request):
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
-@login_required(login_url='login')
 def whatsapp_media_proxy(request, media_id):
     """
     Proxy to fetch media from WhatsApp Cloud API and serve it to the frontend.
     WhatsApp requires the Bearer token to download media.
+    Includes local disk caching for instant subsequent serving.
     """
-    wa_token = os.getenv('WA_ACCESS_TOKEN')
+    import glob
+    # 1. Check if media was already downloaded and cached locally anywhere in MEDIA_ROOT
+    try:
+        os.makedirs(settings.MEDIA_ROOT, exist_ok=True)
+        matching_files = glob.glob(os.path.join(settings.MEDIA_ROOT, "**", f"*{media_id}*"), recursive=True)
+        if matching_files:
+            local_path = matching_files[0]
+            ext = os.path.splitext(local_path)[1].lower()
+            content_type = 'image/jpeg'
+            if ext in ['.png']: content_type = 'image/png'
+            elif ext in ['.webp']: content_type = 'image/webp'
+            elif ext in ['.gif']: content_type = 'image/gif'
+            elif ext in ['.mp4', '.mov', '.avi', '.3gp']: content_type = 'video/mp4'
+            elif ext in ['.mp3', '.ogg', '.opus', '.m4a', '.wav', '.aac']: content_type = 'audio/mpeg'
+            elif ext in ['.pdf']: content_type = 'application/pdf'
+            with open(local_path, 'rb') as f:
+                return HttpResponse(f.read(), content_type=content_type)
+    except Exception as cache_check_err:
+        logger.warning(f"Disk cache check error: {cache_check_err}")
+
+    wa_token = SystemSetting.get_wa_token()
     if not wa_token:
-        return HttpResponse('WhatsApp Access Token not configured', status=500)
+        logger.error("WA_ACCESS_TOKEN missing in whatsapp_media_proxy")
+        return HttpResponse('WhatsApp Access Token not configured', status=404)
         
     try:
-        # Step 1: Get media URL
+        # 2. Get media URL from Meta Graph API
         headers = {'Authorization': f'Bearer {wa_token}'}
-        resp = requests.get(f'https://graph.facebook.com/v17.0/{media_id}/', headers=headers, timeout=10)
+        resp = requests.get(f'https://graph.facebook.com/v19.0/{media_id}/', headers=headers, timeout=10)
         if resp.status_code != 200:
             logger.error(f"Failed to get media URL for {media_id}: {resp.text}")
-            return HttpResponse('Media not found on WhatsApp', status=404)
+            # Return SVG fallback image indicating expired media
+            svg_fallback = '''<svg xmlns="http://www.w3.org/2000/svg" width="280" height="130" viewBox="0 0 280 130">
+                <rect width="100%" height="100%" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5" rx="12"/>
+                <circle cx="140" cy="45" r="16" fill="#f1f5f9"/>
+                <path d="M140 37v10M140 53h.01" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round"/>
+                <text x="50%" y="82" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="bold" fill="#64748b">Image WhatsApp non disponible</text>
+                <text x="50%" y="100" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#94a3b8">Expirée sur les serveurs Meta (>14j)</text>
+            </svg>'''
+            return HttpResponse(svg_fallback, content_type='image/svg+xml')
             
         media_info = resp.json()
         media_url = media_info.get('url')
-        mime_type = media_info.get('mime_type', 'application/octet-stream')
+        mime_type = media_info.get('mime_type', 'image/jpeg')
         
         if not media_url:
-            return HttpResponse('Invalid media response', status=500)
+            svg_fallback = '''<svg xmlns="http://www.w3.org/2000/svg" width="280" height="130" viewBox="0 0 280 130">
+                <rect width="100%" height="100%" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5" rx="12"/>
+                <text x="50%" y="65" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="bold" fill="#64748b">Fichier non disponible</text>
+            </svg>'''
+            return HttpResponse(svg_fallback, content_type='image/svg+xml')
             
-        # Step 2: Download actual media
+        # 3. Download actual media binary stream from Meta WhatsApp CDN
         media_resp = requests.get(media_url, headers=headers, timeout=20)
         if media_resp.status_code == 200:
+            # Save file locally to MEDIA_ROOT for instant future serving
+            ext = mime_type.split('/')[-1] if '/' in mime_type else 'jpg'
+            if ext == 'jpeg': ext = 'jpg'
+            elif ';' in ext: ext = ext.split(';')[0]
+            try:
+                local_file_path = os.path.join(settings.MEDIA_ROOT, f"wa_media_{media_id}.{ext}")
+                with open(local_file_path, 'wb') as f:
+                    f.write(media_resp.content)
+                logger.info(f"Successfully cached WhatsApp media {media_id} to disk.")
+            except Exception as save_err:
+                logger.error(f"Failed to cache proxy media locally: {save_err}")
+                
             return HttpResponse(media_resp.content, content_type=mime_type)
         else:
             logger.error(f"Failed to download media {media_id} from {media_url}: {media_resp.text}")
