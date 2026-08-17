@@ -710,9 +710,10 @@
                                 <span id="assistancePaidBadge" class="hidden inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-bold bg-green-600 text-white rounded-full flex-shrink-0 shadow-sm">
                                     PAYÉE
                                 </span>
-                                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-bold bg-teal-50 text-teal-700 rounded-full border border-teal-200 flex-shrink-0" id="sessionTimerBadge">
+                                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-bold bg-teal-50 text-teal-700 rounded-full border border-teal-200 flex-shrink-0 cursor-pointer" id="sessionTimerBadge" onclick="if(this.classList.contains('expired')) toggleHsmDrawer();" title="État de la session 24h">
                                     ⏱️ Calcul...
                                 </span>
+
                             </div>
                             <!-- Activity status row -->
                             <div class="flex items-center gap-1.5 mt-0.5 text-[10px] md:text-xs">
@@ -804,23 +805,65 @@
                         <div id="slashTemplatesList" class="flex flex-col gap-1"></div>
                     </div>
 
-                    <!-- Session Expired Alert Banner (Enhanced with HSM template picker) -->
-                    <div id="sessionExpiredBanner" class="hidden flex-col gap-2 bg-red-50 border border-red-200 rounded-2xl px-4 py-3 shadow-sm">
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-2 text-xs font-semibold text-red-800">
-                                <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-                                <span>Session WhatsApp expirée (+24h)</span>
-                            </div>
-                            <span class="text-[10px] bg-red-100 text-red-700 font-bold px-2 py-0.5 rounded-full border border-red-200">Hors fenêtre</span>
+                    <!-- Session Expired Compact Bar (Invisible si <24h, discret si >24h) -->
+                    <div id="sessionExpiredBanner" class="hidden items-center justify-between px-3.5 py-1.5 bg-gradient-to-r from-red-50 to-amber-50 border border-red-200/90 rounded-xl text-xs shadow-xs mb-1 transition-all">
+                        <div class="flex items-center gap-2 text-red-800 font-medium">
+                            <span class="relative flex h-2 w-2">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                            </span>
+                            <span class="text-[11px] font-semibold text-red-900">Session WhatsApp expirée (+24h)</span>
+                            <span class="hidden sm:inline text-[9px] bg-red-100/90 text-red-700 font-bold px-1.5 py-0.5 rounded border border-red-200">Hors fenêtre</span>
                         </div>
-                        <p class="text-[10px] text-red-600">Relancez le client avec un modèle de message approuvé :</p>
+                        <button type="button" onclick="toggleHsmDrawer()" id="btnToggleHsm" class="flex items-center gap-1.5 px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white text-[11px] font-bold rounded-lg transition-all shadow-xs active:scale-95">
+                            <span>🚀 Modèles de relance</span>
+                            <svg id="hsmChevron" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-3.5 h-3.5 transition-transform duration-200"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
+                        </button>
+                    </div>
+
+                    <!-- HSM Templates Drawer / Popover (Déroulable optionnellement via bouton) -->
+                    <div id="hsmDrawer" class="hidden flex-col gap-2 bg-white/95 backdrop-blur-sm border border-red-200 rounded-2xl p-3 shadow-xl mb-1 border-t-2 border-t-red-500 transition-all">
+                        <div class="flex items-center justify-between border-b border-gray-100 pb-1.5">
+                            <div class="flex items-center gap-1.5 text-xs font-bold text-gray-800">
+                                <span>💬 Choisissez un modèle de message Meta pré-approuvé</span>
+                            </div>
+                            <button type="button" onclick="toggleHsmDrawer(false)" class="p-1 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700 text-xs font-bold" title="Fermer">✕</button>
+                        </div>
+                        <p class="text-[10px] text-gray-500">Cliquez sur un modèle pour l'envoyer au client et réactiver la fenêtre de discussion WhatsApp :</p>
                         <div class="flex flex-col gap-1.5" id="hsmTemplatesList">
-                            <!-- Injected dynamically from templates -->
-                            <button onclick="sendHsmTemplate('Bonjour ! 😊 Nous avons de nouvelles opportunités immobilières qui pourraient vous intéresser. Souhaitez-vous reprendre notre discussion ?')" class="text-left w-full px-3 py-2 rounded-xl bg-white border border-red-100 text-xs text-gray-700 hover:bg-red-50 hover:border-red-300 transition-all font-medium leading-snug">💬 Relance générale — Reprendre la discussion</button>
-                            <button onclick="sendHsmTemplate('Bonjour ! 🏡 Nous avons trouvé de nouvelles annonces correspondant à votre recherche. Pouvez-vous nous contacter pour en savoir plus ?')" class="text-left w-full px-3 py-2 rounded-xl bg-white border border-red-100 text-xs text-gray-700 hover:bg-red-50 hover:border-red-300 transition-all font-medium leading-snug">🏡 Nouvelles annonces disponibles</button>
-                            <button onclick="sendHsmTemplate('Bonjour ! 📅 Suite à notre échange, nous souhaitons planifier une visite pour vous. Êtes-vous disponible cette semaine ?')" class="text-left w-full px-3 py-2 rounded-xl bg-white border border-red-100 text-xs text-gray-700 hover:bg-red-50 hover:border-red-300 transition-all font-medium leading-snug">📅 Proposition de visite</button>
+                            <button onclick="sendHsmTemplate('Bonjour ! 😊 Nous avons de nouvelles opportunités immobilières qui pourraient vous intéresser. Souhaitez-vous reprendre notre discussion ?')" class="group text-left w-full p-2.5 rounded-xl bg-gray-50 hover:bg-red-50 border border-gray-200 hover:border-red-300 transition-all flex items-start gap-2.5">
+                                <span class="text-base flex-shrink-0">💬</span>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center justify-between mb-0.5">
+                                        <span class="text-xs font-bold text-gray-800 group-hover:text-red-700">Relance générale</span>
+                                        <span class="text-[9px] font-bold text-forest-600 bg-forest-50 px-1.5 py-0.5 rounded">1-clic</span>
+                                    </div>
+                                    <p class="text-[11px] text-gray-600 leading-snug">"Bonjour ! 😊 Nous avons de nouvelles opportunités immobilières qui pourraient vous intéresser..."</p>
+                                </div>
+                            </button>
+                            <button onclick="sendHsmTemplate('Bonjour ! 🏡 Nous avons trouvé de nouvelles annonces correspondant à votre recherche. Pouvez-vous nous contacter pour en savoir plus ?')" class="group text-left w-full p-2.5 rounded-xl bg-gray-50 hover:bg-red-50 border border-gray-200 hover:border-red-300 transition-all flex items-start gap-2.5">
+                                <span class="text-base flex-shrink-0">🏡</span>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center justify-between mb-0.5">
+                                        <span class="text-xs font-bold text-gray-800 group-hover:text-red-700">Nouvelles annonces</span>
+                                        <span class="text-[9px] font-bold text-forest-600 bg-forest-50 px-1.5 py-0.5 rounded">1-clic</span>
+                                    </div>
+                                    <p class="text-[11px] text-gray-600 leading-snug">"Bonjour ! 🏡 Nous avons trouvé de nouvelles annonces correspondant à votre recherche..."</p>
+                                </div>
+                            </button>
+                            <button onclick="sendHsmTemplate('Bonjour ! 📅 Suite à notre échange, nous souhaitons planifier une visite pour vous. Êtes-vous disponible cette semaine ?')" class="group text-left w-full p-2.5 rounded-xl bg-gray-50 hover:bg-red-50 border border-gray-200 hover:border-red-300 transition-all flex items-start gap-2.5">
+                                <span class="text-base flex-shrink-0">📅</span>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center justify-between mb-0.5">
+                                        <span class="text-xs font-bold text-gray-800 group-hover:text-red-700">Proposition de visite</span>
+                                        <span class="text-[9px] font-bold text-forest-600 bg-forest-50 px-1.5 py-0.5 rounded">1-clic</span>
+                                    </div>
+                                    <p class="text-[11px] text-gray-600 leading-snug">"Bonjour ! 📅 Suite à notre échange, nous souhaitons planifier une visite pour vous..."</p>
+                                </div>
+                            </button>
                         </div>
                     </div>
+
 
                     <!-- Quick Actions Row - flex-wrap instead of overflow-x to allow dropdowns -->
                     <div id="chatToolbar" class="flex flex-wrap items-center gap-1.5 pb-2 pt-1 -mx-2 px-2 md:mx-0 md:px-0">
@@ -1856,9 +1899,19 @@
                 activeSessionTimerInterval = setInterval(updateSessionCountdown, 10000); // Check and tick every 10 seconds
             } else {
                 document.getElementById('sessionTimerBadge').classList.add('hidden');
-                document.getElementById('sessionExpiredBanner').classList.add('hidden');
+                const expBanner = document.getElementById('sessionExpiredBanner');
+                if (expBanner) {
+                    expBanner.classList.add('hidden');
+                    expBanner.classList.remove('flex');
+                }
+                const hsmDrw = document.getElementById('hsmDrawer');
+                if (hsmDrw) {
+                    hsmDrw.classList.add('hidden');
+                    hsmDrw.classList.remove('flex');
+                }
                 enableChatInput(true);
             }
+
             
             // Populate and render active conversation tags
             currentProspectTags = info.tags || [];
@@ -2814,11 +2867,19 @@ ${window.location.origin}/survey/${currentConversationId}/`;
         function updateSessionCountdown() {
             const timerBadge = document.getElementById('sessionTimerBadge');
             const expiredBanner = document.getElementById('sessionExpiredBanner');
+            const hsmDrawer = document.getElementById('hsmDrawer');
             
             if (!clientLastMessageAt) {
                 timerBadge.innerHTML = `⏱️ Pas de session`;
                 timerBadge.classList.remove('expired');
-                expiredBanner.classList.add('hidden');
+                if (expiredBanner) {
+                    expiredBanner.classList.add('hidden');
+                    expiredBanner.classList.remove('flex');
+                }
+                if (hsmDrawer) {
+                    hsmDrawer.classList.add('hidden');
+                    hsmDrawer.classList.remove('flex');
+                }
                 enableChatInput(true);
                 return;
             }
@@ -2839,17 +2900,28 @@ ${window.location.origin}/survey/${currentConversationId}/`;
                 timerBadge.classList.remove('expired');
                 timerBadge.innerHTML = `⏱️ ${pad(hours)}:${pad(mins)}:${pad(secs)}`;
                 
-                expiredBanner.classList.add('hidden');
+                if (expiredBanner) {
+                    expiredBanner.classList.add('hidden');
+                    expiredBanner.classList.remove('flex');
+                }
+                if (hsmDrawer) {
+                    hsmDrawer.classList.add('hidden');
+                    hsmDrawer.classList.remove('flex');
+                }
                 enableChatInput(true);
             } else {
-                // Session has expired
+                // Session has expired (>24h)
                 timerBadge.classList.add('expired');
                 timerBadge.innerHTML = `⚠️ Session expirée`;
                 
-                expiredBanner.classList.remove('hidden');
+                if (expiredBanner) {
+                    expiredBanner.classList.remove('hidden');
+                    expiredBanner.classList.add('flex');
+                }
                 enableChatInput(false);
             }
         }
+
 
         // Real-time ticking for the internal SLA timers in conversation list
         function updateSLATimers() {
@@ -3034,26 +3106,64 @@ ${window.location.origin}/survey/${currentConversationId}/`;
         function enableChatInput(enabled) {
             const textarea = document.getElementById('messageInput');
             const btnSend = document.getElementById('btnSendMessage');
+            const wrapper = textarea ? textarea.parentElement : null;
             
             if (enabled) {
-                textarea.removeAttribute('disabled');
-                textarea.placeholder = "Saisissez votre réponse...";
-                textarea.className = "flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-forest-500 resize-none text-sm max-h-24 custom-scrollbar";
+                if (textarea) {
+                    textarea.removeAttribute('disabled');
+                    textarea.placeholder = "Saisissez votre message...";
+                    textarea.style.cursor = 'text';
+                }
+                if (wrapper) {
+                    wrapper.classList.remove('bg-gray-100', 'opacity-75');
+                    wrapper.classList.add('bg-white');
+                    wrapper.onclick = null;
+                }
                 if (btnSend) {
                     btnSend.removeAttribute('disabled');
-                    btnSend.className = "h-12 w-12 rounded-2xl bg-forest-600 hover:bg-forest-700 text-white flex items-center justify-center shadow-md shadow-forest-600/20 hover:shadow-forest-600/30 transition-all flex-shrink-0";
+                    btnSend.classList.remove('opacity-50', 'cursor-not-allowed', 'bg-gray-300');
+                    btnSend.classList.add('bg-forest-600', 'hover:bg-forest-700');
                 }
             } else {
-                textarea.setAttribute('disabled', 'true');
-                textarea.value = ""; // Clear text if expired
-                textarea.placeholder = "Saisie désactivée. Utilisez un modèle de message à droite ➔";
-                textarea.className = "flex-1 px-4 py-3 bg-gray-100 border border-gray-200 rounded-2xl text-sm resize-none custom-scrollbar text-gray-400 cursor-not-allowed";
+                if (textarea) {
+                    textarea.setAttribute('disabled', 'true');
+                    textarea.value = ""; // Clear text if expired
+                    textarea.placeholder = "🔒 Session WhatsApp +24h expirée. Cliquez pour ouvrir les modèles de relance ➔";
+                    textarea.style.cursor = 'pointer';
+                }
+                if (wrapper) {
+                    wrapper.classList.remove('bg-white');
+                    wrapper.classList.add('bg-gray-100', 'opacity-75');
+                    wrapper.onclick = function() { toggleHsmDrawer(true); };
+                }
                 if (btnSend) {
                     btnSend.setAttribute('disabled', 'true');
-                    btnSend.className = "h-12 w-12 rounded-2xl bg-gray-200 text-gray-400 flex items-center justify-center transition-all flex-shrink-0 cursor-not-allowed shadow-none";
+                    btnSend.classList.remove('bg-forest-600', 'hover:bg-forest-700');
+                    btnSend.classList.add('opacity-50', 'cursor-not-allowed', 'bg-gray-300');
                 }
             }
         }
+
+        // Toggle foldable HSM Drawer
+        function toggleHsmDrawer(forceState) {
+            const drawer = document.getElementById('hsmDrawer');
+            const chevron = document.getElementById('hsmChevron');
+            if (!drawer) return;
+            
+            const isCurrentlyHidden = drawer.classList.contains('hidden');
+            const shouldOpen = typeof forceState === 'boolean' ? forceState : isCurrentlyHidden;
+            
+            if (shouldOpen) {
+                drawer.classList.remove('hidden');
+                drawer.classList.add('flex');
+                if (chevron) chevron.style.transform = 'rotate(180deg)';
+            } else {
+                drawer.classList.add('hidden');
+                drawer.classList.remove('flex');
+                if (chevron) chevron.style.transform = 'rotate(0deg)';
+            }
+        }
+
 
         // Highlight search term in a text snippet (for conv list search results)
         function highlightSnippet(snippet, term) {
@@ -3126,6 +3236,8 @@ ${window.location.origin}/survey/${currentConversationId}/`;
             if (textarea) {
                 textarea.value = messageText;
             }
+            // Close the HSM drawer
+            toggleHsmDrawer(false);
             // Temporarily enable input, send, then re-disable
             const btn = document.getElementById('btnSendMessage');
             const msgInput = document.getElementById('messageInput');
@@ -3137,6 +3249,7 @@ ${window.location.origin}/survey/${currentConversationId}/`;
                 updateSessionCountdown();
             }, 500);
         }
+
 
         // ─────────────────────────────────────────────────────────────────────
         // 🔍 IN-CHAT MESSAGE SEARCH
