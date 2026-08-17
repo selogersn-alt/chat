@@ -132,8 +132,15 @@ CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
         "LOCATION": redis_url,
+        "OPTIONS": {
+            "socket_timeout": 10,           # Evite les TimeoutError Redis sous charge
+            "socket_connect_timeout": 5,    # Connexion rapide
+            "retry_on_timeout": True,       # Retry automatique si timeout
+            "max_connections": 50,          # Limite le pool de connexions
+        }
     }
 }
+
 
 # Session Engine (High Performance Sessions: Cache Redis + Persistance Base de données)
 SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"

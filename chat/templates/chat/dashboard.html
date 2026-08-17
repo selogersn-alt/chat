@@ -1267,6 +1267,7 @@
 
             chatSocket.onopen = function(e) {
                 console.log("WebSocket connected!");
+                _wsActive = true;
                 const dot = document.getElementById('wsStatusDot');
                 if (dot) { dot.classList.remove('bg-red-500', 'bg-yellow-500'); dot.classList.add('bg-emerald-500'); }
                 
@@ -1285,15 +1286,18 @@
                     return;
                 }
                 console.log("WebSocket event received:", data);
-                // Instantly trigger a sync when a new message or status update arrives
+                // Instantly trigger a sync when a new message or status update arrives via WS
                 syncData();
             };
 
             chatSocket.onclose = function(e) {
                 console.warn('Chat WebSocket closed. Reconnecting in 5 seconds...');
+                _wsActive = false;
                 if (wsPingInterval) clearInterval(wsPingInterval);
                 const dot = document.getElementById('wsStatusDot');
                 if (dot) { dot.classList.remove('bg-emerald-500', 'bg-yellow-500'); dot.classList.add('bg-red-500'); }
+                // Trigger one sync immediately when WS drops so the UI stays fresh
+                syncData(false);
                 setTimeout(connectWebSocket, 5000);
             };
             
@@ -1311,13 +1315,27 @@
         setInterval(updateSessionCountdown, 1000);
         setInterval(updateSLATimers, 1000);
         
-        // Bulletproof HTTP fallback polling: sync every 4 seconds in case WebSockets fail or sleep
-        setInterval(() => { syncData(false); }, 4000);
+        // ── HTTP Fallback polling ───────────────────────────────────────────────
+        // Only fires every 30 seconds, and only when the page is visible.
+        // Real-time updates come from the WebSocket above (syncData() on message).
+        // This interval is purely a safety net for edge-cases (WS sleep / network blip).
+        let _wsActive = false; // true when WebSocket is OPEN
+        setInterval(() => {
+            if (!document.hidden && !_wsActive) {
+                syncData(false);
+            }
+        }, 30000);
 
         let syncFailures = 0;
-        let _syncAbortController = null; // Tracks in-flight sync request for cancellation
+        let _syncInFlight = false;          // guard: prevent parallel /api/sync/ calls
+        let _syncAbortController = null;   // Tracks in-flight sync request for cancellation
 
         function syncData(fastLoad = false) {
+            // ── In-flight guard: skip if a regular sync is already running ──
+            if (!fastLoad && _syncInFlight) {
+                return;
+            }
+
             // ── Race-condition fix: capture conversation ID at fetch time ──
             // If a new conversation is clicked before a previous sync returns,
             // we discard the stale response by comparing IDs when data arrives.
@@ -1329,6 +1347,7 @@
             }
             const abortCtrl = new AbortController();
             if (fastLoad) _syncAbortController = abortCtrl;
+            if (!fastLoad) _syncInFlight = true;
 
             let url = `/api/sync/`;
             let params = new URLSearchParams();
@@ -1361,6 +1380,7 @@
                 .then(res => res.json())
                 .then(data => {
                     syncFailures = 0; // Reset failures on success
+                    if (!fastLoad) _syncInFlight = false;
 
                     // ── Stale response guard ──
                     // If the user clicked another conversation while this fetch was in flight,
@@ -1486,6 +1506,7 @@
                     }
                 })
                 .catch(err => {
+                    if (!fastLoad) _syncInFlight = false;
                     // AbortError is expected (user clicked another conv) — don't count as failure
                     if (err && err.name === 'AbortError') {
                         console.log('[syncData] Fetch aborted (conversation changed), ignoring.');
@@ -1493,8 +1514,8 @@
                     }
                     console.error("Error syncing dashboard:", err);
                     syncFailures++;
-                    if (syncFailures >= 3) {
-                        // ── Connection badge: offline ──
+                    if (syncFailures >= 5) {
+                        // ── Connection badge: offline (only after 5 consecutive failures) ──
                         const badge = document.getElementById('connBadge');
                         if (badge) {
                             badge.classList.add('offline');
