@@ -818,6 +818,28 @@ def sync_messages(request):
         # Count unread messages from client
         unread_count = conv.client_unread_count
         
+        # ── Snippet du message correspondant à la recherche ──
+        matching_snippet = None
+        matching_snippet_time = None
+        if query:
+            # Cherche le message le plus récent contenant le terme recherché
+            match_msg = (
+                conv.messages
+                .filter(content__icontains=query)
+                .order_by('-created_at')
+                .first()
+            )
+            if match_msg and match_msg.content:
+                text = match_msg.content
+                idx = text.lower().find(query.lower())
+                if idx >= 0:
+                    # Extrait 80 caractères autour du terme
+                    start = max(0, idx - 30)
+                    end = min(len(text), idx + len(query) + 50)
+                    snippet = ("..." if start > 0 else "") + text[start:end] + ("..." if end < len(text) else "")
+                    matching_snippet = snippet
+                    matching_snippet_time = format_time_short(match_msg.created_at)
+
         conv_data.append({
             'id': str(conv.id),
             'topic': conv.topic,
@@ -841,6 +863,8 @@ def sync_messages(request):
             'unread_count': unread_count,
             'is_blacklisted': is_blacklisted,
             'is_assistance_paid': client.is_assistance_paid if client else False,
+            'matching_snippet': matching_snippet,
+            'matching_snippet_time': matching_snippet_time,
         })
         
     messages_data = []
