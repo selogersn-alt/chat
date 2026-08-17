@@ -115,12 +115,32 @@ TEMPLATES = [
 WSGI_APPLICATION = 'chatproject.wsgi.application'
 ASGI_APPLICATION = 'chatproject.asgi.application'
 
-# Channel Layers - InMemory (single-server, zero Redis dependency)
+# Channel Layers - Redis (High Performance WebSockets)
+redis_url = os.environ.get('REDIS_URL', 'redis://127.0.0.1:6379/1')
+
 CHANNEL_LAYERS = {
     'default': {
-        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [redis_url],
+        },
     },
 }
+
+# Caching Configuration
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": redis_url,
+    }
+}
+
+# Session Engine (High Performance Sessions: Cache Redis + Persistance Base de données)
+SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
+SESSION_CACHE_ALIAS = "default"
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 30  # 30 jours
+SESSION_SAVE_EVERY_REQUEST = True
+
 
 # Database
 # https://docs.djangoproject.com/en/stable/ref/settings/#databases
@@ -165,7 +185,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/stable/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
@@ -178,7 +198,7 @@ STORAGES = {
     },
 }
 
-MEDIA_URL = 'media/'
+MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 # Custom User Model
