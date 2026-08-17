@@ -142,11 +142,10 @@ CACHES = {
 }
 
 
-# Session Engine (High Performance Sessions: Cache Redis + Persistance Base de données)
-SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
+# Session Engine (Ultra-fast in-memory Redis Sessions, 30 days)
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 SESSION_CACHE_ALIAS = "default"
 SESSION_COOKIE_AGE = 60 * 60 * 24 * 30  # 30 jours
-SESSION_SAVE_EVERY_REQUEST = True
 
 
 # Database
@@ -155,10 +154,11 @@ SESSION_SAVE_EVERY_REQUEST = True
 DATABASES = {
     'default': dj_database_url.config(
         default=f"sqlite:///{Path(os.getenv('DATABASE_DIR', str(BASE_DIR))) / 'db.sqlite3'}",
-        conn_max_age=600,
+        conn_max_age=0,  # CRITIQUE EN ASGI/Daphne: évite l'accumulation de connexions PostgreSQL fantômes
         conn_health_checks=True,
     )
 }
+
 
 # Password validation
 # https://docs.djangoproject.com/en/stable/ref/settings/#auth-password-validators
