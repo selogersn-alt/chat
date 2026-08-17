@@ -1246,6 +1246,13 @@
         let previousMessageSnippets = {}; // Track last message snippets to trigger notifications
         let triggeredSlaAlerts = new Set(); // Track conversations that triggered SLA alert in current client-message cycle
 
+        // Sync & WebSocket State Variables (Declared before any function calls)
+        let _wsActive = false;             // true when WebSocket is OPEN
+        let _syncInFlight = false;         // guard: prevent parallel /api/sync/ calls
+        let _syncAbortController = null;   // Tracks in-flight sync request for cancellation
+        let syncFailures = 0;
+        let wsPingInterval = null;
+
         // Request notification permissions
         if (typeof window !== 'undefined' && 'Notification' in window) {
             if (Notification.permission === 'default') {
@@ -1257,7 +1264,6 @@
         syncData();
         
         // Connect WebSocket for real-time updates
-        let wsPingInterval = null;
         function connectWebSocket() {
             if (wsPingInterval) clearInterval(wsPingInterval);
             const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
@@ -1319,18 +1325,14 @@
         // Only fires every 30 seconds, and only when the page is visible.
         // Real-time updates come from the WebSocket above (syncData() on message).
         // This interval is purely a safety net for edge-cases (WS sleep / network blip).
-        let _wsActive = false; // true when WebSocket is OPEN
         setInterval(() => {
             if (!document.hidden && !_wsActive) {
                 syncData(false);
             }
         }, 30000);
 
-        let syncFailures = 0;
-        let _syncInFlight = false;          // guard: prevent parallel /api/sync/ calls
-        let _syncAbortController = null;   // Tracks in-flight sync request for cancellation
-
         function syncData(fastLoad = false) {
+
             // ── In-flight guard: skip if a regular sync is already running ──
             if (!fastLoad && _syncInFlight) {
                 return;
